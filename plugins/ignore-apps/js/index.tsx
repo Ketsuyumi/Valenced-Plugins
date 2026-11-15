@@ -2,6 +2,7 @@ import { ToastActionCreators } from '@valenced/discord/actions'
 import { Design } from '@valenced/discord/design'
 import { onFluxEventDispatched } from '@valenced/discord/flux'
 import { useState } from 'react'
+import { ScrollView } from 'react-native'
 import {
 	createMessageFilter,
 	DEFAULT_SETTINGS,
@@ -72,67 +73,75 @@ function SettingsPage({ api }: { api: Api }) {
 	}
 
 	return (
-		<Stack spacing={24} style={{ padding: 16 }}>
-			<Stack spacing={12}>
-				<TextInput
-					label="App ID"
-					placeholder="159985870458322944"
-					value={input}
-					onChange={setInput}
-					isClearable
-					status={error ? 'error' : 'default'}
-					errorMessage={error}
-					description={
-						id && !error
-							? `${describeUser(id)}${isKnownHuman(id) ? ' (this is a person, not an app, but ignoring still works)' : ''}`
-							: 'Turn on Developer Mode in Discord, then long-press the app and copy its user ID.'
-					}
-				/>
-				<Button text="Ignore" disabled={!id || !!error} onPress={add} />
-			</Stack>
+		<ScrollView
+			style={{ flex: 1 }}
+			contentContainerStyle={{ padding: 16 }}
+			keyboardShouldPersistTaps="handled"
+		>
+			<Stack spacing={24}>
+				<Stack spacing={12}>
+					<TextInput
+						label="App ID"
+						placeholder="159985870458322944"
+						value={input}
+						onChange={setInput}
+						isClearable
+						status={error ? 'error' : 'default'}
+						errorMessage={error}
+						description={
+							id && !error
+								? `${describeUser(id)}${isKnownHuman(id) ? ' (this is a person, not an app, but ignoring still works)' : ''}`
+								: 'Turn on Developer Mode in Discord, then long-press the app and copy its user ID.'
+						}
+					/>
+					<Button text="Ignore" disabled={!id || !!error} onPress={add} />
+				</Stack>
 
-			<TableRowGroup title="Options">
-				<TableSwitchRow
-					label="Hide all apps"
-					subLabel="Hide messages from every bot, not only the ones listed below"
-					value={settings.hideAllApps}
-					onValueChange={(hideAllApps: boolean) => update(api, { hideAllApps })}
-				/>
-				<TableSwitchRow
-					label="Keep replies to my commands"
-					subLabel="Still show an app's answer to a slash command you ran"
-					value={settings.keepMyCommandReplies}
-					onValueChange={(keepMyCommandReplies: boolean) =>
-						update(api, { keepMyCommandReplies })
-					}
-				/>
-			</TableRowGroup>
-
-			{settings.ignored.length ? (
-				<TableRowGroup title="Ignored apps">
-					{settings.ignored.map(entry => (
-						<TableRow
-							key={entry.id}
-							label={entry.label}
-							subLabel={entry.id}
-							trailing={
-								<Button
-									text="Unignore"
-									size="sm"
-									variant="secondary"
-									onPress={() => remove(entry.id)}
-								/>
-							}
-						/>
-					))}
+				<TableRowGroup title="Options">
+					<TableSwitchRow
+						label="Hide all apps"
+						subLabel="Hide messages from every bot, not only the ones listed below"
+						value={settings.hideAllApps}
+						onValueChange={(hideAllApps: boolean) =>
+							update(api, { hideAllApps })
+						}
+					/>
+					<TableSwitchRow
+						label="Keep replies to my commands"
+						subLabel="Still show an app's answer to a slash command you ran"
+						value={settings.keepMyCommandReplies}
+						onValueChange={(keepMyCommandReplies: boolean) =>
+							update(api, { keepMyCommandReplies })
+						}
+					/>
 				</TableRowGroup>
-			) : null}
 
-			<Text variant="text-sm/medium" color="text-muted">
-				Messages are hidden only on this device. Changes apply to newly loaded
-				messages, so reopen a channel to refresh it.
-			</Text>
-		</Stack>
+				{settings.ignored.length ? (
+					<TableRowGroup title="Ignored apps">
+						{settings.ignored.map(entry => (
+							<TableRow
+								key={entry.id}
+								label={entry.label}
+								subLabel={entry.id}
+								trailing={
+									<Button
+										text="Unignore"
+										size="sm"
+										variant="secondary"
+										onPress={() => remove(entry.id)}
+									/>
+								}
+							/>
+						))}
+					</TableRowGroup>
+				) : null}
+
+				<Text variant="text-sm/medium" color="text-muted">
+					Messages are hidden only on this device. Changes apply to newly loaded
+					messages, so reopen a channel to refresh it.
+				</Text>
+			</Stack>
+		</ScrollView>
 	)
 }
 

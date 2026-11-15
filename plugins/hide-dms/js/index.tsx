@@ -1,6 +1,6 @@
 import { Design } from '@valenced/discord/design'
 import { useMemo, useState } from 'react'
-import { Image } from 'react-native'
+import { Image, ScrollView } from 'react-native'
 import {
 	DEFAULT_SETTINGS,
 	DM,
@@ -53,58 +53,64 @@ function SettingsPage({ api }: { api: Api }) {
 		(type === GROUP_DM && settings.hideAllGroups)
 
 	return (
-		<Stack spacing={24} style={{ padding: 16 }}>
-			<TableRowGroup title="Hide everything">
-				<TableSwitchRow
-					label="Hide all DMs"
-					subLabel="One-to-one conversations"
-					value={settings.hideAllDms}
-					onValueChange={(hideAllDms: boolean) => update(api, { hideAllDms })}
-				/>
-				<TableSwitchRow
-					label="Hide all group DMs"
-					value={settings.hideAllGroups}
-					onValueChange={(hideAllGroups: boolean) =>
-						update(api, { hideAllGroups })
-					}
-				/>
-			</TableRowGroup>
+		<ScrollView
+			style={{ flex: 1 }}
+			contentContainerStyle={{ padding: 16 }}
+			keyboardShouldPersistTaps="handled"
+		>
+			<Stack spacing={24}>
+				<TableRowGroup title="Hide everything">
+					<TableSwitchRow
+						label="Hide all DMs"
+						subLabel="One-to-one conversations"
+						value={settings.hideAllDms}
+						onValueChange={(hideAllDms: boolean) => update(api, { hideAllDms })}
+					/>
+					<TableSwitchRow
+						label="Hide all group DMs"
+						value={settings.hideAllGroups}
+						onValueChange={(hideAllGroups: boolean) =>
+							update(api, { hideAllGroups })
+						}
+					/>
+				</TableRowGroup>
 
-			<Stack spacing={12}>
-				<TextInput
-					placeholder="Search conversations"
-					value={query}
-					onChange={setQuery}
-					isClearable
-				/>
-				{shown.length ? (
-					<TableRowGroup title="Conversations" hasIcons>
-						{shown.map(c => (
-							<TableSwitchRow
-								key={c.id}
-								label={c.name}
-								subLabel={c.type === GROUP_DM ? 'Group DM' : 'DM'}
-								icon={<Avatar url={c.avatarUrl} />}
-								disabled={coveredByAll(c.type)}
-								value={coveredByAll(c.type) || settings.hidden.includes(c.id)}
-								onValueChange={(hide: boolean) => toggle(c.id, hide)}
-							/>
-						))}
-					</TableRowGroup>
-				) : (
-					<Text variant="text-sm/medium" color="text-muted">
-						{conversations.length
-							? 'No conversations match your search.'
-							: "Couldn't read your DM list. Open your DMs once, then come back."}
-					</Text>
-				)}
+				<Stack spacing={12}>
+					<TextInput
+						placeholder="Search conversations"
+						value={query}
+						onChange={setQuery}
+						isClearable
+					/>
+					{shown.length ? (
+						<TableRowGroup title="Conversations" hasIcons>
+							{shown.map(c => (
+								<TableSwitchRow
+									key={c.id}
+									label={c.name}
+									subLabel={c.type === GROUP_DM ? 'Group DM' : 'DM'}
+									icon={<Avatar url={c.avatarUrl} />}
+									disabled={coveredByAll(c.type)}
+									value={coveredByAll(c.type) || settings.hidden.includes(c.id)}
+									onValueChange={(hide: boolean) => toggle(c.id, hide)}
+								/>
+							))}
+						</TableRowGroup>
+					) : (
+						<Text variant="text-sm/medium" color="text-muted">
+							{conversations.length
+								? 'No conversations match your search.'
+								: "Couldn't read your DM list. Open your DMs once, then come back."}
+						</Text>
+					)}
+				</Stack>
+
+				<Text variant="text-sm/medium" color="text-muted">
+					Hiding only removes conversations from your DM list on this device.
+					You don't leave them, and you still get messages and notifications.
+				</Text>
 			</Stack>
-
-			<Text variant="text-sm/medium" color="text-muted">
-				Hiding only removes conversations from your DM list on this device. You
-				don't leave them, and you still get messages and notifications.
-			</Text>
-		</Stack>
+		</ScrollView>
 	)
 }
 

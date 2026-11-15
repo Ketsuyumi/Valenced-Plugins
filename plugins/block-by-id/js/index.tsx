@@ -4,7 +4,7 @@ import {
 } from '@valenced/discord/actions'
 import { Design } from '@valenced/discord/design'
 import { useEffect, useState } from 'react'
-import { Image } from 'react-native'
+import { Image, ScrollView } from 'react-native'
 import {
 	blockUser,
 	errorMessage,
@@ -198,48 +198,54 @@ function SettingsPage({ api }: { api: Api }) {
 	const history = settings?.history ?? []
 
 	return (
-		<Stack spacing={24} style={{ padding: 16 }}>
-			<Stack spacing={12}>
-				<TextInput
-					label="Discord user ID"
-					placeholder="123456789012345678"
-					value={input}
-					onChange={setInput}
-					isClearable
-					status={error ? 'error' : 'default'}
-					errorMessage={error}
-					description={
-						id
-							? undefined
-							: 'Turn on Developer Mode in Discord, then long-press a user and copy their ID.'
-					}
-				/>
-				{id && !error ? <UserPreview user={user} /> : null}
-				<Button
-					text="Block"
-					variant="destructive"
-					disabled={!id || !!error}
-					onPress={() => {
-						if (!id) return
-						confirmBlock(api, id, user ?? null)
-						setInput('')
-					}}
-				/>
-			</Stack>
+		<ScrollView
+			style={{ flex: 1 }}
+			contentContainerStyle={{ padding: 16 }}
+			keyboardShouldPersistTaps="handled"
+		>
+			<Stack spacing={24}>
+				<Stack spacing={12}>
+					<TextInput
+						label="Discord user ID"
+						placeholder="123456789012345678"
+						value={input}
+						onChange={setInput}
+						isClearable
+						status={error ? 'error' : 'default'}
+						errorMessage={error}
+						description={
+							id
+								? undefined
+								: 'Turn on Developer Mode in Discord, then long-press a user and copy their ID.'
+						}
+					/>
+					{id && !error ? <UserPreview user={user} /> : null}
+					<Button
+						text="Block"
+						variant="destructive"
+						disabled={!id || !!error}
+						onPress={() => {
+							if (!id) return
+							confirmBlock(api, id, user ?? null)
+							setInput('')
+						}}
+					/>
+				</Stack>
 
-			{history.length ? (
-				<TableRowGroup title="Blocked with this plugin">
-					{history.map(entry => (
-						<BlockedRow key={entry.id} api={api} entry={entry} />
-					))}
-				</TableRowGroup>
-			) : (
-				<Text variant="text-sm/medium" color="text-muted">
-					Users you block here will be listed here, so you can unblock them
-					later.
-				</Text>
-			)}
-		</Stack>
+				{history.length ? (
+					<TableRowGroup title="Blocked with this plugin">
+						{history.map(entry => (
+							<BlockedRow key={entry.id} api={api} entry={entry} />
+						))}
+					</TableRowGroup>
+				) : (
+					<Text variant="text-sm/medium" color="text-muted">
+						Users you block here will be listed here, so you can unblock them
+						later.
+					</Text>
+				)}
+			</Stack>
+		</ScrollView>
 	)
 }
 
