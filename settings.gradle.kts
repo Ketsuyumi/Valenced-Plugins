@@ -29,7 +29,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "valenced-plugins"
 
-val pluginRoots = listOf("plugins", "themes")
+val pluginRoots = listOf("plugins", "themes", "private")
 
 // Each `plugins/<name>/` or `themes/<name>/` folder with Kotlin sources (`src/main`) is a native plugin module (`:plugins:<name>` or `:themes:<name>`).
 // Plugins without `src/main` are JS-only and are packaged without a Gradle project.

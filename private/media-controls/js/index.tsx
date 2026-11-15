@@ -1,7 +1,7 @@
 import { ToastActionCreators } from '@valenced/discord/actions'
 import { Design } from '@valenced/discord/design'
 import { Clipboard } from '@valenced/externals/react-native-clipboard'
-import { Linking, ScrollView } from 'react-native'
+import { ScrollView } from 'react-native'
 import { dockStatus, patchYouBar } from './dock'
 import { Player, useMedia } from './player'
 import { reconnect, startPolling } from './store'
@@ -17,8 +17,6 @@ interface Settings {
 type Api = PluginApi<{ jsonStorage: Settings }>
 
 const DEFAULTS: Settings = { dock: true, tucked: false }
-const BRIDGE_DOWNLOAD =
-	'https://github.com/Ketsuyumi/Valenced-Plugins/releases/download/media-bridge/MediaBridge.apk'
 
 let readSettings: () => Settings = () => DEFAULTS
 
@@ -93,7 +91,7 @@ function Diagnostics() {
 }
 
 function SettingsPage({ api }: { api: Api }) {
-	const { Stack, Text, Card, TableRowGroup, TableSwitchRow, TableRow } = Design
+	const { Stack, Text, Card, TableRowGroup, TableSwitchRow } = Design
 	const settings = { ...DEFAULTS, ...api.jsonStorage.use() }
 	const { playback } = useMedia()
 
@@ -118,15 +116,6 @@ function SettingsPage({ api }: { api: Api }) {
 						onValueChange={(dock: boolean) =>
 							api.jsonStorage.set({ ...settings, dock }, true)
 						}
-					/>
-				</TableRowGroup>
-
-				<TableRowGroup title="Media Bridge app">
-					<TableRow
-						label="Get Media Bridge"
-						subLabel="Needed to see what's playing (title, cover, progress). Install it, open it and turn on its notification access."
-						arrow
-						onPress={() => Linking.openURL(BRIDGE_DOWNLOAD)}
 					/>
 				</TableRowGroup>
 

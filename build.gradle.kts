@@ -59,7 +59,7 @@ data class PluginDef(
     val scriptName: String?,
 )
 
-val pluginRoots = listOf("plugins", "themes")
+val pluginRoots = listOf("plugins", "themes", "private")
 
 val pluginDefs = pluginRoots.flatMap { file(it).listFiles().orEmpty().sortedBy(File::getName) }
     .filter(File::isDirectory)

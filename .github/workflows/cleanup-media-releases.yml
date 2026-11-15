@@ -1,0 +1,23 @@
+# One-off: removes the public Media Controls / Media Bridge releases and their tags
+# (Media Controls is kept private). Run it by hand from the Actions tab.
+
+name: Remove public Media Controls releases
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          for tag in media-bridge media-controls-test; do
+            gh release delete "$tag" --yes --cleanup-tag || echo "no release $tag"
+            gh api -X DELETE "repos/$GH_REPO/git/refs/tags/$tag" || echo "no tag $tag"
+          done
