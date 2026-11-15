@@ -48,6 +48,21 @@ It filters the lists Discord's DM screen reads from (`PrivateChannelSortStore` a
 visual and only on this device: you still receive messages and notifications, and turning a switch off shows the
 conversation again straight away.
 
+### DM Details+ (`dev.ketsuyumi.dm-details-plus`)
+
+Changes the details screen of DMs (tap the name at the top of a DM):
+
+- Hides the **New Group** button in one-to-one DMs.
+- Hides the **Files** tab in DMs and group DMs.
+- Adds a **Stickers** tab: every sticker either of you sent, from Discord's `has: sticker` search.
+- Adds an **Emoji** tab: every custom emoji either of you sent, found by scanning the conversation 100 messages at a
+  time as you scroll.
+
+Both tabs show a Media-style grid with how often each one was sent and who sent it last. Each change can be turned off
+in the plugin's settings. It works by adjusting the tab list passed to Discord's `useSegmentedControlState` hook, and
+by dropping the `RowButton` that `useMemberListAction` creates; `tools/dm-inspector` is the debug plugin used to find
+those.
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.
