@@ -14,8 +14,8 @@ Block any Discord user by their user ID, even when you share no server or DM wit
 2. Open **Settings > Valenced > Plugins > Block by ID**.
 3. Paste the ID (a plain ID or a `<@123…>` mention both work) and tap **Block**, then confirm.
 
-If Discord already knows the user, the page shows their name before you block. Users blocked from this page are
-listed underneath with an **Unblock** button.
+When you paste an ID, the page shows that person's profile picture and name before you block. Users blocked from this page are
+listed underneath with their picture, name and an **Unblock** button.
 
 How it blocks: it calls Discord's own relationship action (`addRelationship` with type `2`, *blocked*), the same
 code path the app uses when you block from a profile. If a Discord update moves that module, it falls back to

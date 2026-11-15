@@ -33,6 +33,7 @@ interface HttpRequest {
 }
 
 interface HttpModule {
+	get(request: HttpRequest): Promise<{ body?: any }>
 	put(request: HttpRequest): Promise<unknown>
 	del(request: HttpRequest): Promise<unknown>
 }
@@ -46,6 +47,8 @@ interface User {
 	id: string
 	username: string
 	globalName?: string | null
+	avatar?: string | null
+	discriminator?: string
 }
 
 interface UserStore {
@@ -77,6 +80,7 @@ function getHttp() {
 	const [http] = lookupModule(
 		withProps<HttpModule & { getAPIBaseURL(): string }>(
 			'getAPIBaseURL',
+			'get',
 			'put',
 			'del',
 		),
@@ -100,15 +104,6 @@ export function isBlocked(userId: string): boolean {
 
 export function isCurrentUser(userId: string): boolean {
 	return userStore()?.getCurrentUser?.()?.id === userId
-}
-
-/** A display name if Discord already has this user cached, else the ID. */
-export function describeUser(userId: string): string {
-	const user = userStore()?.getUser?.(userId)
-	if (!user) return userId
-	return user.globalName
-		? `${user.globalName} (@${user.username})`
-		: `@${user.username}`
 }
 
 export async function blockUser(userId: string): Promise<void> {
@@ -157,4 +152,71 @@ export function errorMessage(error: unknown): string {
 	if (e?.body?.message) return e.body.message
 	if (e?.status === 404) return 'No user exists with that ID'
 	return e?.message ?? String(error)
+}
+
+export interface UserInfo {
+	id: string
+	/** Display name, falling back to the username. */
+	name: string
+	username: string
+	avatarUrl: string
+}
+
+const CDN = 'https://cdn.discordapp.com'
+
+/** Discord's default avatar index, used when a user has no profile picture. */
+function defaultAvatarIndex(id: string, discriminator?: string): number {
+	if (discriminator && discriminator !== '0') return Number(discriminator) % 5
+	if (typeof BigInt === 'function') return Number((BigInt(id) >> 22n) % 6n)
+	return 0
+}
+
+function toUserInfo(raw: {
+	id: string
+	username: string
+	global_name?: string | null
+	globalName?: string | null
+	avatar?: string | null
+	discriminator?: string
+}): UserInfo {
+	const globalName = raw.globalName ?? raw.global_name
+	const avatarUrl = raw.avatar
+		? `${CDN}/avatars/${raw.id}/${raw.avatar}.${raw.avatar.startsWith('a_') ? 'gif' : 'png'}?size=128`
+		: `${CDN}/embed/avatars/${defaultAvatarIndex(raw.id, raw.discriminator)}.png`
+	return {
+		id: raw.id,
+		name: globalName || raw.username,
+		username: raw.username,
+		avatarUrl,
+	}
+}
+
+const userCache = new Map<string, Promise<UserInfo | null>>()
+
+/** A user's name and avatar, already cached, or fetched from Discord once. */
+export function fetchUserInfo(userId: string): Promise<UserInfo | null> {
+	const known = userCache.get(userId)
+	if (known) return known
+
+	const request = (async () => {
+		const cached = userStore()?.getUser?.(userId)
+		if (cached?.username) return toUserInfo(cached)
+
+		const http = getHttp()
+		if (!http) return null
+		try {
+			const { body } = await http.get({ url: `/users/${userId}` })
+			if (body?.username) return toUserInfo(body)
+		} catch {}
+		try {
+			const { body } = await http.get({ url: `/users/${userId}/profile` })
+			if (body?.user?.username) return toUserInfo(body.user)
+		} catch {}
+		return null
+	})()
+
+	// Retry later instead of caching a failure forever.
+	request.then(info => info ?? userCache.delete(userId))
+	userCache.set(userId, request)
+	return request
 }

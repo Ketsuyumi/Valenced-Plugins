@@ -3,22 +3,26 @@ import {
 	ToastActionCreators,
 } from '@valenced/discord/actions'
 import { Design } from '@valenced/discord/design'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { Image } from 'react-native'
 import {
 	blockUser,
-	describeUser,
 	errorMessage,
+	fetchUserInfo,
 	isBlocked,
 	isCurrentUser,
 	parseUserId,
 	unblockUser,
 } from './relationships'
 import type { PluginApi } from '@valenced/plugins/types'
+import type { UserInfo } from './relationships'
 
 interface BlockedEntry {
 	id: string
-	/** Name at the time of blocking, if Discord had the user cached. */
+	/** Name at the time of blocking (the ID if it couldn't be looked up). */
 	label: string
+	/** Profile picture at the time of blocking. */
+	avatarUrl?: string
 	/** Unix time in milliseconds. */
 	blockedAt: number
 }
@@ -48,10 +52,45 @@ async function removeFromHistory(api: Api, id: string) {
 	await api.jsonStorage.set({ history: history.filter(e => e.id !== id) }, true)
 }
 
-async function doBlock(api: Api, id: string, label: string) {
+/** `undefined` while loading, `null` if the user couldn't be found. */
+function useUserInfo(id: string | null) {
+	const [info, setInfo] = useState<{ id: string; user: UserInfo | null }>()
+
+	useEffect(() => {
+		if (!id) return
+		let active = true
+		fetchUserInfo(id).then(user => active && setInfo({ id, user }))
+		return () => {
+			active = false
+		}
+	}, [id])
+
+	return id && info?.id === id ? info.user : undefined
+}
+
+function Avatar({ url, size }: { url?: string; size: number }) {
+	if (!url) return null
+	return (
+		<Image
+			source={{ uri: url }}
+			style={{ width: size, height: size, borderRadius: size / 2 }}
+		/>
+	)
+}
+
+const nameOf = (id: string, user?: UserInfo | null) =>
+	user ? `${user.name} (@${user.username})` : id
+
+async function doBlock(api: Api, id: string, user: UserInfo | null) {
+	const label = user?.name ?? id
 	try {
 		await blockUser(id)
-		await addToHistory(api, { id, label, blockedAt: Date.now() })
+		await addToHistory(api, {
+			id,
+			label,
+			avatarUrl: user?.avatarUrl,
+			blockedAt: Date.now(),
+		})
 		toast(`Blocked ${label}`, 'success')
 	} catch (e) {
 		api.logger.error(`Failed to block ${id}`, e)
@@ -59,20 +98,20 @@ async function doBlock(api: Api, id: string, label: string) {
 	}
 }
 
-async function doUnblock(api: Api, id: string) {
+async function doUnblock(api: Api, id: string, label: string) {
 	try {
 		await unblockUser(id)
 		await removeFromHistory(api, id)
-		toast(`Unblocked ${describeUser(id)}`, 'success')
+		toast(`Unblocked ${label}`, 'success')
 	} catch (e) {
 		api.logger.error(`Failed to unblock ${id}`, e)
 		toast(`Couldn't unblock: ${errorMessage(e)}`, 'critical')
 	}
 }
 
-function confirmBlock(api: Api, id: string) {
+function confirmBlock(api: Api, id: string, user: UserInfo | null) {
 	const { AlertModal, AlertActionButton, Stack } = Design
-	const label = describeUser(id)
+	const label = nameOf(id, user)
 
 	AlertActionCreators.openAlert(
 		ALERT_KEY,
@@ -84,7 +123,7 @@ function confirmBlock(api: Api, id: string) {
 					<AlertActionButton
 						text="Block"
 						variant="destructive"
-						onPress={() => doBlock(api, id, label)}
+						onPress={() => doBlock(api, id, user)}
 					/>
 					<AlertActionButton text="Cancel" variant="secondary" />
 				</Stack>
@@ -93,12 +132,60 @@ function confirmBlock(api: Api, id: string) {
 	)
 }
 
+function UserPreview({ user }: { user: UserInfo | null | undefined }) {
+	const { Card, Stack, Text } = Design
+	return (
+		<Card>
+			<Stack direction="horizontal" spacing={12} align="center">
+				{user ? <Avatar url={user.avatarUrl} size={48} /> : null}
+				<Stack spacing={2} style={{ flex: 1 }}>
+					<Text variant="text-md/semibold">
+						{user === undefined
+							? 'Looking up user…'
+							: user
+								? user.name
+								: "Couldn't find this user"}
+					</Text>
+					{user ? (
+						<Text variant="text-sm/medium" color="text-muted">
+							@{user.username}
+						</Text>
+					) : null}
+				</Stack>
+			</Stack>
+		</Card>
+	)
+}
+
+function BlockedRow({ api, entry }: { api: Api; entry: BlockedEntry }) {
+	const { TableRow, Button } = Design
+	const user = useUserInfo(entry.id)
+	const name = user?.name ?? (entry.label !== entry.id ? entry.label : entry.id)
+
+	return (
+		<TableRow
+			label={name}
+			subLabel={`${user ? `@${user.username} · ` : ''}${entry.id} · ${new Date(entry.blockedAt).toLocaleDateString()}`}
+			icon={<Avatar url={user?.avatarUrl ?? entry.avatarUrl} size={40} />}
+			trailing={
+				<Button
+					text="Unblock"
+					size="sm"
+					variant="secondary"
+					onPress={() => doUnblock(api, entry.id, name)}
+				/>
+			}
+		/>
+	)
+}
+
 function SettingsPage({ api }: { api: Api }) {
-	const { Stack, Text, TextInput, Button, TableRowGroup, TableRow } = Design
+	const { Stack, Text, TextInput, Button, TableRowGroup } = Design
 	const settings = api.jsonStorage.use()
 	const [input, setInput] = useState('')
 
 	const id = parseUserId(input)
+	const user = useUserInfo(id)
 	const error =
 		input.trim() && !id
 			? 'A Discord ID is a 17 to 20 digit number'
@@ -122,18 +209,19 @@ function SettingsPage({ api }: { api: Api }) {
 					status={error ? 'error' : 'default'}
 					errorMessage={error}
 					description={
-						id && !error
-							? describeUser(id)
+						id
+							? undefined
 							: 'Turn on Developer Mode in Discord, then long-press a user and copy their ID.'
 					}
 				/>
+				{id && !error ? <UserPreview user={user} /> : null}
 				<Button
 					text="Block"
 					variant="destructive"
 					disabled={!id || !!error}
 					onPress={() => {
 						if (!id) return
-						confirmBlock(api, id)
+						confirmBlock(api, id, user ?? null)
 						setInput('')
 					}}
 				/>
@@ -142,19 +230,7 @@ function SettingsPage({ api }: { api: Api }) {
 			{history.length ? (
 				<TableRowGroup title="Blocked with this plugin">
 					{history.map(entry => (
-						<TableRow
-							key={entry.id}
-							label={entry.label}
-							subLabel={`${entry.id} · ${new Date(entry.blockedAt).toLocaleDateString()}`}
-							trailing={
-								<Button
-									text="Unblock"
-									size="sm"
-									variant="secondary"
-									onPress={() => doUnblock(api, entry.id)}
-								/>
-							}
-						/>
+						<BlockedRow key={entry.id} api={api} entry={entry} />
 					))}
 				</TableRowGroup>
 			) : (
