@@ -40,6 +40,30 @@
         }
       }
     },
+    "dev.ketsuyumi.dm-details-plus": {
+      "name": "DM Details+",
+      "description": "On a DM's details screen: hide the New Group button and the Files tab, and add Stickers and Emoji tabs.",
+      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "icon": "StickerIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.0.0.zip",
+          "sha256": "daab0e4cf0012d6ce16ba1b53495b7729f8823ad1e0542b0f98a1b215b8c727c",
+          "size": 3989,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.hide-dms": {
       "name": "Hide DMs",
       "description": "Hide chosen DMs and group DMs, or all of them, from your DM list without leaving them.",
