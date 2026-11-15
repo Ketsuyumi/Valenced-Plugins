@@ -9,13 +9,26 @@
       "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
       "icon": "DenyIcon",
       "channels": {
-        "latest": "1.1.0"
+        "latest": "1.1.1"
       },
       "versions": {
         "1.1.0": {
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.block-by-id@1.1.0.zip",
           "sha256": "9cbb5970df3ce81dafffbb7d7214ce88ab9107c80b53a93b86daee10dd6c0ecb",
           "size": 3079,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.1.1": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.block-by-id@1.1.1.zip",
+          "sha256": "fed800e3a29f5c36e322c38e8cddf297025f7f53b3f8f0194249e5d6592a913f",
+          "size": 3133,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -33,13 +46,26 @@
       "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
       "icon": "EyeSlashIcon",
       "channels": {
-        "latest": "1.0.0"
+        "latest": "1.0.1"
       },
       "versions": {
         "1.0.0": {
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-dms@1.0.0.zip",
           "sha256": "9737fdcaa821fe26425bdd7991d261876275ac3d6e7d66fd2ac6b33fdcf6f1b5",
           "size": 2471,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.1": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-dms@1.0.1.zip",
+          "sha256": "e4ecdbadf8253d51d4e3525f2cd62af9bc74cbc114176e3725cef2eb966c0e4e",
+          "size": 2540,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -57,13 +83,26 @@
       "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
       "icon": "EyeSlashIcon",
       "channels": {
-        "latest": "1.0.0"
+        "latest": "1.0.1"
       },
       "versions": {
         "1.0.0": {
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ignore-apps@1.0.0.zip",
           "sha256": "f2ff974ec2f05afd6f28b29ed245c50103b8f11d981ac6a2206bc193f3dabfa7",
           "size": 2188,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.1": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ignore-apps@1.0.1.zip",
+          "sha256": "2603253c04233cb6c92974d4bcba217d244ebbcb2c547269e9a0f4b7f36e3594",
+          "size": 2260,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
