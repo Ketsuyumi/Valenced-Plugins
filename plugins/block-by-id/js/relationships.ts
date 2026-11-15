@@ -24,6 +24,9 @@ interface RelationshipActionCreators {
 		userId: string,
 		context?: { location: string },
 	): Promise<unknown>
+	/** Discord's "Ignore" (hide messages, mute notifications without blocking). */
+	ignoreUser?(userId: string, location?: string): Promise<unknown>
+	unignoreUser?(userId: string, location?: string): Promise<unknown>
 }
 
 interface HttpRequest {
@@ -40,6 +43,7 @@ interface HttpModule {
 
 interface RelationshipStore {
 	isBlocked(userId: string): boolean
+	isIgnored?(userId: string): boolean
 	getRelationshipType(userId: string): number
 }
 
@@ -167,6 +171,39 @@ export async function unblockUser(userId: string): Promise<void> {
 		throw new Error("Couldn't find Discord's relationship or HTTP module")
 
 	await http.del({ url: relationshipUrl(userId), oldFormErrors: true })
+}
+
+export function isIgnored(userId: string): boolean {
+	return relationshipStore()?.isIgnored?.(userId) ?? false
+}
+
+/** Discord's Ignore: their messages are hidden and notifications muted, without blocking. */
+export async function ignoreUser(userId: string): Promise<void> {
+	const actions = getRelationshipActions()
+	if (typeof actions?.ignoreUser === 'function') {
+		await actions.ignoreUser(userId, CONTEXT.location)
+		return
+	}
+	const http = getHttp()
+	if (!http) throw new Error("Couldn't find Discord's Ignore action")
+	await http.put({
+		url: `${relationshipUrl(userId)}/ignore`,
+		oldFormErrors: true,
+	})
+}
+
+export async function unignoreUser(userId: string): Promise<void> {
+	const actions = getRelationshipActions()
+	if (typeof actions?.unignoreUser === 'function') {
+		await actions.unignoreUser(userId, CONTEXT.location)
+		return
+	}
+	const http = getHttp()
+	if (!http) throw new Error("Couldn't find Discord's Ignore action")
+	await http.del({
+		url: `${relationshipUrl(userId)}/ignore`,
+		oldFormErrors: true,
+	})
 }
 
 /** Pulls a readable message out of Discord's HTTP errors. */

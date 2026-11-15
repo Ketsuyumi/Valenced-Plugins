@@ -5,17 +5,20 @@ import {
 import { Design } from '@valenced/discord/design'
 import { onFluxEventDispatched } from '@valenced/discord/flux'
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, Image, ScrollView } from 'react-native'
+import { ActivityIndicator, Image, Pressable, ScrollView } from 'react-native'
 import {
 	blockUser,
 	currentUserId,
 	errorMessage,
 	fetchUserInfo,
+	ignoreUser,
 	isBlocked,
 	isCurrentUser,
+	isIgnored,
 	parseUserId,
 	subscribeRelationships,
 	unblockUser,
+	unignoreUser,
 } from './relationships'
 import { describeResult, syncAccount } from './sync'
 import type { PluginApi } from '@valenced/plugins/types'
@@ -260,27 +263,86 @@ function UserPreview({ user }: { user: UserInfo | null | undefined }) {
 	)
 }
 
-/** Whether `id` is blocked on the current account, kept up to date. */
-function useBlocked(id: string): boolean {
-	const [blocked, setBlocked] = useState(() => isBlocked(id))
+/** Block / ignore status of `id` on the current account, kept up to date. */
+function useRelationship(id: string) {
+	const read = () => ({ blocked: isBlocked(id), ignored: isIgnored(id) })
+	const [state, setState] = useState(read)
 	useEffect(() => {
-		const update = () => setBlocked(isBlocked(id))
+		const update = () => setState(read())
 		update()
 		return subscribeRelationships(update)
 	}, [id])
-	return blocked
+	return state
+}
+
+async function doToggleIgnore(
+	api: Api,
+	id: string,
+	label: string,
+	ignored: boolean,
+) {
+	try {
+		if (ignored) await unignoreUser(id)
+		else await ignoreUser(id)
+		toast(
+			`${ignored ? 'Stopped ignoring' : 'Ignoring'} ${label} on this account`,
+			'success',
+		)
+	} catch (e) {
+		api.logger.error(`Failed to ${ignored ? 'unignore' : 'ignore'} ${id}`, e)
+		toast(
+			`Couldn't ${ignored ? 'unignore' : 'ignore'}: ${errorMessage(e)}`,
+			'critical',
+		)
+	}
+}
+
+/** Small round ✕ that takes someone off the list. */
+function RemoveButton({
+	onPress,
+	disabled,
+}: {
+	onPress(): void
+	disabled: boolean
+}) {
+	const { Text } = Design
+	return (
+		<Pressable
+			accessibilityRole="button"
+			accessibilityLabel="Remove from list"
+			hitSlop={8}
+			disabled={disabled}
+			onPress={onPress}
+			style={{
+				width: 28,
+				height: 28,
+				borderRadius: 14,
+				alignItems: 'center',
+				justifyContent: 'center',
+				backgroundColor: 'rgba(255, 255, 255, 0.08)',
+				opacity: disabled ? 0.5 : 1,
+			}}
+		>
+			<Text variant="text-sm/bold" color="text-muted">
+				✕
+			</Text>
+		</Pressable>
+	)
 }
 
 function BlockedRow({ api, entry }: { api: Api; entry: BlockedEntry }) {
 	const { TableRow, Button, Stack } = Design
 	const user = useUserInfo(entry.id)
-	const blocked = useBlocked(entry.id)
-	const [busy, setBusy] = useState(false)
+	const { blocked, ignored } = useRelationship(entry.id)
+	const [busy, setBusy] = useState<'block' | 'ignore' | 'remove' | null>(null)
 	const name = user?.name ?? (entry.label !== entry.id ? entry.label : entry.id)
-	const run = async (action: () => Promise<void>) => {
-		setBusy(true)
+	const run = async (
+		kind: 'block' | 'ignore' | 'remove',
+		action: () => Promise<void>,
+	) => {
+		setBusy(kind)
 		await action()
-		setBusy(false)
+		setBusy(null)
 	}
 
 	return (
@@ -294,29 +356,46 @@ function BlockedRow({ api, entry }: { api: Api; entry: BlockedEntry }) {
 						text="Unblock"
 						size="sm"
 						variant="secondary"
-						loading={busy}
-						onPress={() => run(() => doUnblock(api, entry.id, name))}
+						loading={busy === 'block'}
+						onPress={() => run('block', () => doUnblock(api, entry.id, name))}
 					/>
 				) : (
-					<Stack direction="horizontal" spacing={6} style={{ width: 'auto' }}>
-						<Button
-							text="Remove"
-							size="sm"
-							variant="secondary"
-							disabled={busy}
+					<Stack
+						direction="horizontal"
+						spacing={6}
+						align="center"
+						style={{ width: 'auto' }}
+					>
+						<RemoveButton
+							disabled={!!busy}
 							onPress={() =>
-								run(async () => {
+								run('remove', async () => {
 									await removeFromHistory(api, entry.id)
 									toast(`Removed ${name} from your list`, 'default')
 								})
 							}
 						/>
 						<Button
+							text={ignored ? 'Unignore' : 'Ignore'}
+							size="sm"
+							variant="secondary"
+							disabled={!!busy && busy !== 'ignore'}
+							loading={busy === 'ignore'}
+							onPress={() =>
+								run('ignore', () =>
+									doToggleIgnore(api, entry.id, name, ignored),
+								)
+							}
+						/>
+						<Button
 							text="Block"
 							size="sm"
 							variant="destructive"
-							loading={busy}
-							onPress={() => run(() => doBlockHere(api, entry.id, name))}
+							disabled={!!busy && busy !== 'block'}
+							loading={busy === 'block'}
+							onPress={() =>
+								run('block', () => doBlockHere(api, entry.id, name))
+							}
 						/>
 					</Stack>
 				)

@@ -5,7 +5,7 @@
 	"description": "Block any Discord user by pasting their user ID, even if you share no server or DM with them.",
 	"author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
 	"icon": "DenyIcon",
-	"version": "1.2.0",
+	"version": "1.3.0",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

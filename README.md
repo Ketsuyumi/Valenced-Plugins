@@ -16,8 +16,8 @@ Block any Discord user by their user ID, even when you share no server or DM wit
 
 When you paste an ID, the page shows that person's profile picture and name before you block. Everyone you block here
 goes on **your block list**, which is shared by every account on the device. Each row's button shows the account you
-are on right now: **Unblock** if they're blocked on it, or **Block** (and **Remove**, to take them off the list) if
-not. So after switching accounts you can block the same people with one tap each. Unblocking only affects the current
+are on right now: **Unblock** if they're blocked on it; otherwise **✕** (take them off the list), **Ignore** (Discord's
+Ignore: hide their messages and mute notifications without blocking; becomes **Unignore**) and **Block**. So after switching accounts you can block the same people with one tap each. Unblocking only affects the current
 account and keeps them on the list.
 
 **Block automatically on every account** (off by default) does it for you: whenever an account connects, anyone on the
