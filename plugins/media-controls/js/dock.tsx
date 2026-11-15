@@ -84,8 +84,8 @@ function useYouBarMargins() {
 
 /** Pixels of the card (its handle) left above the bar while tucked away. */
 const PEEK = 22
-/** Space between the open card and the top of the bar. */
-const GAP = 8
+/** Space between the open card and the top of the bar: none, it's attached to the bar. */
+const GAP = 0
 /** Bar height used until the real bar has been measured. */
 const FALLBACK_BAR_HEIGHT = 64
 const MAX_DEPTH = 12
