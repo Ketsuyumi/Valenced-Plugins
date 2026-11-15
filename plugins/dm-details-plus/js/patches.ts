@@ -1,12 +1,7 @@
 import { getModules } from '@valenced/modules/finders'
-import {
-	createFilterGenerator,
-	FilterScopes,
-	withProps,
-} from '@valenced/modules/finders/filters'
-import { before, instead } from '@valenced/patcher'
-import { insteadJSX } from '@valenced/react/jsx-runtime'
-import { createElement } from 'react'
+import { withProps } from '@valenced/modules/finders/filters'
+import { after, before } from '@valenced/patcher'
+import { createElement, isValidElement } from 'react'
 import { channelType, getCollector, selectedChannelId } from './api'
 import { GridPage } from './pages'
 import type { Kind } from './api'
@@ -209,44 +204,21 @@ const nameOf = (value: unknown, depth = 0): string => {
 	)
 }
 
-/** Modules exporting a component with this name (default or named export). */
-const withComponentName = createFilterGenerator<[name: string]>(
-	([name], _id, exports) => {
-		if (
-			!exports ||
-			(typeof exports !== 'object' && typeof exports !== 'function')
-		)
-			return false
-		if (nameOf(exports) === name) return true
-		if (typeof exports !== 'object') return false
-		for (const key of Object.keys(exports)) {
-			try {
-				if (nameOf((exports as any)[key]) === name) return true
-			} catch {}
-		}
-		return false
-	},
-	([name]) => `dev.ketsuyumi.dm-details-plus.componentName(${name})`,
-	FilterScopes.Initialized,
-)
-
 /**
- * Hides the "New Group" button: the RowButton that Discord's `useMemberListAction` hook creates
- * on the details screen of a 1:1 DM.
+ * Hides the "New Group" button: the RowButton element that Discord's `useMemberListAction` hook
+ * returns on the details screen of a 1:1 DM.
  *
- * Cheap by design: only RowButton elements are intercepted (insteadJSX), and whether one comes
- * from useMemberListAction is a flag set while that hook runs, not a stack trace.
+ * Only that hook is patched, so nothing runs for any other element (no JSX-level hooks, which
+ * Valenced implements by intercepting every element Discord creates). The result is only dropped
+ * when it's a single RowButton element; anything else Discord might return is left alone.
  */
 export function patchNewGroup(
 	getSettings: () => Settings,
 	logger: { log(m: string): void; warn(m: string): void },
 ) {
 	const unpatches: (() => void)[] = []
-	let insideMemberListAction = 0
-	let hookWrapped = false
-	const patchedTypes = new WeakSet<object>()
+	let found = false
 
-	// 1. A flag while useMemberListAction runs.
 	unpatches.push(
 		getModules(
 			withProps<{ useMemberListAction: (...args: any[]) => any }>(
@@ -255,57 +227,22 @@ export function patchNewGroup(
 			module => {
 				try {
 					unpatches.push(
-						instead(module, 'useMemberListAction', (args, original) => {
-							insideMemberListAction++
-							try {
-								return original(...args)
-							} finally {
-								insideMemberListAction--
-							}
-						}),
+						after(module, 'useMemberListAction', (result: unknown) =>
+							getSettings().hideNewGroup &&
+							isValidElement(result) &&
+							nameOf(result.type) === 'RowButton' &&
+							channelType(selectedChannelId()) === DM
+								? null
+								: result,
+						),
 					)
-					hookWrapped = true
+					if (!found) logger.log('Hiding New Group via useMemberListAction')
+					found = true
 				} catch {
-					// Read-only re-export; the source module gets wrapped instead.
+					// Read-only re-export; the source module gets patched instead.
 				}
 			},
 			{ max: 5 },
-		),
-	)
-
-	const fromMemberListAction = () =>
-		hookWrapped
-			? insideMemberListAction > 0
-			: // Fallback if Discord renamed the export: only reached for RowButtons, which are rare.
-				String(new Error().stack).includes('useMemberListAction')
-
-	// 2. Only RowButton elements are intercepted.
-	unpatches.push(
-		getModules(
-			withComponentName('RowButton'),
-			namespace => {
-				const ns = namespace as any
-				if (!ns || typeof ns !== 'object') return
-				for (const key of Object.keys(ns)) {
-					const type = ns[key]
-					if (nameOf(type) !== 'RowButton' || !type || patchedTypes.has(type))
-						continue
-					patchedTypes.add(type)
-					unpatches.push(
-						insteadJSX(type, (args, jsx) => {
-							if (
-								getSettings().hideNewGroup &&
-								fromMemberListAction() &&
-								channelType(selectedChannelId()) === DM
-							)
-								return null
-							return (jsx as (...a: unknown[]) => any)(...args)
-						}) as unknown as () => void,
-					)
-					logger.log(`Watching RowButton (${key}) for New Group`)
-				}
-			},
-			{ returnNamespace: true, max: 5 },
 		),
 	)
 
