@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Only apps signed with this app's key hold this permission. The Media Controls plugin only
+        accepts "now playing" broadcasts from a holder, so no other app can feed Discord fake songs.
+    -->
+    <permission
+        android:name="dev.ketsuyumi.mediabridge.permission.SEND_STATE"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="dev.ketsuyumi.mediabridge.permission.SEND_STATE" />
+
+    <!--
+        Discord builds patched by Valenced can have any package name (Canary, renamed installs), so the
+        app learns the name from Discord itself and needs to see that package to send to it.
+    -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+
+    <application
+        android:allowBackup="false"
+        android:icon="@android:drawable/ic_media_play"
+        android:label="Media Bridge"
+        android:theme="@android:style/Theme.DeviceDefault">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Android only lets a notification listener read other apps' media sessions. -->
+        <service
+            android:name=".MediaListener"
+            android:exported="true"
+            android:label="Media Bridge"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>
