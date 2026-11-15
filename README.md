@@ -64,6 +64,12 @@ plugin's settings. It works by adjusting the tab list passed to Discord's `useSe
 dropping the `RowButton` that `useMemberListAction` creates; `tools/dm-inspector` is the debug plugin used to find
 those.
 
+### Hide Server Banners (`dev.ketsuyumi.hide-server-banners`)
+
+Hides the banner image at the top of a server's channel list, so every server uses the compact header. It patches
+`GuildStore` so servers are handed out without their `banner` field (using the record's own `set`, so nothing else
+about the server changes). Turn the plugin off to bring banners back straight away.
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.
