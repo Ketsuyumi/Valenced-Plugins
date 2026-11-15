@@ -31,6 +31,8 @@ export interface NativeState {
 	/** -1 when Media Bridge is too old to report it. */
 	commandsReceived?: number
 	lastCommand?: string | null
+	/** How commands reach Media Bridge: its PendingIntent ("envelope") or a plain broadcast. */
+	commandRoute?: 'envelope' | 'broadcast'
 }
 
 const call = callNativeMethod as unknown as (

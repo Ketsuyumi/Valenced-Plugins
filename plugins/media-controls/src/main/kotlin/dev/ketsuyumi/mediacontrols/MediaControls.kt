@@ -2,6 +2,7 @@
 
 package dev.ketsuyumi.mediacontrols
 
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -41,6 +42,16 @@ private val MEDIA_KEYS = mapOf(
 @Volatile private var helloAt = 0L
 @Volatile private var trackKey: String? = null
 @Volatile private var art: String? = null
+/**
+ * Media Bridge's reply envelope, from its latest state: a PendingIntent addressed to it. Sending
+ * commands through it works even though Discord can't see Media Bridge (Android 11+), unlike a
+ * plain broadcast, which newer Android versions may drop.
+ */
+@Volatile private var commandIntent: PendingIntent? = null
+
+/** How the last command was sent, for Diagnostics: "envelope" or "broadcast". */
+@Volatile private var lastRoute: String? = null
+
 /** Commands sent to Media Bridge (not counting hello/request), for Diagnostics. */
 @Volatile private var commandsSent = 0
 
@@ -87,13 +98,21 @@ private fun audio() = context()?.getSystemService(Context.AUDIO_SERVICE) as? Aud
 /** Tells Media Bridge this Discord's package name, so it knows where to send updates. */
 private fun sendCommand(command: String, position: Long = 0L): Boolean {
     val context = appContext ?: context() ?: return false
-    // Implicit: Discord can't see Media Bridge on Android 11+, but its runtime receiver gets this.
-    context.sendBroadcast(
-        Intent(ACTION_COMMAND)
-            .putExtra("command", command)
-            .putExtra("position", position)
-            .putExtra("from", context.packageName),
-    )
+    val extras = Intent()
+        .putExtra("command", command)
+        .putExtra("position", position)
+        .putExtra("from", context.packageName)
+
+    // Preferred: through Media Bridge's own PendingIntent, delivered as if it sent it itself.
+    val envelope = commandIntent
+    val sent = envelope != null && runCatching { envelope.send(context, 0, extras) }.isSuccess
+    if (sent) {
+        lastRoute = "envelope"
+    } else {
+        // Before the first state (e.g. the very first hello): a plain implicit broadcast.
+        context.sendBroadcast(Intent(ACTION_COMMAND).putExtras(extras))
+        lastRoute = "broadcast"
+    }
     if (command == "hello" || command == "request") helloAt = SystemClock.elapsedRealtime()
     else commandsSent++
     return true
@@ -111,6 +130,9 @@ private fun pressKey(name: String?): Boolean {
 
 private fun onState(intent: Intent) {
     lastState = intent
+    @Suppress("DEPRECATION")
+    val envelope: PendingIntent? = intent.getParcelableExtra("commandIntent")
+    if (envelope != null) commandIntent = envelope
     heardAt = SystemClock.elapsedRealtime()
     val key = intent.getStringExtra("trackKey")
     if (key != trackKey) {
@@ -166,6 +188,7 @@ private fun stateMap(): Map<String, Any?> {
         "commandsSent" to commandsSent.toDouble(),
         "commandsReceived" to intent.getIntExtra("commandCount", -1).toDouble(),
         "lastCommand" to intent.getStringExtra("lastCommand"),
+        "commandRoute" to (lastRoute ?: if (commandIntent != null) "envelope" else "broadcast"),
     )
 }
 
@@ -205,6 +228,7 @@ val mediaControls = plugin {
         receiver?.let { runCatching { appContext?.unregisterReceiver(it) } }
         receiver = null
         lastState = null
+        commandIntent = null
         art = null
         trackKey = null
     }

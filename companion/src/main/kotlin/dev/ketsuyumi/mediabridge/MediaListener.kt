@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.app.PendingIntent
 import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -82,6 +83,18 @@ class MediaListener : NotificationListenerService() {
     }
 
     private val component get() = ComponentName(this, MediaListener::class.java)
+
+    /**
+     * Discord can't see this app (Android 11+ package visibility), so its broadcasts to us may be
+     * dropped. Instead, every state carries this PendingIntent: Discord fills in the command and
+     * sends it, and Android delivers it to our receiver as if we had sent it ourselves.
+     * Mutable so Discord can add the command; explicit (our package), as Android 14+ requires.
+     */
+    private val commandIntent: PendingIntent by lazy {
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or
+            (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0)
+        PendingIntent.getBroadcast(this, 0, Intent(ACTION_COMMAND).setPackage(packageName), flags)
+    }
 
     /** App label and package of what's followed, for this app's own screen. */
     val nowFollowing: String?
@@ -239,6 +252,7 @@ class MediaListener : NotificationListenerService() {
         val base = Intent(ACTION_STATE)
             .putExtra("protocol", PROTOCOL_VERSION)
             .putExtra("access", true)
+            .putExtra("commandIntent", commandIntent)
             .putExtra("commandCount", commandCount)
             .putExtra("lastCommand", lastCommand)
         val current = controller
