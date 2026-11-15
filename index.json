@@ -114,6 +114,30 @@
         }
       }
     },
+    "dev.ketsuyumi.hide-server-banners": {
+      "name": "Hide Server Banners",
+      "description": "Hides server banners at the top of the channel list, so every server uses the compact header.",
+      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "icon": "ImageIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-server-banners@1.0.0.zip",
+          "sha256": "55a8262be1131554356338f8cd55ba9485876e8b12224c1295c1751c498bc394",
+          "size": 1089,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.ignore-apps": {
       "name": "Ignore Apps",
       "description": "Hide messages from apps and bots that Discord doesn't let you block or ignore, like MEE6.",
