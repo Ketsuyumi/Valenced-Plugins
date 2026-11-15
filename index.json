@@ -1,0 +1,55 @@
+{
+  "format": 1,
+  "name": "Valenced Plugins by ketsuyumi",
+  "description": "Plugins for Valenced.",
+  "plugins": {
+    "dev.ketsuyumi.block-by-id": {
+      "name": "Block by ID",
+      "description": "Block any Discord user by pasting their user ID, even if you share no server or DM with them.",
+      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "icon": "DenyIcon",
+      "channels": {
+        "latest": "1.1.0"
+      },
+      "versions": {
+        "1.1.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.block-by-id@1.1.0.zip",
+          "sha256": "9cbb5970df3ce81dafffbb7d7214ce88ab9107c80b53a93b86daee10dd6c0ecb",
+          "size": 3079,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
+    "dev.ketsuyumi.ignore-apps": {
+      "name": "Ignore Apps",
+      "description": "Hide messages from apps and bots that Discord doesn't let you block or ignore, like MEE6.",
+      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "icon": "EyeSlashIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ignore-apps@1.0.0.zip",
+          "sha256": "f2ff974ec2f05afd6f28b29ed245c50103b8f11d981ac6a2206bc193f3dabfa7",
+          "size": 2188,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    }
+  }
+}
