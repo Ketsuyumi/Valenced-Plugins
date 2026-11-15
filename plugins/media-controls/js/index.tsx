@@ -52,6 +52,12 @@ function Diagnostics() {
 		['Media Bridge app', bridgeText],
 		['This Discord', media.discordPackage ?? 'unknown'],
 		[
+			'Commands (seek, shuffle, repeat)',
+			n?.commandsReceived === undefined || n.commandsReceived < 0
+				? `sent ${n?.commandsSent ?? 0}; Media Bridge doesn't report what it received (update it)`
+				: `sent ${n.commandsSent ?? 0}, Media Bridge received ${n.commandsReceived}${n.lastCommand ? ` (last: ${n.lastCommand})` : ''}`,
+		],
+		[
 			'Dock',
 			dockStatus.error
 				? `Error: ${dockStatus.error}`

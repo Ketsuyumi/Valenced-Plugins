@@ -52,6 +52,10 @@ class MediaListener : NotificationListenerService() {
     /** Per Discord package: the cover version it already has, so the image is only sent once. */
     private val artSent = mutableMapOf<String, Int>()
 
+    /** Commands received from Discord (not counting hello/request), for the plugin's Diagnostics. */
+    private var commandCount = 0
+    private var lastCommand: String? = null
+
     /** What was last sent, to skip updates where only the expected progress changed. */
     private var lastSignature: String? = null
     private var lastPosition = 0L
@@ -96,7 +100,15 @@ class MediaListener : NotificationListenerService() {
                     forceNextSend()
                 }
             }
-            run(intent.getStringExtra(EXTRA_COMMAND), intent.getLongExtra(EXTRA_POSITION, 0L))
+            val command = intent.getStringExtra(EXTRA_COMMAND)
+            if (command != COMMAND_HELLO && command != COMMAND_REQUEST) {
+                commandCount++
+                lastCommand = command
+                forceNextSend() // so Discord sees the new count even if playback didn't change
+            }
+            run(command, intent.getLongExtra(EXTRA_POSITION, 0L))
+            // Some players don't report a change for every command (e.g. seek while paused).
+            main.postDelayed({ send() }, 300)
         }
     }
 
@@ -227,11 +239,13 @@ class MediaListener : NotificationListenerService() {
         val base = Intent(ACTION_STATE)
             .putExtra("protocol", PROTOCOL_VERSION)
             .putExtra("access", true)
+            .putExtra("commandCount", commandCount)
+            .putExtra("lastCommand", lastCommand)
         val current = controller
 
         if (current == null) {
-            if (lastSignature == "inactive") return
-            lastSignature = "inactive"
+            if (lastSignature == "inactive:$commandCount") return
+            lastSignature = "inactive:$commandCount"
             base.putExtra("active", false)
             for (target in liveTargets()) deliver(base, target)
             return
@@ -268,6 +282,7 @@ class MediaListener : NotificationListenerService() {
         val signature = listOf(
             key, playing, speed, metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION),
             shuffle, repeat, artVersion, artWebUrl, canShuffle(), canRepeat(), supports(PlaybackState.ACTION_SEEK_TO),
+            commandCount,
         ).joinToString("|")
         val expected = if (lastSignature != null && playing) lastPosition + ((updated - lastUpdated) * lastSpeed).toLong() else lastPosition
         val jumped = kotlin.math.abs(position - expected) > 1500

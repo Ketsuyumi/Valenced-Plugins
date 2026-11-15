@@ -245,12 +245,12 @@ export async function control(
 	if (action === 'seek')
 		set({ playback: { ...p, position, sampledAt: Date.now() } })
 
-	if (p.source === 'keys') {
-		if (action === 'playPause' || action === 'next' || action === 'previous')
-			await native.press(action).catch(() => {})
-	} else {
+	// Play/pause, next and previous go as media keys, like headphone buttons: Android delivers
+	// them to the app that's playing, without depending on Media Bridge receiving commands.
+	if (action === 'playPause' || action === 'next' || action === 'previous')
+		await native.press(action).catch(() => {})
+	else if (p.source === 'bridge')
 		await native.command(action, position).catch(() => {})
-	}
 	setTimeout(poll, 300)
 }
 

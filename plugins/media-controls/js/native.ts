@@ -27,6 +27,10 @@ export interface NativeState {
 	artVersion?: number
 	artUrl?: string | null
 	age?: number
+	commandsSent?: number
+	/** -1 when Media Bridge is too old to report it. */
+	commandsReceived?: number
+	lastCommand?: string | null
 }
 
 const call = callNativeMethod as unknown as (

@@ -41,6 +41,8 @@ private val MEDIA_KEYS = mapOf(
 @Volatile private var helloAt = 0L
 @Volatile private var trackKey: String? = null
 @Volatile private var art: String? = null
+/** Commands sent to Media Bridge (not counting hello/request), for Diagnostics. */
+@Volatile private var commandsSent = 0
 
 /** Tells JavaScript a new state arrived, so it doesn't have to poll. Set while the plugin runs. */
 @Volatile private var onChange: (() -> Unit)? = null
@@ -93,6 +95,7 @@ private fun sendCommand(command: String, position: Long = 0L): Boolean {
             .putExtra("from", context.packageName),
     )
     if (command == "hello" || command == "request") helloAt = SystemClock.elapsedRealtime()
+    else commandsSent++
     return true
 }
 
@@ -128,6 +131,7 @@ private fun stateMap(): Map<String, Any?> {
             "heard" to false,
             "sinceHello" to if (helloAt == 0L) -1.0 else (now - helloAt).toDouble(),
             "discordPackage" to context()?.packageName,
+            "commandsSent" to commandsSent.toDouble(),
         )
     val playing = intent.getBooleanExtra("playing", false)
     val position = intent.getLongExtra("position", 0L)
@@ -159,6 +163,9 @@ private fun stateMap(): Map<String, Any?> {
         "artUrl" to intent.getStringExtra("artUrl"),
         "age" to (now - heardAt).toDouble(),
         "discordPackage" to appContext?.packageName,
+        "commandsSent" to commandsSent.toDouble(),
+        "commandsReceived" to intent.getIntExtra("commandCount", -1).toDouble(),
+        "lastCommand" to intent.getStringExtra("lastCommand"),
     )
 }
 
