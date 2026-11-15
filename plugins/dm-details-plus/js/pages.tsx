@@ -1,68 +1,116 @@
-import { ToastActionCreators } from '@valenced/discord/actions'
+import {
+	AlertActionCreators,
+	ToastActionCreators,
+} from '@valenced/discord/actions'
 import { Design } from '@valenced/discord/design'
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useReducer } from 'react'
 import {
 	ActivityIndicator,
 	FlatList,
 	Image,
+	Linking,
 	Pressable,
 	useWindowDimensions,
 	View,
 } from 'react-native'
-import { createEmojiCollector, createStickerCollector } from './api'
-import type { Collector, Item } from './api'
+import { getCollector } from './api'
+import type { Item, Kind } from './api'
 
-const PADDING = 16
-const GAP = 6
+const PADDING = 12
+const GAP = 4
 
-function Tile({
+const EMPTY: Record<Kind, string> = {
+	stickers: 'No stickers in this conversation yet.',
+	emoji: 'No custom emoji found in the scanned messages.',
+	pins: 'No pinned messages.',
+	links: 'No links in this conversation yet.',
+}
+
+function openItem(kind: Kind, item: Item) {
+	if (kind === 'links' && item.href) {
+		Linking.openURL(item.href).catch(() => {})
+		return
+	}
+	if (kind === 'pins') {
+		const { AlertModal, AlertActionButton } = Design
+		AlertActionCreators.openAlert(
+			'dm-details-plus-pin',
+			<AlertModal
+				title={item.title}
+				content={item.body || item.subtitle}
+				actions={<AlertActionButton text="Close" variant="secondary" />}
+			/>,
+		)
+		return
+	}
+	ToastActionCreators.open('dm-details-plus', {
+		text: `${item.title} · sent ${item.count}×`,
+	})
+}
+
+const Tile = memo(function Tile({
+	kind,
 	item,
 	size,
-	showName,
 }: {
+	kind: Kind
 	item: Item
 	size: number
-	showName: boolean
 }) {
 	const { Text } = Design
+	const compact = kind === 'stickers' || kind === 'emoji'
+
 	return (
 		<Pressable
-			onPress={() =>
-				ToastActionCreators.open('dm-details-plus', {
-					text: `${showName ? item.name : `:${item.name}:`} · sent ${item.count}×`,
-				})
-			}
+			onPress={() => openItem(kind, item)}
 			style={{
 				width: size,
 				height: size,
-				borderRadius: 8,
+				borderRadius: 6,
 				overflow: 'hidden',
 				backgroundColor: 'rgba(255, 255, 255, 0.06)',
 				alignItems: 'center',
 				justifyContent: 'center',
 			}}
 		>
-			{item.url ? (
+			{item.image ? (
 				<Image
-					source={{ uri: item.url }}
-					resizeMode="contain"
-					style={{ width: size * 0.8, height: size * 0.8 }}
+					source={{ uri: item.image }}
+					resizeMode={compact ? 'contain' : 'cover'}
+					fadeDuration={0}
+					style={
+						compact
+							? { width: size * 0.8, height: size * 0.8 }
+							: { width: size, height: size }
+					}
 				/>
 			) : (
-				<Text variant="text-xs/medium" style={{ textAlign: 'center' }}>
-					{item.name}
-				</Text>
+				<View style={{ padding: 8, width: size, gap: 2 }}>
+					<Text variant="text-xs/bold" lineClamp={2}>
+						{item.title}
+					</Text>
+					{item.subtitle ? (
+						<Text
+							variant="text-xxs/medium"
+							color="text-muted"
+							lineClamp={compact ? 2 : 5}
+						>
+							{item.subtitle}
+						</Text>
+					) : null}
+				</View>
 			)}
 			{item.senderAvatar && size >= 80 ? (
 				<Image
 					source={{ uri: item.senderAvatar }}
+					fadeDuration={0}
 					style={{
 						position: 'absolute',
-						top: 6,
-						right: 6,
-						width: 22,
-						height: 22,
-						borderRadius: 11,
+						top: 5,
+						right: 5,
+						width: 20,
+						height: 20,
+						borderRadius: 10,
 					}}
 				/>
 			) : null}
@@ -84,125 +132,80 @@ function Tile({
 			) : null}
 		</Pressable>
 	)
-}
+})
 
-function CollectorGrid({
-	create,
-	columns,
-	emptyText,
-	showName,
+export function GridPage({
+	kind,
+	channelId,
 }: {
-	create: () => Collector
-	columns: number
-	emptyText: string
-	showName: boolean
+	kind: Kind
+	channelId: string
 }) {
 	const { Text, Button } = Design
-	const collector = useRef<Collector>(null)
-	if (!collector.current) collector.current = create()
-
-	const [, setVersion] = useState(0)
-	const [loading, setLoading] = useState(false)
-	const [error, setError] = useState<string>()
-	const busy = useRef(false)
+	const collector = getCollector(kind, channelId)
+	const [, rerender] = useReducer((n: number) => n + 1, 0)
 	const { width } = useWindowDimensions()
+
+	const columns = kind === 'emoji' ? 5 : 3
 	const size = Math.floor((width - PADDING * 2 - GAP * (columns - 1)) / columns)
 
-	const load = async () => {
-		const c = collector.current!
-		if (busy.current || c.done) return
-		busy.current = true
-		setLoading(true)
-		setError(undefined)
-		try {
-			// Keep going (up to 5 batches) until something new shows up.
-			const before = c.items.length
-			let batches = 0
-			do await c.loadMore()
-			while (!c.done && c.items.length === before && ++batches < 5)
-		} catch (e: any) {
-			setError(e?.body?.message ?? e?.message ?? String(e))
-		} finally {
-			busy.current = false
-			setLoading(false)
-			setVersion(v => v + 1)
-		}
-	}
-
 	useEffect(() => {
-		load()
-	}, [])
+		const unsubscribe = collector.subscribe(rerender)
+		collector.prefetch()
+		return unsubscribe
+	}, [collector])
 
-	const c = collector.current
+	const c = collector
 	return (
 		<FlatList
 			data={c.items}
-			key={columns}
 			numColumns={columns}
-			keyExtractor={item => item.id}
+			keyExtractor={item => item.key}
 			contentContainerStyle={{ padding: PADDING, gap: GAP }}
-			columnWrapperStyle={columns > 1 ? { gap: GAP } : undefined}
-			renderItem={({ item }) => (
-				<Tile item={item} size={size} showName={showName} />
-			)}
-			onEndReached={() => load()}
-			onEndReachedThreshold={0.5}
+			columnWrapperStyle={{ gap: GAP }}
+			renderItem={({ item }) => <Tile kind={kind} item={item} size={size} />}
+			initialNumToRender={columns * 6}
+			maxToRenderPerBatch={columns * 6}
+			windowSize={7}
+			removeClippedSubviews
+			onEndReached={() => c.loadMore()}
+			onEndReachedThreshold={1}
+			refreshing={false}
+			onRefresh={() => c.refresh()}
 			ListEmptyComponent={
-				loading ? null : (
+				c.loading ? null : (
 					<Text variant="text-md/medium" color="text-muted">
-						{error
-							? `Couldn't load: ${error}`
+						{c.error
+							? `Couldn't load: ${c.error}`
 							: c.done
-								? emptyText
+								? EMPTY[kind]
 								: 'Nothing found yet. Tap Load more to look further back.'}
 					</Text>
 				)
 			}
 			ListFooterComponent={
 				<View style={{ paddingVertical: 16, alignItems: 'center', gap: 8 }}>
-					{loading ? <ActivityIndicator /> : null}
+					{c.loading ? <ActivityIndicator /> : null}
 					{c.progress ? (
 						<Text variant="text-xs/medium" color="text-muted">
 							{c.progress}
 						</Text>
 					) : null}
-					{!loading && !c.done ? (
+					{!c.loading && !c.done ? (
 						<Button
 							text="Load more"
 							size="sm"
 							variant="secondary"
-							onPress={load}
+							onPress={() => c.loadMore()}
 						/>
 					) : null}
-					{error && c.items.length ? (
+					{c.error && c.items.length ? (
 						<Text variant="text-xs/medium" color="text-feedback-critical">
-							{error}
+							{c.error}
 						</Text>
 					) : null}
 				</View>
 			}
-		/>
-	)
-}
-
-export function StickersPage({ channelId }: { channelId: string }) {
-	return (
-		<CollectorGrid
-			create={() => createStickerCollector(channelId)}
-			columns={3}
-			showName
-			emptyText="No stickers in this conversation yet."
-		/>
-	)
-}
-
-export function EmojiPage({ channelId }: { channelId: string }) {
-	return (
-		<CollectorGrid
-			create={() => createEmojiCollector(channelId)}
-			columns={5}
-			showName={false}
-			emptyText="No custom emoji found in the scanned messages."
 		/>
 	)
 }

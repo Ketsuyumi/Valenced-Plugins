@@ -5,7 +5,7 @@
 	"description": "On a DM's details screen: hide the New Group button and the Files tab, and add Stickers and Emoji tabs.",
 	"author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
 	"icon": "StickerIcon",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

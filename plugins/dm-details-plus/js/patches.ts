@@ -3,19 +3,26 @@ import { withProps } from '@valenced/modules/finders/filters'
 import { before, instead } from '@valenced/patcher'
 import { React, ReactJSXRuntime } from '@valenced/react'
 import { createElement } from 'react'
-import { channelType, selectedChannelId } from './api'
-import { EmojiPage, StickersPage } from './pages'
+import { channelType, getCollector, selectedChannelId } from './api'
+import { GridPage } from './pages'
+import type { Kind } from './api'
 
 export interface Settings {
 	hideNewGroup: boolean
+	hideMembers: boolean
 	hideFiles: boolean
+	pinsGrid: boolean
+	linksGrid: boolean
 	stickersTab: boolean
 	emojiTab: boolean
 }
 
 export const DEFAULT_SETTINGS: Settings = {
 	hideNewGroup: true,
+	hideMembers: true,
 	hideFiles: true,
+	pinsGrid: true,
+	linksGrid: true,
 	stickersTab: true,
 	emojiTab: true,
 }
@@ -24,11 +31,14 @@ const DM = 1
 const GROUP_DM = 3
 const STICKERS_ID = 'dm-details-plus-stickers'
 const EMOJI_ID = 'dm-details-plus-emoji'
+/** Marks pages we replaced, so a second pass leaves them alone. */
+const OURS = Symbol('dm-details-plus')
 
 interface TabItem {
 	id: string
 	label: string
 	page?: any
+	[OURS]?: true
 	[key: string]: unknown
 }
 
@@ -46,42 +56,77 @@ function channelIdFromItems(items: TabItem[]): string | undefined {
 	return undefined
 }
 
-/** The DM details tab list is the only one with Members, Media and Pins. */
+/** The DM details tab list is the only one with Media and Pins tabs (Members may already be gone). */
 function isDetailsTabs(items: unknown): items is TabItem[] {
 	return (
 		Array.isArray(items) &&
-		items.some(i => is(i, /member/i)) &&
 		items.some(i => is(i, /media/i)) &&
-		items.some(i => is(i, /pin/i))
+		items.some(i => is(i, /pin/i)) &&
+		(items.some(i => is(i, /member/i)) || items.some(i => i?.[OURS]))
 	)
 }
+
+const grid = (kind: Kind, channelId: string, key: string) =>
+	createElement(GridPage, { kind, channelId, key })
 
 export function transformTabs(items: TabItem[], settings: Settings): TabItem[] {
 	const channelId = channelIdFromItems(items) ?? selectedChannelId()
 	const type = channelType(channelId)
 	if (!channelId || (type !== DM && type !== GROUP_DM)) return items
 
-	let result = settings.hideFiles ? items.filter(i => !is(i, /file/i)) : items
+	const kinds: Kind[] = []
+	const result: TabItem[] = []
+	for (const item of items) {
+		if (item[OURS]) {
+			result.push(item)
+			continue
+		}
+		if (settings.hideFiles && is(item, /file/i)) continue
+		if (settings.hideMembers && type === DM && is(item, /member/i)) continue
+		if (settings.pinsGrid && is(item, /pin/i)) {
+			kinds.push('pins')
+			result.push({
+				...item,
+				page: grid('pins', channelId, item.id),
+				[OURS]: true,
+			})
+			continue
+		}
+		if (settings.linksGrid && is(item, /link/i)) {
+			kinds.push('links')
+			result.push({
+				...item,
+				page: grid('links', channelId, item.id),
+				[OURS]: true,
+			})
+			continue
+		}
+		result.push(item)
+	}
 
-	if (settings.stickersTab && !result.some(i => i.id === STICKERS_ID))
-		result = [
-			...result,
-			{
-				id: STICKERS_ID,
-				label: 'Stickers',
-				page: createElement(StickersPage, { channelId, key: STICKERS_ID }),
-			},
-		]
-	if (settings.emojiTab && !result.some(i => i.id === EMOJI_ID))
-		result = [
-			...result,
-			{
-				id: EMOJI_ID,
-				label: 'Emoji',
-				page: createElement(EmojiPage, { channelId, key: EMOJI_ID }),
-			},
-		]
+	const add = (id: string, label: string, kind: Kind) => {
+		if (result.some(i => i.id === id)) return
+		kinds.push(kind)
+		result.push({ id, label, page: grid(kind, channelId, id), [OURS]: true })
+	}
+	if (settings.stickersTab) add(STICKERS_ID, 'Stickers', 'stickers')
+	if (settings.emojiTab) add(EMOJI_ID, 'Emoji', 'emoji')
+
+	// Start loading every grid now, not when its tab is first shown.
+	for (const kind of kinds) getCollector(kind, channelId).prefetch()
 	return result
+}
+
+/** Keeps the opening tab the same after tabs before it were removed. */
+export function remapIndex(
+	from: TabItem[],
+	to: TabItem[],
+	index: unknown,
+): number | undefined {
+	if (typeof index !== 'number') return undefined
+	const id = from[index]?.id
+	const mapped = to.findIndex(i => i.id === id)
+	return mapped === -1 ? 0 : mapped
 }
 
 /** Patches Discord's tab state hook so the details screen gets our tab list. */
@@ -92,6 +137,8 @@ export function patchTabs(
 	const unpatches: (() => void)[] = []
 	// Same input list -> same output list, so Discord's memoisation keeps working.
 	const cache = new WeakMap<object, TabItem[]>()
+	// Lists we produced pass through untouched (keeps the same array identity).
+	const produced = new WeakSet<object>()
 
 	const unsubscribe = getModules(
 		withProps<{ useSegmentedControlState: (props: any) => any }>(
@@ -102,13 +149,26 @@ export function patchTabs(
 				unpatches.push(
 					before(module, 'useSegmentedControlState', args => {
 						const props = args[0]
-						if (!isDetailsTabs(props?.items)) return args
+						if (!isDetailsTabs(props?.items) || produced.has(props.items))
+							return args
 						let items = cache.get(props.items)
 						if (!items) {
 							items = transformTabs(props.items, getSettings())
 							cache.set(props.items, items)
+							produced.add(items)
 						}
-						if (items !== props.items) args[0] = { ...props, items }
+						if (items !== props.items) {
+							const defaultIndex = remapIndex(
+								props.items,
+								items,
+								props.defaultIndex,
+							)
+							args[0] = {
+								...props,
+								items,
+								...(defaultIndex === undefined ? {} : { defaultIndex }),
+							}
+						}
 						return args
 					}),
 				)

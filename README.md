@@ -52,15 +52,16 @@ conversation again straight away.
 
 Changes the details screen of DMs (tap the name at the top of a DM):
 
-- Hides the **New Group** button in one-to-one DMs.
+- Hides the **New Group** button and the **Members** tab in one-to-one DMs.
 - Hides the **Files** tab in DMs and group DMs.
-- Adds a **Stickers** tab: every sticker either of you sent, from Discord's `has: sticker` search.
-- Adds an **Emoji** tab: every custom emoji either of you sent, found by scanning the conversation 100 messages at a
-  time as you scroll.
+- Shows **Pins** and **Links** as 3-column grids like Media (tap a pin to read it, tap a link to open it).
+- Adds a **Stickers** tab (from Discord's `has: sticker` search) and an **Emoji** tab (custom emoji found by scanning
+  the conversation, starting instantly from messages Discord already has loaded).
 
-Both tabs show a Media-style grid with how often each one was sent and who sent it last. Each change can be turned off
-in the plugin's settings. It works by adjusting the tab list passed to Discord's `useSegmentedControlState` hook, and
-by dropping the `RowButton` that `useMemberListAction` creates; `tools/dm-inspector` is the debug plugin used to find
+All four grids start loading as soon as the screen opens and are kept in memory until Discord restarts, so switching
+tabs or reopening the screen never reloads them. Pull down on a grid to reload it. Each change can be turned off in the
+plugin's settings. It works by adjusting the tab list passed to Discord's `useSegmentedControlState` hook, and by
+dropping the `RowButton` that `useMemberListAction` creates; `tools/dm-inspector` is the debug plugin used to find
 those.
 
 ## Building

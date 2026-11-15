@@ -33,7 +33,10 @@ function SettingsPage({ api }: { api: Api }) {
 			<Stack spacing={24}>
 				<TableRowGroup title="DM details screen">
 					{row('hideNewGroup', 'Hide "New Group" button', 'In one-to-one DMs')}
+					{row('hideMembers', 'Hide Members tab', 'In one-to-one DMs')}
 					{row('hideFiles', 'Hide Files tab', 'In DMs and group DMs')}
+					{row('pinsGrid', 'Pins as grid', '3 columns, like Media')}
+					{row('linksGrid', 'Links as grid', '3 columns, like Media')}
 					{row(
 						'stickersTab',
 						'Stickers tab',
@@ -46,8 +49,8 @@ function SettingsPage({ api }: { api: Api }) {
 					)}
 				</TableRowGroup>
 				<Text variant="text-sm/medium" color="text-muted">
-					Changes apply the next time you open a DM's details. Tap a sticker or
-					emoji to see its name and how often it was sent.
+					Changes apply the next time you open a DM's details. Loaded grids are
+					kept until Discord restarts; pull down on a grid to reload it.
 				</Text>
 			</Stack>
 		</ScrollView>
