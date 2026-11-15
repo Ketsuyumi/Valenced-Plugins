@@ -1,7 +1,11 @@
 import { getModules } from '@valenced/modules/finders'
-import { withProps } from '@valenced/modules/finders/filters'
+import {
+	createFilterGenerator,
+	FilterScopes,
+	withProps,
+} from '@valenced/modules/finders/filters'
 import { before, instead } from '@valenced/patcher'
-import { React, ReactJSXRuntime } from '@valenced/react'
+import { insteadJSX } from '@valenced/react/jsx-runtime'
 import { createElement } from 'react'
 import { channelType, getCollector, selectedChannelId } from './api'
 import { GridPage } from './pages'
@@ -191,34 +195,123 @@ export function patchTabs(
 	]
 }
 
-function isRowButton(type: unknown): boolean {
-	const t = type as any
-	const name = t?.displayName ?? t?.name ?? t?.type?.name ?? t?.render?.name
-	return name === 'RowButton'
+/** Name of a component: plain, memo, forwardRef, or memo(forwardRef(...)). */
+const nameOf = (value: unknown, depth = 0): string => {
+	const v = value as any
+	if (!v || depth > 3) return ''
+	if (typeof v === 'function') return v.displayName || v.name || ''
+	if (typeof v !== 'object') return ''
+	return (
+		v.displayName ||
+		nameOf(v.type, depth + 1) ||
+		nameOf(v.render, depth + 1) ||
+		''
+	)
 }
 
-/**
- * Hides the "New Group" button: the RowButton that Discord's
- * `useMemberListAction` hook creates on the details screen of a 1:1 DM.
- */
-export function patchNewGroup(getSettings: () => Settings) {
-	const unpatches: (() => void)[] = []
-	const runtime = ReactJSXRuntime as any
-
-	const hook = (args: any[], original: (...a: any[]) => any) => {
+/** Modules exporting a component with this name (default or named export). */
+const withComponentName = createFilterGenerator<[name: string]>(
+	([name], _id, exports) => {
 		if (
-			isRowButton(args[0]) &&
-			getSettings().hideNewGroup &&
-			channelType(selectedChannelId()) === DM &&
-			String(new Error().stack).includes('useMemberListAction')
+			!exports ||
+			(typeof exports !== 'object' && typeof exports !== 'function')
 		)
-			return null
-		return original(...args)
-	}
+			return false
+		if (nameOf(exports) === name) return true
+		if (typeof exports !== 'object') return false
+		for (const key of Object.keys(exports)) {
+			try {
+				if (nameOf((exports as any)[key]) === name) return true
+			} catch {}
+		}
+		return false
+	},
+	([name]) => `dev.ketsuyumi.dm-details-plus.componentName(${name})`,
+	FilterScopes.Initialized,
+)
 
-	for (const key of ['jsx', 'jsxs'])
-		if (typeof runtime[key] === 'function')
-			unpatches.push(instead(runtime, key, hook as never))
-	unpatches.push(instead(React as any, 'createElement', hook as never))
-	return unpatches
+/**
+ * Hides the "New Group" button: the RowButton that Discord's `useMemberListAction` hook creates
+ * on the details screen of a 1:1 DM.
+ *
+ * Cheap by design: only RowButton elements are intercepted (insteadJSX), and whether one comes
+ * from useMemberListAction is a flag set while that hook runs, not a stack trace.
+ */
+export function patchNewGroup(
+	getSettings: () => Settings,
+	logger: { log(m: string): void; warn(m: string): void },
+) {
+	const unpatches: (() => void)[] = []
+	let insideMemberListAction = 0
+	let hookWrapped = false
+	const patchedTypes = new WeakSet<object>()
+
+	// 1. A flag while useMemberListAction runs.
+	unpatches.push(
+		getModules(
+			withProps<{ useMemberListAction: (...args: any[]) => any }>(
+				'useMemberListAction',
+			),
+			module => {
+				try {
+					unpatches.push(
+						instead(module, 'useMemberListAction', (args, original) => {
+							insideMemberListAction++
+							try {
+								return original(...args)
+							} finally {
+								insideMemberListAction--
+							}
+						}),
+					)
+					hookWrapped = true
+				} catch {
+					// Read-only re-export; the source module gets wrapped instead.
+				}
+			},
+			{ max: 5 },
+		),
+	)
+
+	const fromMemberListAction = () =>
+		hookWrapped
+			? insideMemberListAction > 0
+			: // Fallback if Discord renamed the export: only reached for RowButtons, which are rare.
+				String(new Error().stack).includes('useMemberListAction')
+
+	// 2. Only RowButton elements are intercepted.
+	unpatches.push(
+		getModules(
+			withComponentName('RowButton'),
+			namespace => {
+				const ns = namespace as any
+				if (!ns || typeof ns !== 'object') return
+				for (const key of Object.keys(ns)) {
+					const type = ns[key]
+					if (nameOf(type) !== 'RowButton' || !type || patchedTypes.has(type))
+						continue
+					patchedTypes.add(type)
+					unpatches.push(
+						insteadJSX(type, (args, jsx) => {
+							if (
+								getSettings().hideNewGroup &&
+								fromMemberListAction() &&
+								channelType(selectedChannelId()) === DM
+							)
+								return null
+							return (jsx as (...a: unknown[]) => any)(...args)
+						}) as unknown as () => void,
+					)
+					logger.log(`Watching RowButton (${key}) for New Group`)
+				}
+			},
+			{ returnNamespace: true, max: 5 },
+		),
+	)
+
+	return [
+		() => {
+			for (const unpatch of unpatches.splice(0)) unpatch()
+		},
+	]
 }

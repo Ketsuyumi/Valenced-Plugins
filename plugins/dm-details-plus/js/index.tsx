@@ -72,7 +72,10 @@ export default plugin<{ jsonStorage: Settings }>({
 		const getSettings = () => ({ ...DEFAULT_SETTINGS, ...jsonStorage.cache })
 		setStillPreviews(() => getSettings().stillPreviews)
 		cleanup(() => setStillPreviews(() => false))
-		cleanup(...patchTabs(getSettings, logger), ...patchNewGroup(getSettings))
+		cleanup(
+			...patchTabs(getSettings, logger),
+			...patchNewGroup(getSettings, logger),
+		)
 	},
 	SettingsComponent: SettingsPage,
 })
