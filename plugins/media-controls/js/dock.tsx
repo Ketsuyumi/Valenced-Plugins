@@ -190,7 +190,11 @@ function token(...names: string[]): unknown {
 	return undefined
 }
 
-let useCardStyles: (() => { card: object; handle: object }) | null = null
+/** How opaque the card's background is: the list behind shows through slightly, text stays readable. */
+const BACKGROUND_OPACITY = 0.88
+
+type CardLook = { background: object; border: object; handle: object }
+let useCardStyles: (() => CardLook) | null = null
 
 /**
  * The card's look from Discord's theme: the floating-panel background (solid, so the text stays
@@ -211,15 +215,13 @@ function useCardLook() {
 		const handle =
 			token('INTERACTIVE_MUTED', 'TEXT_MUTED') ?? 'rgba(255, 255, 255, 0.35)'
 		const styles = {
-			card: { backgroundColor: background, borderColor: border },
+			background: { backgroundColor: background },
+			border: { borderColor: border },
 			handle: { backgroundColor: handle },
 		}
 		useCardStyles =
 			typeof Design.createStyles === 'function'
-				? (Design.createStyles(styles as any) as unknown as () => {
-						card: object
-						handle: object
-					})
+				? (Design.createStyles(styles as any) as unknown as () => CardLook)
 				: () => styles as any
 	}
 	return useCardStyles()
@@ -366,9 +368,18 @@ function DockLayer({
 							borderWidth: 1,
 							opacity: content ? 1 : 0,
 						},
-						look.card,
+						look.border,
 					]}
 				>
+					{/* Background on its own layer, slightly see-through; content stays fully opaque. */}
+					<Animated.View
+						pointerEvents="none"
+						style={[
+							StyleSheet.absoluteFill,
+							look.background,
+							{ opacity: BACKGROUND_OPACITY },
+						]}
+					/>
 					<Animated.View
 						style={{ paddingHorizontal: 16, paddingBottom: 16 }}
 						onLayout={(e: any) => {
