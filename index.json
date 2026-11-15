@@ -27,6 +27,30 @@
         }
       }
     },
+    "dev.ketsuyumi.hide-dms": {
+      "name": "Hide DMs",
+      "description": "Hide chosen DMs and group DMs, or all of them, from your DM list without leaving them.",
+      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "icon": "EyeSlashIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-dms@1.0.0.zip",
+          "sha256": "9737fdcaa821fe26425bdd7991d261876275ac3d6e7d66fd2ac6b33fdcf6f1b5",
+          "size": 2471,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.ignore-apps": {
       "name": "Ignore Apps",
       "description": "Hide messages from apps and bots that Discord doesn't let you block or ignore, like MEE6.",
