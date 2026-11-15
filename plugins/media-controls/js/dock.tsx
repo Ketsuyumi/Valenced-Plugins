@@ -1,3 +1,4 @@
+import { Tokens } from '@valenced/discord/common/tokens'
 import { Design } from '@valenced/discord/design'
 import { getModules, lookupModule } from '@valenced/modules/finders'
 import {
@@ -180,19 +181,60 @@ function measureBar(
 		: cloneElement(node as any, {}, measureBar(children, onBar, depth + 1))
 }
 
+/** First Discord color token that exists in this version (names change between versions). */
+function token(...names: string[]): unknown {
+	const colors = (Tokens as any)?.default?.colors ?? (Tokens as any)?.colors
+	for (const name of names) if (colors?.[name]) return colors[name]
+	return undefined
+}
+
+let useCardStyles: (() => { card: object; handle: object }) | null = null
+
+/**
+ * The card's look from Discord's theme: the floating-panel background (solid, so the text stays
+ * readable over the list behind it) and a subtle border. Falls back to fixed colors.
+ */
+function useCardLook() {
+	if (!useCardStyles) {
+		const background =
+			token(
+				'BACKGROUND_FLOATING',
+				'BG_SURFACE_OVERLAY',
+				'BACKGROUND_SURFACE_HIGHEST',
+				'BACKGROUND_SECONDARY',
+			) ?? '#232428'
+		const border =
+			token('BORDER_SUBTLE', 'BORDER_FAINT', 'BACKGROUND_MODIFIER_ACCENT') ??
+			'rgba(255, 255, 255, 0.08)'
+		const handle =
+			token('INTERACTIVE_MUTED', 'TEXT_MUTED') ?? 'rgba(255, 255, 255, 0.35)'
+		const styles = {
+			card: { backgroundColor: background, borderColor: border },
+			handle: { backgroundColor: handle },
+		}
+		useCardStyles =
+			typeof Design.createStyles === 'function'
+				? (Design.createStyles(styles as any) as unknown as () => {
+						card: object
+						handle: object
+					})
+				: () => styles as any
+	}
+	return useCardStyles()
+}
+
 /** The grab handle: a small pill, like a bottom sheet's. */
 function Handle() {
+	const look = useCardLook()
 	return (
 		<Animated.View
 			style={{ alignItems: 'center', paddingTop: 6, paddingBottom: 10 }}
 		>
 			<Animated.View
-				style={{
-					width: 36,
-					height: 4,
-					borderRadius: 2,
-					backgroundColor: 'rgba(255, 255, 255, 0.35)',
-				}}
+				style={[
+					{ width: 36, height: 4, borderRadius: 2, opacity: 0.7 },
+					look.handle,
+				]}
 			/>
 		</Animated.View>
 	)
@@ -218,9 +260,9 @@ function DockLayer({
 	rendered: ReactNode
 	options: DockOptions
 }) {
-	const { Card } = Design
 	const { playback } = useMedia()
 	const margins = useYouBarMargins()
+	const look = useCardLook()
 	const [bar, setBar] = useState<LayoutRectangle | null>(null)
 	const [container, setContainer] = useState(0)
 	const [content, setContent] = useState(0)
@@ -312,37 +354,37 @@ function DockLayer({
 			{show && playback ? (
 				<Animated.View
 					{...pan.panHandlers}
-					style={{
-						position: 'absolute',
-						...frame,
-						height,
-						overflow: 'hidden',
-						borderRadius: 16,
-						opacity: content ? 1 : 0,
-					}}
+					style={[
+						{
+							position: 'absolute',
+							...frame,
+							height,
+							overflow: 'hidden',
+							borderRadius: 18,
+							borderWidth: 1,
+							opacity: content ? 1 : 0,
+						},
+						look.card,
+					]}
 				>
-					<Card
-						variant="secondary"
-						border="subtle"
-						style={{ paddingTop: 0, borderRadius: 16 }}
+					<Animated.View
+						style={{ paddingHorizontal: 16, paddingBottom: 16 }}
+						onLayout={(e: any) => {
+							// + the border, so the open card fits its content exactly.
+							const h = Math.round(e.nativeEvent.layout.height) + 2
+							if (Math.abs(h - content) > 1) setContent(h)
+						}}
 					>
-						<Animated.View
-							onLayout={(e: any) => {
-								const h = Math.round(e.nativeEvent.layout.height) + 24
-								if (Math.abs(h - content) > 1) setContent(h)
-							}}
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel={tucked ? 'Show player' : 'Tuck player away'}
+							onPress={() => snap(!tucked)}
+							hitSlop={12}
 						>
-							<Pressable
-								accessibilityRole="button"
-								accessibilityLabel={tucked ? 'Show player' : 'Tuck player away'}
-								onPress={() => snap(!tucked)}
-								hitSlop={12}
-							>
-								<Handle />
-							</Pressable>
-							<Player p={playback} />
-						</Animated.View>
-					</Card>
+							<Handle />
+						</Pressable>
+						<Player p={playback} />
+					</Animated.View>
 				</Animated.View>
 			) : null}
 			{/* Discord's bar on top: covers a tucked card; hidden while the card is open over it. */}
