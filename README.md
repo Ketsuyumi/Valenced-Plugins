@@ -22,6 +22,21 @@ code path the app uses when you block from a profile. If a Discord update moves 
 Discord's built-in HTTP client and sends `PUT /users/@me/relationships/{id}` with `{ "type": 2 }`. The plugin never
 reads your token: Discord's HTTP client adds authentication itself.
 
+### Ignore Apps (`dev.ketsuyumi.ignore-apps`)
+
+Hide messages from apps and bots, such as MEE6, whose profiles have no Block or Ignore option.
+
+1. In Discord, turn on **Developer Mode**, long-press the app and **Copy User ID**.
+2. Open **Settings > Valenced > Plugins > Ignore Apps**, paste the ID and tap **Ignore**.
+
+Options:
+
+- **Hide all apps**: hide every bot, not just the listed ones.
+- **Keep replies to my commands** (on by default): still show an app's answer to a slash command you ran.
+
+Messages are filtered as Discord receives them (new messages, edits, channel history, mentions and pins), so it only
+affects your device. Messages already on screen stay until you reopen the channel.
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.
