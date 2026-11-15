@@ -1,5 +1,6 @@
 import { Design } from '@valenced/discord/design'
 import { ScrollView } from 'react-native'
+import { setStillPreviews } from './pages'
 import { DEFAULT_SETTINGS, patchNewGroup, patchTabs } from './patches'
 import type { PluginApi } from '@valenced/plugins/types'
 import type { Settings } from './patches'
@@ -47,6 +48,11 @@ function SettingsPage({ api }: { api: Api }) {
 						'Emoji tab',
 						'Custom emoji sent by both of you, found by scanning messages',
 					)}
+					{row(
+						'stillPreviews',
+						'Still previews',
+						"Don't play GIFs, animated stickers or emoji in the grids; loads faster",
+					)}
 				</TableRowGroup>
 				<Text variant="text-sm/medium" color="text-muted">
 					Changes apply the next time you open a DM's details. Loaded grids are
@@ -64,6 +70,8 @@ export default plugin<{ jsonStorage: Settings }>({
 	},
 	start({ cleanup, jsonStorage, logger }) {
 		const getSettings = () => ({ ...DEFAULT_SETTINGS, ...jsonStorage.cache })
+		setStillPreviews(() => getSettings().stillPreviews)
+		cleanup(() => setStillPreviews(() => false))
 		cleanup(...patchTabs(getSettings, logger), ...patchNewGroup(getSettings))
 	},
 	SettingsComponent: SettingsPage,

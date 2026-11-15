@@ -25,6 +25,8 @@ export interface Item {
 	key: string
 	/** Image to show, or none for a text tile. */
 	image?: string
+	/** Still (non-animated) version of `image`, when it may be animated. */
+	staticImage?: string
 	/** Text tile title (and toast / alert title). */
 	title: string
 	/** Second line on text tiles. */
@@ -47,6 +49,14 @@ function avatarOf(author: any): string | undefined {
 
 const nameOf = (author: any): string =>
 	author?.global_name || author?.globalName || author?.username || 'Someone'
+
+const isGif = (url: string | undefined) => !!url && /\.gif(\?|$)/i.test(url)
+
+/** First frame of a GIF from Discord's media proxy, as a PNG. */
+function stillOf(url: string | undefined): string | undefined {
+	if (!url || !isGif(url) || !url.includes('discordapp.net')) return undefined
+	return `${url}${url.includes('?') ? '&' : '?'}format=png`
+}
 
 /** Shrinks Discord media proxy images, which is much faster to load. */
 function thumb(url: string | undefined, size = 240): string | undefined {
@@ -98,16 +108,24 @@ function searchSource(
 
 function stickerSource(channelId: string): Source {
 	return searchSource(channelId, 'sticker', 'sticker messages', m =>
-		(m?.sticker_items ?? []).map((s: any) => ({
-			key: s.id,
-			title: s.name,
-			// 3 = Lottie, which can't be shown as an image.
-			image:
-				s.format_type === 3
-					? undefined
-					: `https://media.discordapp.net/stickers/${s.id}.${s.format_type === 4 ? 'gif' : 'png'}?size=160`,
-			senderAvatar: avatarOf(m.author),
-		})),
+		(m?.sticker_items ?? []).map((s: any) => {
+			// 1 PNG, 2 APNG, 3 Lottie (can't be shown as an image), 4 GIF.
+			const base = `https://media.discordapp.net/stickers/${s.id}`
+			const animated = s.format_type === 2 || s.format_type === 4
+			return {
+				key: s.id,
+				title: s.name,
+				image:
+					s.format_type === 3
+						? undefined
+						: `${base}.${s.format_type === 4 ? 'gif' : 'png'}?size=160`,
+				// passthrough=false: the proxy converts instead of sending the animated original.
+				staticImage: animated
+					? `${base}.png?size=160&passthrough=false`
+					: undefined,
+				senderAvatar: avatarOf(m.author),
+			}
+		}),
 	)
 }
 
@@ -126,6 +144,9 @@ function linkSource(channelId: string): Source {
 				title: e.title || e.provider?.name || hostOf(e.url),
 				subtitle: hostOf(e.url),
 				image: thumb(e.thumbnail?.proxy_url ?? e.image?.proxy_url),
+				staticImage: stillOf(
+					thumb(e.thumbnail?.proxy_url ?? e.image?.proxy_url),
+				),
 				senderAvatar: avatarOf(m.author),
 			})
 		}
@@ -156,16 +177,18 @@ function pinItem(m: any): Found {
 		...(m?.attachments ?? []).map((a: any) => `[${a.filename}]`),
 		...(m?.sticker_items ?? []).map((s: any) => `[sticker: ${s.name}]`),
 	]
+	const image = thumb(
+		attachment?.proxy_url ??
+			embed?.thumbnail?.proxy_url ??
+			embed?.image?.proxy_url,
+	)
 	return {
 		key: m.id,
 		title: nameOf(m.author),
 		subtitle: text || extras.join(' ') || '(no text)',
 		body: [text, ...extras].filter(Boolean).join('\n'),
-		image: thumb(
-			attachment?.proxy_url ??
-				embed?.thumbnail?.proxy_url ??
-				embed?.image?.proxy_url,
-		),
+		image,
+		staticImage: stillOf(image),
 		senderAvatar: avatarOf(m.author),
 	}
 }
@@ -210,6 +233,8 @@ function emojiFrom(message: any): Found[] {
 			key: id,
 			title: `:${name}:`,
 			image: `${CDN}/emojis/${id}.${animated ? 'gif' : 'png'}?size=64`,
+			// The .png of an animated emoji is its first frame.
+			staticImage: animated ? `${CDN}/emojis/${id}.png?size=64` : undefined,
 			senderAvatar: avatarOf(message.author),
 		}),
 	)

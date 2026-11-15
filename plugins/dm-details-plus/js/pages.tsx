@@ -3,7 +3,7 @@ import {
 	ToastActionCreators,
 } from '@valenced/discord/actions'
 import { Design } from '@valenced/discord/design'
-import { memo, useEffect, useReducer } from 'react'
+import { memo, useEffect, useReducer, useState } from 'react'
 import {
 	ActivityIndicator,
 	FlatList,
@@ -15,6 +15,12 @@ import {
 } from 'react-native'
 import { getCollector } from './api'
 import type { Item, Kind } from './api'
+
+/** Whether to show still previews; set by the plugin from its settings. */
+let stillPreviews: () => boolean = () => false
+export function setStillPreviews(getter: () => boolean) {
+	stillPreviews = getter
+}
 
 const PADDING = 12
 const GAP = 4
@@ -59,6 +65,11 @@ const Tile = memo(function Tile({
 }) {
 	const { Text } = Design
 	const compact = kind === 'stickers' || kind === 'emoji'
+	const preferred =
+		stillPreviews() && item.staticImage ? item.staticImage : item.image
+	// If the still version fails to load, fall back to the original.
+	const [failed, setFailed] = useState(false)
+	const source = failed ? item.image : preferred
 
 	return (
 		<Pressable
@@ -73,9 +84,12 @@ const Tile = memo(function Tile({
 				justifyContent: 'center',
 			}}
 		>
-			{item.image ? (
+			{source ? (
 				<Image
-					source={{ uri: item.image }}
+					source={{ uri: source }}
+					onError={() => {
+						if (source !== item.image) setFailed(true)
+					}}
 					resizeMode={compact ? 'contain' : 'cover'}
 					fadeDuration={0}
 					style={

@@ -57,6 +57,9 @@ Changes the details screen of DMs (tap the name at the top of a DM):
 - Shows **Pins** and **Links** as 3-column grids like Media (tap a pin to read it, tap a link to open it).
 - Adds a **Stickers** tab (from Discord's `has: sticker` search) and an **Emoji** tab (custom emoji found by scanning
   the conversation, starting instantly from messages Discord already has loaded).
+- **Still previews** (on by default): the grids load the first frame of GIFs, animated stickers and animated emoji
+  instead of the animation, which downloads less and loads faster. If a still version fails to load, that tile falls
+  back to the original.
 
 All four grids start loading as soon as the screen opens and are kept in memory until Discord restarts, so switching
 tabs or reopening the screen never reloads them. Pull down on a grid to reload it. Each change can be turned off in the

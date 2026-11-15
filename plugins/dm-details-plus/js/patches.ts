@@ -15,6 +15,7 @@ export interface Settings {
 	linksGrid: boolean
 	stickersTab: boolean
 	emojiTab: boolean
+	stillPreviews: boolean
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -25,6 +26,7 @@ export const DEFAULT_SETTINGS: Settings = {
 	linksGrid: true,
 	stickersTab: true,
 	emojiTab: true,
+	stillPreviews: true,
 }
 
 const DM = 1
