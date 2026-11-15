@@ -84,6 +84,7 @@ jobs:
   # A test release with both files, for installing on a phone before the plugin goes to main.
   test-release:
     name: Publish test build
+    if: github.ref != 'refs/heads/main'
     needs: [bridge, plugin]
     runs-on: ubuntu-latest
     permissions:
@@ -107,3 +108,30 @@ jobs:
             --notes "Test build of the Media Controls plugin and the Media Bridge app from ${GITHUB_SHA::7}. Install MediaBridge.apk, open it and turn on notification access, then install the plugin ZIP in Valenced (Plugins > settings gear > Install from file)." \
             out/MediaBridge-apk/MediaBridge.apk \
             out/media-controls-plugin/*.zip
+
+  # On main: keep the Media Bridge APK in its own release, which the plugin's settings link to.
+  bridge-release:
+    name: Publish Media Bridge
+    if: github.ref == 'refs/heads/main'
+    needs: [bridge]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: MediaBridge-apk
+          path: out
+      - name: Replace the media-bridge release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -e
+          gh release delete media-bridge --yes --cleanup-tag || true
+          gh release create media-bridge \
+            --latest=false \
+            --target "$GITHUB_SHA" \
+            --title "Media Bridge (companion app for Media Controls)" \
+            --notes "Install MediaBridge.apk, open it and turn on notification access. It lets the Media Controls plugin show and control what any app is playing. Built from ${GITHUB_SHA::7}." \
+            out/MediaBridge.apk

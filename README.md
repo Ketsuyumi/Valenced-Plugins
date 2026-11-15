@@ -80,6 +80,30 @@ Hides the banner image at the top of a server's channel list, so every server us
 `GuildStore` so servers are handed out without their `banner` field (using the record's own `set`, so nothing else
 about the server changes). Turn the plugin off to bring banners back straight away.
 
+### Media Controls (`dev.ketsuyumi.media-controls`)
+
+Shows and controls what **any** app is playing (YouTube, Muriel or any music or video player) from a player card
+attached to the top of the bar with your name. Swipe the card down to tuck it behind the bar with only its handle
+showing, and up (or tap the handle) to bring it back. Cover, title, artist, a progress bar you can drag to seek,
+play/pause, previous/next, and shuffle/repeat when the app supports them. Android only.
+
+It needs the **Media Bridge** companion app ([download](https://github.com/Ketsuyumi/Valenced-Plugins/releases/download/media-bridge/MediaBridge.apk)),
+because Android only lets apps with notification access read other apps' media sessions:
+
+1. Install MediaBridge.apk, open it and tap **Open notification access**, then turn Media Bridge on (on Android 13+,
+   if it's greyed out: App info > ⋮ > **Allow restricted settings**).
+2. Set Media Bridge's battery usage to **Unrestricted**.
+3. Install **Media Controls** in Valenced and fully restart Discord.
+
+How it works: the plugin says hello with Discord's own package name, so Media Bridge works with any Discord build
+(Canary, renamed Valenced installs). Media Bridge follows the media session that's playing and sends it to Discord,
+protected by a signature permission only it holds. Play/pause and skipping use media keys; seeking, shuffle and
+repeat go through a PendingIntent Media Bridge provides, since Discord can't address it directly on Android 11+.
+The plugin's settings page has the full player and a Diagnostics section.
+
+Source: `plugins/media-controls` (plugin, JS + Kotlin) and `companion/` (Media Bridge app).
+`.github/workflows/media-controls.yml` builds both; the native part needs a `READ_PACKAGES_TOKEN` secret.
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.

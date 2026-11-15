@@ -18,7 +18,7 @@ type Api = PluginApi<{ jsonStorage: Settings }>
 
 const DEFAULTS: Settings = { dock: true, tucked: false }
 const BRIDGE_DOWNLOAD =
-	'https://github.com/ketsuyumi/Valenced-Plugins/releases/latest'
+	'https://github.com/Ketsuyumi/Valenced-Plugins/releases/download/media-bridge/MediaBridge.apk'
 
 let readSettings: () => Settings = () => DEFAULTS
 
