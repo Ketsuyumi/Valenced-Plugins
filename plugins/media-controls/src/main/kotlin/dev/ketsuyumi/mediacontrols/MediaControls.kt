@@ -47,11 +47,44 @@ private val MEDIA_KEYS = mapOf(
 @Volatile private var pushPending = false
 private val pushScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-private fun audio() = appContext?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+/**
+ * Discord's application context. Normally set in [mediaControls]' start through withAppContext;
+ * if that didn't happen (e.g. the plugin was updated and restarted without restarting Discord),
+ * it's taken from Android directly and the receiver is registered then.
+ */
+private fun context(): Context? {
+    appContext?.let { return it }
+    val app = runCatching {
+        Class.forName("android.app.ActivityThread").getMethod("currentApplication").invoke(null) as? Context
+    }.getOrNull() ?: return null
+    attach(app)
+    return app
+}
+
+/** Remembers the context, listens for Media Bridge and says hello. Safe to call more than once. */
+private fun attach(context: Context) {
+    val app = context.applicationContext ?: context
+    appContext = app
+    if (receiver == null) {
+        val listener = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) = onState(intent)
+        }
+        val filter = IntentFilter(ACTION_STATE)
+        if (Build.VERSION.SDK_INT >= 33) {
+            app.registerReceiver(listener, filter, SEND_PERMISSION, null, Context.RECEIVER_EXPORTED)
+        } else {
+            app.registerReceiver(listener, filter, SEND_PERMISSION, null)
+        }
+        receiver = listener
+    }
+    sendCommand("hello")
+}
+
+private fun audio() = context()?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
 
 /** Tells Media Bridge this Discord's package name, so it knows where to send updates. */
 private fun sendCommand(command: String, position: Long = 0L): Boolean {
-    val context = appContext ?: return false
+    val context = appContext ?: context() ?: return false
     // Implicit: Discord can't see Media Bridge on Android 11+, but its runtime receiver gets this.
     context.sendBroadcast(
         Intent(ACTION_COMMAND)
@@ -94,7 +127,7 @@ private fun stateMap(): Map<String, Any?> {
         ?: return mapOf(
             "heard" to false,
             "sinceHello" to if (helloAt == 0L) -1.0 else (now - helloAt).toDouble(),
-            "discordPackage" to appContext?.packageName,
+            "discordPackage" to context()?.packageName,
         )
     val playing = intent.getBooleanExtra("playing", false)
     val position = intent.getLongExtra("position", 0L)
@@ -135,24 +168,7 @@ private fun stateMap(): Map<String, Any?> {
  */
 val mediaControls = plugin {
     start {
-        withAppContext { context ->
-            // Valenced hands over the context early, before applicationContext may exist.
-            val app = context.applicationContext ?: context
-            appContext = app
-            if (receiver == null) {
-                val listener = object : BroadcastReceiver() {
-                    override fun onReceive(context: Context, intent: Intent) = onState(intent)
-                }
-                val filter = IntentFilter(ACTION_STATE)
-                if (Build.VERSION.SDK_INT >= 33) {
-                    app.registerReceiver(listener, filter, SEND_PERMISSION, null, Context.RECEIVER_EXPORTED)
-                } else {
-                    app.registerReceiver(listener, filter, SEND_PERMISSION, null)
-                }
-                receiver = listener
-            }
-            sendCommand("hello")
-        }
+        withAppContext { context -> attach(context) }
 
         // Push: one JavaScript call per burst of updates (merged within 50 ms).
         onChange = {
