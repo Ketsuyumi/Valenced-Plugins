@@ -84,6 +84,8 @@ function useYouBarMargins() {
 
 /** Pixels of the card (its handle) left above the bar while tucked away. */
 const PEEK = 22
+/** Space between the open card and the top of the bar. */
+const GAP = 8
 /** Bar height used until the real bar has been measured. */
 const FALLBACK_BAR_HEIGHT = 64
 const MAX_DEPTH = 12
@@ -248,9 +250,9 @@ const sameLayout = (a: LayoutRectangle | null, b: LayoutRectangle) =>
 	a.height === b.height
 
 /**
- * Fills the YouBar's area. The card's bottom edge sits on the bar's bottom edge:
- * - open: the card is full height and covers the bar (which fades out underneath);
- * - tucked: the card is the bar's height plus the handle, so only the handle shows above the bar.
+ * Fills the YouBar's area. The card sits behind Discord's bar, its bottom edge on the bar's:
+ * - open: it's tall enough to show the whole player above the bar;
+ * - tucked: it's the bar's height plus the handle, so only the handle shows above the bar.
  * Drag the handle or card to resize it; it snaps open or tucked on release.
  */
 function DockLayer({
@@ -281,7 +283,8 @@ function DockLayer({
 
 	const barHeight = bar?.height ?? FALLBACK_BAR_HEIGHT
 	const closedHeight = barHeight + PEEK
-	const openHeight = Math.max(content, closedHeight + 1)
+	// Open: the whole player above the bar; the rest of the card stays behind the bar.
+	const openHeight = Math.max(content + barHeight + GAP, closedHeight + 1)
 
 	const height = useRef(new Animated.Value(closedHeight)).current
 	const limits = useRef({ closed: closedHeight, open: openHeight })
@@ -327,7 +330,6 @@ function DockLayer({
 	).current
 
 	const show = options.enabled() && !!playback
-	const open = show && !tucked
 	// The card's bottom edge on the bar's bottom edge, in this layer's coordinates.
 	const frame =
 		bar && container > 0
@@ -387,11 +389,8 @@ function DockLayer({
 					</Animated.View>
 				</Animated.View>
 			) : null}
-			{/* Discord's bar on top: covers a tucked card; hidden while the card is open over it. */}
-			<Animated.View
-				pointerEvents={open ? 'none' : 'box-none'}
-				style={[StyleSheet.absoluteFill, { opacity: open ? 0 : 1 }]}
-			>
+			{/* Discord's bar on top, always visible: the card's lower part stays behind it. */}
+			<Animated.View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
 				{measured}
 			</Animated.View>
 		</Animated.View>
