@@ -213,6 +213,30 @@
           }
         }
       }
+    },
+    "dev.ketsuyumi.media-controls": {
+      "name": "Media Controls",
+      "description": "Show and control what any app is playing (YouTube, any music or video player) from a player above the bottom bar. Needs the Media Bridge app for song details; media keys work without it. Android only.",
+      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "icon": "MusicIcon",
+      "channels": {
+        "latest": "1.0.9"
+      },
+      "versions": {
+        "1.0.9": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.media-controls@1.0.9.zip",
+          "sha256": "46c61c6629c93384651e7014221886eba4b9e608a9fa6570e6e5c8f7528fdcb5",
+          "size": 18117,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
     }
   }
 }
