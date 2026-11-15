@@ -2,7 +2,7 @@ import { ToastActionCreators } from '@valenced/discord/actions'
 import { Design } from '@valenced/discord/design'
 import { Clipboard } from '@valenced/externals/react-native-clipboard'
 import { Linking, ScrollView } from 'react-native'
-import { patchYouBar } from './dock'
+import { dockStatus, patchYouBar } from './dock'
 import { Player, useMedia } from './player'
 import { reconnect, startPolling } from './store'
 import type { PluginApi } from '@valenced/plugins/types'
@@ -51,6 +51,14 @@ function Diagnostics() {
 		],
 		['Media Bridge app', bridgeText],
 		['This Discord', media.discordPackage ?? 'unknown'],
+		[
+			'Dock',
+			dockStatus.error
+				? `Error: ${dockStatus.error}`
+				: dockStatus.patched.length
+					? `Attached to YouBarThemed (${dockStatus.patched.join(', ')}); ${dockStatus.renders ? `drawn ${dockStatus.renders}×` : 'not drawn yet, open the server list'}; bar ${dockStatus.barMeasured ? 'measured' : 'not measured (using default spacing)'}`
+					: "Not attached: couldn't find Discord's YouBarThemed",
+		],
 		[
 			'Now playing',
 			media.playback
