@@ -1,3 +1,4 @@
+import { registerJSMethod } from '@valenced/modules/native'
 import { AppState } from 'react-native'
 import { native } from './native'
 import type { NativeState } from './native'
@@ -59,8 +60,29 @@ export function subscribe(listener: () => void) {
 	}
 }
 
+/** Only what the UI shows; the raw native state changes on every poll. */
+function visibleKey(s: MediaState) {
+	const n = s.lastNative
+	return [
+		s.bridge,
+		s.nativeOk,
+		s.nativeError,
+		s.discordPackage,
+		n?.access,
+		n?.active,
+		n?.app ?? n?.package,
+	].join('|')
+}
+
+/** Updates the state, and re-renders subscribers only if something they show changed. */
 function set(next: Partial<MediaState>) {
+	const before = state
 	state = { ...state, ...next }
+	if (
+		before.playback === state.playback &&
+		visibleKey(before) === visibleKey(state)
+	)
+		return
 	for (const l of listeners) l()
 }
 
@@ -73,7 +95,12 @@ export function positionOf(p: Playback, now = Date.now()) {
 }
 
 const HELLO_EVERY_MS = 10_000
-const POLL_MS = 1000
+/** Safety-net poll once pushes work; Media Bridge pushes every change. */
+const POLL_PUSHED_MS = 5000
+/** Before Media Bridge answered: watch for media-key playback, and keep saying hello. */
+const POLL_WAITING_MS = 2000
+/** Connected, but no push arrived yet (older native part or bridge not ready). */
+const POLL_CONNECTED_MS = 1000
 
 let art = { key: '', uri: null as string | null }
 /** Optimistic values after a button press, until the player confirms them. */
@@ -106,7 +133,19 @@ function samePlayback(a: Playback | null, b: Playback | null) {
 	)
 }
 
-export async function poll() {
+let inflight: Promise<void> | null = null
+let pushed = false
+
+/** Reads the native state now. Concurrent calls share one read. */
+export function poll(): Promise<void> {
+	if (!inflight)
+		inflight = readState().finally(() => {
+			inflight = null
+		})
+	return inflight
+}
+
+async function readState() {
 	let s: NativeState
 	try {
 		s = await native.state()
@@ -215,28 +254,58 @@ export async function control(
 	setTimeout(poll, 300)
 }
 
-let timer: ReturnType<typeof setInterval> | undefined
-let appStateSub: { remove(): void } | undefined
+let timer: ReturnType<typeof setTimeout> | undefined
+let running = false
 
-/** Polls while Discord is in the foreground. */
+function nextDelay() {
+	if (state.bridge !== 'connected') return POLL_WAITING_MS
+	return pushed ? POLL_PUSHED_MS : POLL_CONNECTED_MS
+}
+
+function schedule(delay: number) {
+	if (timer) clearTimeout(timer)
+	timer = setTimeout(async () => {
+		timer = undefined
+		if (!running) return
+		await poll()
+		if (running) schedule(nextDelay())
+	}, delay)
+}
+
+let jsMethodRegistered = false
+
+/**
+ * Follows the player while Discord is in the foreground: the native part pushes every change,
+ * and a slow poll covers anything missed.
+ */
 export function startPolling() {
+	if (!jsMethodRegistered) {
+		jsMethodRegistered = true
+		// Can't be unregistered; it does nothing while stopped.
+		registerJSMethod('mediaControls.changed', () => {
+			if (!running) return false
+			pushed = true
+			poll()
+			return true
+		})
+	}
 	const resume = () => {
-		if (timer) return
-		poll()
-		timer = setInterval(poll, POLL_MS)
+		if (running) return
+		running = true
+		schedule(0)
 	}
 	const pause = () => {
-		if (timer) clearInterval(timer)
+		running = false
+		if (timer) clearTimeout(timer)
 		timer = undefined
 	}
-	appStateSub = AppState.addEventListener('change', s =>
+	const sub = AppState.addEventListener('change', s =>
 		s === 'active' ? resume() : pause(),
 	)
 	if (AppState.currentState !== 'background') resume()
 	return () => {
 		pause()
-		appStateSub?.remove()
-		appStateSub = undefined
+		sub.remove()
 	}
 }
 

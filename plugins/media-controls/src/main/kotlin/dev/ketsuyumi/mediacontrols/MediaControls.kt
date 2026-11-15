@@ -12,7 +12,13 @@ import android.os.SystemClock
 import android.util.Base64
 import android.view.KeyEvent
 import app.valenced.plugins.plugin
+import app.valenced.xposed.api.callJSMethod
 import app.valenced.xposed.api.registerNativeMethod
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 // Must match the Media Bridge app (companion/src/main/kotlin/.../Protocol.kt).
 private const val BRIDGE = "dev.ketsuyumi.mediabridge"
@@ -35,6 +41,11 @@ private val MEDIA_KEYS = mapOf(
 @Volatile private var helloAt = 0L
 @Volatile private var trackKey: String? = null
 @Volatile private var art: String? = null
+
+/** Tells JavaScript a new state arrived, so it doesn't have to poll. Set while the plugin runs. */
+@Volatile private var onChange: (() -> Unit)? = null
+@Volatile private var pushPending = false
+private val pushScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
 private fun audio() = appContext?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
 
@@ -73,6 +84,7 @@ private fun onState(intent: Intent) {
     intent.getByteArrayExtra("art")?.let {
         art = "data:image/jpeg;base64," + Base64.encodeToString(it, Base64.NO_WRAP)
     }
+    onChange?.invoke()
 }
 
 /** The last state for JavaScript, with the position moved forward to now. Numbers are doubles for React Native. */
@@ -142,6 +154,18 @@ val mediaControls = plugin {
             sendCommand("hello")
         }
 
+        // Push: one JavaScript call per burst of updates (merged within 50 ms).
+        onChange = {
+            if (!pushPending) {
+                pushPending = true
+                pushScope.launch {
+                    delay(50)
+                    pushPending = false
+                    if (bridge.isReady) runCatching { callJSMethod("mediaControls.changed") }
+                }
+            }
+        }
+
         registerNativeMethod("mediaControls.state") { stateMap() }
         registerNativeMethod("mediaControls.art") { art }
         registerNativeMethod("mediaControls.playing") { audio()?.isMusicActive == true }
@@ -154,6 +178,7 @@ val mediaControls = plugin {
     }
 
     stop {
+        onChange = null
         receiver?.let { runCatching { appContext?.unregisterReceiver(it) } }
         receiver = null
         lastState = null

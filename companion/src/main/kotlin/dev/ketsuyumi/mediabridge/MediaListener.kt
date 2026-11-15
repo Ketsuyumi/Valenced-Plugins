@@ -52,6 +52,31 @@ class MediaListener : NotificationListenerService() {
     /** Per Discord package: the cover version it already has, so the image is only sent once. */
     private val artSent = mutableMapOf<String, Int>()
 
+    /** What was last sent, to skip updates where only the expected progress changed. */
+    private var lastSignature: String? = null
+    private var lastPosition = 0L
+    private var lastUpdated = 0L
+    private var lastSpeed = 1f
+
+    /** Installed targets, re-checked at most once a minute (package lookups aren't free). */
+    private var cachedTargets: Set<String> = emptySet()
+    private var targetsCheckedAt = 0L
+
+    private fun liveTargets(): Set<String> {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - targetsCheckedAt > 60_000 || cachedTargets.isEmpty()) {
+            cachedTargets = targets.installed()
+            targetsCheckedAt = now
+        }
+        return cachedTargets
+    }
+
+    /** Forces the next [send] through, e.g. when a Discord says hello. */
+    private fun forceNextSend() {
+        lastSignature = null
+        targetsCheckedAt = 0L
+    }
+
     private val component get() = ComponentName(this, MediaListener::class.java)
 
     /** App label and package of what's followed, for this app's own screen. */
@@ -65,8 +90,11 @@ class MediaListener : NotificationListenerService() {
         override fun onReceive(context: Context, intent: Intent) {
             val from = intent.getStringExtra(EXTRA_FROM)
             if (from != null && from != packageName) {
-                targets.add(from)
-                if (intent.getStringExtra(EXTRA_COMMAND) in setOf(COMMAND_HELLO, COMMAND_REQUEST)) artSent.remove(from)
+                if (targets.add(from)) targetsCheckedAt = 0L
+                if (intent.getStringExtra(EXTRA_COMMAND) in setOf(COMMAND_HELLO, COMMAND_REQUEST)) {
+                    artSent.remove(from)
+                    forceNextSend()
+                }
             }
             run(intent.getStringExtra(EXTRA_COMMAND), intent.getLongExtra(EXTRA_POSITION, 0L))
         }
@@ -202,8 +230,10 @@ class MediaListener : NotificationListenerService() {
         val current = controller
 
         if (current == null) {
+            if (lastSignature == "inactive") return
+            lastSignature = "inactive"
             base.putExtra("active", false)
-            for (target in targets.installed()) deliver(base, target)
+            for (target in liveTargets()) deliver(base, target)
             return
         }
 
@@ -228,6 +258,24 @@ class MediaListener : NotificationListenerService() {
 
         val shuffle = compat?.shuffleMode ?: -1
         val repeat = compat?.repeatMode ?: -1
+
+        // Skip updates that change nothing Discord shows: same track, same state, and the position
+        // where the last update said it would be (some players report progress every second).
+        val playing = state?.state == PlaybackState.STATE_PLAYING
+        val position = state?.position ?: 0L
+        val updated = state?.lastPositionUpdateTime ?: 0L
+        val speed = state?.playbackSpeed ?: 1f
+        val signature = listOf(
+            key, playing, speed, metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION),
+            shuffle, repeat, artVersion, artWebUrl, canShuffle(), canRepeat(), supports(PlaybackState.ACTION_SEEK_TO),
+        ).joinToString("|")
+        val expected = if (lastSignature != null && playing) lastPosition + ((updated - lastUpdated) * lastSpeed).toLong() else lastPosition
+        val jumped = kotlin.math.abs(position - expected) > 1500
+        if (signature == lastSignature && !jumped) return
+        lastSignature = signature
+        lastPosition = position
+        lastUpdated = updated
+        lastSpeed = speed
         base
             .putExtra("active", true)
             .putExtra("package", current.packageName)
@@ -257,7 +305,7 @@ class MediaListener : NotificationListenerService() {
             .putExtra("artVersion", artVersion)
         artWebUrl?.let { base.putExtra("artUrl", it) }
 
-        for (target in targets.installed()) {
+        for (target in liveTargets()) {
             val intent = Intent(base)
             val bytes = artBytes
             if (bytes != null && artSent[target] != artVersion) {
@@ -282,9 +330,15 @@ class MediaListener : NotificationListenerService() {
         if (bitmap != null) {
             if (bitmap === artSource) return
             artSource = bitmap
-            jpeg(bitmap)?.let {
-                artBytes = it
-                artVersion++
+            // Compress off the main thread, then send again with the cover.
+            artWorker.execute {
+                val bytes = jpeg(bitmap)
+                main.post {
+                    if (trackKey != key || bytes == null) return@post
+                    artBytes = bytes
+                    artVersion++
+                    send()
+                }
             }
             return
         }

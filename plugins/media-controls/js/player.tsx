@@ -1,19 +1,28 @@
 import { getAssetIdByName } from '@valenced/assets'
 import { Design } from '@valenced/discord/design'
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { memo, useEffect, useState, useSyncExternalStore } from 'react'
 import { Image, View } from 'react-native'
 import { control, getState, positionOf, subscribe } from './store'
 import type { Playback } from './store'
 
 export const useMedia = () => useSyncExternalStore(subscribe, getState)
 
-/** First icon name that exists in this Discord version. */
+const iconCache = new Map<string, number | undefined>()
+
+/** First icon name that exists in this Discord version (looked up once). */
 function icon(...names: string[]): number | undefined {
+	const key = names.join('|')
+	if (iconCache.has(key)) return iconCache.get(key)
+	let found: number | undefined
 	for (const name of names) {
 		const id = getAssetIdByName(name)
-		if (typeof id === 'number') return id
+		if (typeof id === 'number') {
+			found = id
+			break
+		}
 	}
-	return undefined
+	iconCache.set(key, found)
+	return found
 }
 
 const ICONS = {
@@ -38,17 +47,34 @@ function time(ms: number) {
 	return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`
 }
 
-/** Re-renders every half second while playing, so the time moves. */
-function useTicker(active: boolean) {
+/**
+ * Re-renders this component (only) when the shown second changes: the timer is aligned to the
+ * playing position, so the time ticks exactly on the second with one render per second.
+ */
+function useSecondTicker(p: Playback, active: boolean) {
 	const [, setTick] = useState(0)
 	useEffect(() => {
 		if (!active) return
-		const t = setInterval(() => setTick(n => n + 1), 500)
-		return () => clearInterval(t)
-	}, [active])
+		let timer: ReturnType<typeof setTimeout>
+		const next = () => {
+			const untilNextSecond = 1000 - (positionOf(p) % 1000) + 15
+			timer = setTimeout(() => {
+				setTick(n => n + 1)
+				next()
+			}, untilNextSecond)
+		}
+		next()
+		return () => clearTimeout(timer)
+	}, [p, active])
 }
 
-function Cover({ uri, size }: { uri: string | null; size: number }) {
+const Cover = memo(function Cover({
+	uri,
+	size,
+}: {
+	uri: string | null
+	size: number
+}) {
 	const music = ICONS.music()
 	return (
 		<View
@@ -63,7 +89,11 @@ function Cover({ uri, size }: { uri: string | null; size: number }) {
 			}}
 		>
 			{uri ? (
-				<Image source={{ uri }} style={{ width: size, height: size }} />
+				<Image
+					source={{ uri }}
+					fadeDuration={0}
+					style={{ width: size, height: size }}
+				/>
 			) : music ? (
 				<Image
 					source={music}
@@ -72,9 +102,9 @@ function Cover({ uri, size }: { uri: string | null; size: number }) {
 			) : null}
 		</View>
 	)
-}
+})
 
-function Btn({
+const Btn = memo(function Btn({
 	name,
 	onPress,
 	primary,
@@ -99,12 +129,12 @@ function Btn({
 			accessibilityLabel={label}
 		/>
 	)
-}
+})
 
 function Progress({ p }: { p: Playback }) {
 	const { Slider, Text } = Design
 	const [drag, setDrag] = useState<number | null>(null)
-	useTicker(p.playing && drag === null)
+	useSecondTicker(p, p.playing && drag === null)
 	const pos = drag ?? positionOf(p) / 1000
 	const max = Math.max(p.duration / 1000, 1)
 
@@ -154,7 +184,7 @@ function Progress({ p }: { p: Playback }) {
 	)
 }
 
-export function Player({
+export const Player = memo(function Player({
 	p,
 	compact,
 	onToggleCompact,
@@ -246,4 +276,4 @@ export function Player({
 			)}
 		</View>
 	)
-}
+})

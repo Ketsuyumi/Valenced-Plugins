@@ -55,10 +55,16 @@ const withComponentName = createFilterGenerator<[name: string]>(
 	FilterScopes.Initialized,
 )
 
-/** Discord's own YouBar spacing hooks, when they exist. */
+let marginsModule: Record<string, unknown> | null | undefined
+
+/** Discord's own YouBar spacing hooks, when they exist (module looked up once). */
 function useYouBarMargins() {
-	const [mod] = lookupModule(withProps('useYouBarBottomMargin'))
-	const m = mod as Record<string, () => unknown> | undefined
+	if (marginsModule === undefined)
+		marginsModule =
+			(lookupModule(withProps('useYouBarBottomMargin'))[0] as unknown as
+				| Record<string, unknown>
+				| undefined) ?? null
+	const m = marginsModule ?? undefined
 	const num = (fn: unknown, fallback: number) => {
 		if (typeof fn !== 'function') return fallback
 		const value = (fn as () => unknown)()
@@ -170,7 +176,10 @@ function Dock({
 	return (
 		<Animated.View
 			{...pan.panHandlers}
-			onLayout={(e: any) => setHeight(e.nativeEvent.layout.height)}
+			onLayout={(e: any) => {
+				const h = Math.round(e.nativeEvent.layout.height)
+				if (h !== height) setHeight(h)
+			}}
 			style={{
 				position: 'absolute',
 				left: bar ? bar.x : margins.horizontal,
@@ -215,7 +224,17 @@ function DockedYouBar({
 		? cloneElement(rendered as any, {
 				onLayout: (e: any) => {
 					;(rendered as any).props?.onLayout?.(e)
-					setBar(e.nativeEvent.layout)
+					const l = e.nativeEvent.layout
+					// Only re-render when the bar actually moved or resized.
+					setBar(prev =>
+						prev &&
+						prev.x === l.x &&
+						prev.y === l.y &&
+						prev.width === l.width &&
+						prev.height === l.height
+							? prev
+							: { x: l.x, y: l.y, width: l.width, height: l.height },
+					)
 				},
 			})
 		: rendered
