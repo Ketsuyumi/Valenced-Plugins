@@ -14,8 +14,15 @@ Block any Discord user by their user ID, even when you share no server or DM wit
 2. Open **Settings > Valenced > Plugins > Block by ID**.
 3. Paste the ID (a plain ID or a `<@123…>` mention both work) and tap **Block**, then confirm.
 
-When you paste an ID, the page shows that person's profile picture and name before you block. Users blocked from this page are
-listed underneath with their picture, name and an **Unblock** button.
+When you paste an ID, the page shows that person's profile picture and name before you block. Everyone you block here
+goes on **your block list**, which is shared by every account on the device. Each row's button shows the account you
+are on right now: **Unblock** if they're blocked on it, or **Block** (and **Remove**, to take them off the list) if
+not. So after switching accounts you can block the same people with one tap each. Unblocking only affects the current
+account and keeps them on the list.
+
+**Block automatically on every account** (off by default) does it for you: whenever an account connects, anyone on the
+list it hasn't blocked yet is blocked, one at a time and spaced out for Discord's rate limit. Each person is checked
+once per account, so a later manual unblock is respected; friends and your own signed-in accounts are never blocked.
 
 How it blocks: it calls Discord's own relationship action (`addRelationship` with type `2`, *blocked*), the same
 code path the app uses when you block from a profile. If a Discord update moves that module, it falls back to

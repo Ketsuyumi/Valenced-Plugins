@@ -106,6 +106,33 @@ export function isCurrentUser(userId: string): boolean {
 	return userStore()?.getCurrentUser?.()?.id === userId
 }
 
+/** Calls `listener` whenever Discord's block/friend list changes (including account switches). */
+export function subscribeRelationships(listener: () => void): () => void {
+	const store = relationshipStore() as any
+	store?.addChangeListener?.(listener)
+	return () => store?.removeChangeListener?.(listener)
+}
+
+/** ID of the account currently logged in. */
+export function currentUserId(): string | undefined {
+	return userStore()?.getCurrentUser?.()?.id
+}
+
+/** IDs of every account signed in on this device (the account switcher). */
+export function ownAccountIds(): string[] {
+	const store = Stores.MultiAccountStore as any
+	const users = store?.getUsers?.() ?? store?.getValidUsers?.() ?? []
+	const list: any[] = Array.isArray(users) ? users : Object.values(users ?? {})
+	return list
+		.map(u => u?.id)
+		.filter((id): id is string => typeof id === 'string')
+}
+
+/** Relationship type 1 is "friend". */
+export function isFriend(userId: string): boolean {
+	return relationshipStore()?.getRelationshipType?.(userId) === 1
+}
+
 export async function blockUser(userId: string): Promise<void> {
 	const actions = getRelationshipActions()
 	if (actions) {
