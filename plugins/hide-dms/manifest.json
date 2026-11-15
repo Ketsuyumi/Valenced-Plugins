@@ -1,0 +1,20 @@
+{
+	"format": 1,
+	"id": "dev.ketsuyumi.hide-dms",
+	"name": "Hide DMs",
+	"description": "Hide chosen DMs and group DMs, or all of them, from your DM list without leaving them.",
+	"author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+	"icon": "EyeSlashIcon",
+	"version": "1.0.0",
+	"dependencies": {
+		"valenced.api": {
+			"version": ">=1 <2"
+		},
+		"discord": {
+			"version": "*"
+		}
+	},
+	"dist": {
+		"script": "index.js"
+	}
+}

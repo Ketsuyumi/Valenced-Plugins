@@ -37,6 +37,17 @@ Options:
 Messages are filtered as Discord receives them (new messages, edits, channel history, mentions and pins), so it only
 affects your device. Messages already on screen stay until you reopen the channel.
 
+### Hide DMs (`dev.ketsuyumi.hide-dms`)
+
+Hide chosen DMs and group DMs from your DM list, without leaving them.
+
+Open **Settings > Valenced > Plugins > Hide DMs**. Every conversation is listed with its picture and a switch to hide
+it, plus a search box. **Hide all DMs** and **Hide all group DMs** hide every conversation of that kind.
+
+It filters the lists Discord's DM screen reads from (`PrivateChannelSortStore` and `ChannelStore`), so it is purely
+visual and only on this device: you still receive messages and notifications, and turning a switch off shows the
+conversation again straight away.
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.
