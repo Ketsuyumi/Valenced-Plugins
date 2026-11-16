@@ -24,7 +24,8 @@ const DEFAULTS: Settings = { percent: 35, uploads: true, embeds: true }
 const PERCENTS = [30, 35, 40, 50]
 
 let stats = newStats()
-let hooked = 'Waiting for Discord to load its message builder'
+let hooked = 'Waiting for Discord to load its chat row generator'
+let hookCount = 0
 
 function optionsFrom(settings: Settings): ResizeOptions {
 	const { width, height } = Dimensions.get('window')
@@ -45,9 +46,10 @@ function debugReport(settings: Settings) {
 		`settings: ${JSON.stringify(settings)}`,
 		`screen: ${Math.round(width)}x${Math.round(height)}`,
 		`hook: ${hooked}`,
-		`messages seen: ${stats.messages}, media resized: ${stats.resized}`,
+		`rows: ${stats.rows}, messages: ${stats.messages}, media resized: ${stats.resized}`,
+		`row keys: ${stats.rowKeys}`,
 		...stats.samples,
-		`content keys: ${stats.contentKeys}`,
+		`message keys: ${stats.contentKeys}`,
 		...stats.shapes,
 	].join('\n')
 }
@@ -106,10 +108,10 @@ function SettingsPage({ api }: { api: Api }) {
 				</TableRowGroup>
 
 				<TableRowGroup title="Status">
-					<TableRow label="Message builder" subLabel={hooked} />
+					<TableRow label="Chat row generator" subLabel={hooked} />
 					<TableRow
 						label="This session"
-						subLabel={`${stats.resized} media resized in ${stats.messages} messages`}
+						subLabel={`${stats.resized} media resized in ${stats.rows} chat rows`}
 					/>
 					<TableRow
 						label="Copy debug info"
@@ -134,7 +136,8 @@ export default plugin<{ jsonStorage: Settings }>({
 	jsonStorage: { load: true, default: DEFAULTS },
 	start({ cleanup, jsonStorage, plugin }) {
 		stats = newStats()
-		hooked = 'Waiting for Discord to load its message builder'
+		hooked = 'Waiting for Discord to load its chat row generator'
+		hookCount = 0
 		// Rebuilt when the settings change, not for every message.
 		let options = optionsFrom({ ...DEFAULTS, ...jsonStorage.cache })
 		const refresh = () => {
@@ -145,26 +148,48 @@ export default plugin<{ jsonStorage: Settings }>({
 		const rotation = Dimensions.addEventListener?.('change', refresh)
 		cleanup(() => rotation?.remove?.())
 
+		// The chat's row generator. Each call returns the descriptor one row is drawn from, with
+		// the message's media under `message.attachments` and `message.embeds`. Found by class
+		// name with its `generate` method checked; there can be more than one RowManager.
+		// (1.0.0 hooked `createMessageContent` by function name, which this Discord build does
+		// not expose under that name, so nothing was ever resized.)
+		const patchedPrototypes = new WeakSet<object>()
 		cleanup(
-			// The function that builds the data each chat row is drawn from.
-			getModules(withName<any>('createMessageContent'), exports => {
-				try {
-					if (typeof exports?.default !== 'function') return
-					cleanup(
-						after(exports, 'default', ((content: unknown) => {
-							try {
-								return resizeContent(content, options, stats)
-							} catch {
-								return content
-							}
-						}) as never),
-					)
-					hooked = 'Found'
-				} catch (error) {
-					hooked = 'Found, but could not be patched'
-					plugin.reportError(error)
-				}
-			}),
+			getModules(
+				withName<any>('RowManager'),
+				RowManager => {
+					try {
+						const prototype = RowManager?.prototype
+						if (typeof prototype?.generate !== 'function') return
+						if (patchedPrototypes.has(prototype)) return
+						patchedPrototypes.add(prototype)
+						cleanup(
+							after(prototype, 'generate', ((row: any) => {
+								try {
+									const message = row?.message
+									if (!message || typeof message !== 'object') return row
+									stats.rows++
+									if (!stats.rowKeys)
+										stats.rowKeys = Object.keys(row).join(', ')
+									const next = resizeContent(message, options, stats)
+									if (next === message) return row
+									row.message = next
+									// A read-only row: hand back a copy instead.
+									return row.message === next ? row : { ...row, message: next }
+								} catch {
+									return row
+								}
+							}) as never),
+						)
+						hookCount++
+						hooked = `Found (${hookCount})`
+					} catch (error) {
+						hooked = 'Found, but could not be patched'
+						plugin.reportError(error)
+					}
+				},
+				{ max: 10 },
+			),
 		)
 	},
 	SettingsComponent: SettingsPage,

@@ -29,6 +29,10 @@ export interface ResizeStats {
 	shapes: string[]
 	/** The content object's own keys, once. */
 	contentKeys: string
+	/** Chat rows that passed through the hook. */
+	rows: number
+	/** The row descriptor's own keys, once. */
+	rowKeys: string
 }
 
 export const newStats = (): ResizeStats => ({
@@ -37,6 +41,8 @@ export const newStats = (): ResizeStats => ({
 	samples: [],
 	shapes: [],
 	contentKeys: '',
+	rows: 0,
+	rowKeys: '',
 })
 
 const MAX_SHAPES = 6
@@ -153,6 +159,7 @@ export function resizeContent<T>(
 	if (!isPlain(content) || !(options.scale > 0) || options.scale >= 1)
 		return content
 	stats.messages++
+	if (!stats.contentKeys) stats.contentKeys = Object.keys(content).join(', ')
 	let copy: Record<string, unknown> | undefined
 	for (const [key, kind] of Object.entries(SECTIONS)) {
 		const section = content[key]
@@ -163,8 +170,6 @@ export function resizeContent<T>(
 			Array.isArray(section) &&
 			section.length
 		) {
-			if (!stats.contentKeys)
-				stats.contentKeys = Object.keys(content).join(', ')
 			stats.shapes.push(`${key}[0] = ${describe(section[0])}`)
 		}
 		if (!options[kind]) continue

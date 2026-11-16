@@ -224,9 +224,10 @@ Makes images, GIFs and videos in chat 30 to 50% smaller (35% by default), whoeve
 changes: tapping still opens the full-size image, and videos and GIFs still play. Uploads and link/GIF-picker previews
 have separate switches.
 
-It works on the data Discord builds for each chat row (`createMessageContent`): the `width` and `height` of media under
-`attachments` and `embeds` are scaled by the same factor, on copies, with the URLs left alone. The settings page shows
-whether the message builder was found and how many items were resized, and has a "Copy debug info" row.
+It works on the descriptor Discord builds for each chat row (`RowManager.generate`): the `width` and `height` of media
+under the row's `message.attachments` and `message.embeds` are scaled by the same factor, on copies, with the URLs left
+alone. The settings page shows whether the row generator was found and how many items were resized, and has a
+"Copy debug info" row that lists the fields it saw.
 
 ## Building
 
