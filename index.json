@@ -252,6 +252,30 @@
           }
         }
       }
+    },
+    "dev.ketsuyumi.skip-confirmations": {
+      "name": "Skip Confirmations",
+      "description": "Skip the confirmation dialogs you choose (delete message, leave group, ignore and more). Learns each dialog the first time you see it; nothing is skipped until you turn it on.",
+      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "icon": "BoltIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.skip-confirmations@1.0.0.zip",
+          "sha256": "97271c52cc4da37506cd4a8a455735faf46b064c827adc27535f1d9dbaa0f9ca",
+          "size": 2284,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
     }
   }
 }
