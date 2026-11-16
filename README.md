@@ -122,6 +122,14 @@ A reload button like the old clients had. It adds a ⟳ button next to the bell 
 "Reload Discord" row at the top of Discord's settings; each can be turned off in the plugin's settings. Reloading
 restarts Discord's JavaScript (`BundleUpdaterManager.reload()`), which also applies waiting plugin updates.
 
+### No Blackout (`dev.ketsuyumi.no-blackout`)
+
+Stops the screen going black during calls when the proximity sensor is covered, for example when a finger moves
+near the top of the screen. During calls Discord holds a proximity wake lock; this native plugin hooks
+`PowerManager.newWakeLock` inside Discord only and turns proximity wake locks into partial ones, so the phone stays
+awake for the call but the sensor never switches the screen off. Turn the plugin off to get the normal behaviour back.
+Android only.
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.
