@@ -95,6 +95,18 @@ friend request, and the Block and Ignore action sheets. For those, skipping does
 It hooks only Discord's `openAlert` and `openLazy` (and only reacts to confirmation sheets there), so it does nothing
 until a dialog is about to open, and its HTTP helper is found once at start rather than while a dialog opens.
 
+### Instant Actions+ (`dev.ketsuyumi.instant-actions`)
+
+A fork of [Instant Actions](https://github.com/k1ng0p/Valenced-Plugins-by-k1ng0p) by **k1ng_op** (GPL-3.0; this fork
+is GPL-3.0 too). Skips "Are you sure?" prompts for deleting messages, embeds and attachments, masked links, channels,
+leaving servers and groups, roles, unfriending, blocking, ignoring, cancelling friend requests, voice calls and
+pins, each with its own switch. Same features and settings as the original.
+
+Changed in this fork: the original looked translated dialog titles up by scanning every Discord module while a
+dialog was opening, which made Discord hitch for up to ~100 ms. Here the translation modules are found once, every
+title is resolved in a warm-up shortly after start, template patterns are compiled once, and the HTTP helper is
+fetched up front. Switch the original off if you install this one.
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.
