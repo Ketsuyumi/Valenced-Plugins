@@ -142,6 +142,33 @@
         }
       }
     },
+    "dev.ketsuyumi.fake-nickname": {
+      "name": "Fake Nickname+",
+      "description": "Change anyone's nickname without being friends. A faster fork of coder.gg's Fake Nickname (name lookups no longer slow Discord down). GPL-3.0.",
+      "author": "coder.gg <1099039269391171765> (https://il1ll.github.io \"Website\") (https://github.com/il1ll \"GitHub\")",
+      "contributors": [
+        "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")"
+      ],
+      "icon": "PencilIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.fake-nickname@1.0.0.zip",
+          "sha256": "668fb4eac8dc7605e3706d41e0003f00749b7d894d5b72a21cf0cefce3227c53",
+          "size": 4390,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.hide-dms": {
       "name": "Hide DMs",
       "description": "Hide chosen DMs and group DMs, or all of them, from your DM list without leaving them.",
