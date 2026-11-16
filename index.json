@@ -259,13 +259,26 @@
       "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
       "icon": "BoltIcon",
       "channels": {
-        "latest": "1.0.0"
+        "latest": "1.1.0"
       },
       "versions": {
         "1.0.0": {
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.skip-confirmations@1.0.0.zip",
           "sha256": "97271c52cc4da37506cd4a8a455735faf46b064c827adc27535f1d9dbaa0f9ca",
           "size": 2284,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.1.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.skip-confirmations@1.1.0.zip",
+          "sha256": "43b590bbd4aa89d44b4d2ae13004c7b98672d0b966c85e00f3015d141f165a8b",
+          "size": 2990,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
