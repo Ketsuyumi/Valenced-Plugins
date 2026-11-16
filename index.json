@@ -12,7 +12,7 @@
       ],
       "icon": "ChatIcon",
       "channels": {
-        "latest": "1.0.1"
+        "latest": "1.0.2"
       },
       "versions": {
         "1.0.0": {
@@ -32,6 +32,19 @@
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.better-channel-list@1.0.1.zip",
           "sha256": "c85ca9d92e72d11d2830791949e6980a7dff83c7091c45ec49377f21daf4ef66",
           "size": 39591,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.2": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.better-channel-list@1.0.2.zip",
+          "sha256": "8b0606eaa90da97310cb3fa19ceb6ebac2d161a3f4a1f0f4c893e1ab45c60d91",
+          "size": 39811,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -218,7 +231,7 @@
       ],
       "icon": "TrashIcon",
       "channels": {
-        "latest": "1.0.1"
+        "latest": "1.0.2"
       },
       "versions": {
         "1.0.0": {
@@ -238,6 +251,19 @@
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ghost-log@1.0.1.zip",
           "sha256": "d0418a43874faf16268323b37d93a1db5ef68fa163df87c0340e9660149d730b",
           "size": 182286,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.2": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ghost-log@1.0.2.zip",
+          "sha256": "97143b762d2b48f1c2e80e79a33c9e442e73516f5b6640afd65f160cd0c8470b",
+          "size": 182500,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
