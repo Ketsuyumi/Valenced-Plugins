@@ -6,15 +6,16 @@
  *
  * Changes in this fork (ketsuyumi):
  * - Resolved tags are cached per server, channel and person, so chat no longer recomputes a
- *   member's permissions for every message row. The cache clears when members, roles, channels,
- *   permissions or settings change.
+ *   member's permissions for every message row. An entry is redone when that member's roles
+ *   change; everything is cleared on role, guild and channel-permission events and on settings
+ *   changes.
  * - Settings are merged once per change instead of on every lookup; row colours are converted
  *   once per tag; Discord's own tags skip the painter; member and profile rows check the cached
  *   tag before walking the rendered tree.
  * - New: compact mode, per-server switches, where-to-show switches, and your own tags by user ID.
  * - The original's changelog popup is left out (its notes describe the original's versions).
  */
-import { Stores } from '@valenced/discord/flux'
+import { Dispatcher } from '@valenced/discord/common/flux'
 import { getModules } from '@valenced/modules/finders'
 import { withProps } from '@valenced/modules/finders/filters'
 import { clearDiscordModules, setTagModule } from './lib/discord'
@@ -39,18 +40,26 @@ import type { StaffTagsStorage } from './types'
 export { DEFAULTS }
 export type { StaffTagsStorage }
 
-/** Stores whose changes can change someone's tag: roles, members, owners, channel overwrites. */
-const WATCHED_STORES = [
-	'GuildMemberStore',
-	'GuildStore',
-	'GuildRoleStore',
-	'ChannelStore',
-	'PermissionStore',
+/**
+ * Events that change permissions for many people at once, so every cached tag is dropped: role
+ * edits, guild changes (owner), channel overwrites, and a fresh connection. One member's own
+ * role change is handled per entry in `getTag` and needs nothing here.
+ */
+const PERMISSION_EVENTS = [
+	'GUILD_ROLE_CREATE',
+	'GUILD_ROLE_UPDATE',
+	'GUILD_ROLE_DELETE',
+	'GUILD_UPDATE',
+	'GUILD_CREATE',
+	'GUILD_DELETE',
+	'CHANNEL_UPDATES',
+	'CHANNEL_DELETE',
+	'CONNECTION_OPEN',
 ]
 
-interface ChangeEmitter {
-	addChangeListener?(listener: () => void): void
-	removeChangeListener?(listener: () => void): void
+interface FluxDispatcher {
+	subscribe?(type: string, listener: () => void): void
+	unsubscribe?(type: string, listener: () => void): void
 }
 
 export default plugin<{ jsonStorage: StaffTagsStorage }>({
@@ -71,12 +80,12 @@ export default plugin<{ jsonStorage: StaffTagsStorage }>({
 
 		cleanup(watchStorage(), onSettingsChange(clearTagCache), registerPages())
 
-		for (const name of WATCHED_STORES) {
-			const store = (Stores as Record<string, ChangeEmitter | undefined>)[name]
+		const dispatcher = Dispatcher as unknown as FluxDispatcher | undefined
+		for (const type of PERMISSION_EVENTS) {
 			try {
-				if (typeof store?.addChangeListener !== 'function') continue
-				store.addChangeListener(clearTagCache)
-				cleanup(() => store.removeChangeListener?.(clearTagCache))
+				if (typeof dispatcher?.subscribe !== 'function') break
+				dispatcher.subscribe(type, clearTagCache)
+				cleanup(() => dispatcher.unsubscribe?.(type, clearTagCache))
 			} catch {}
 		}
 

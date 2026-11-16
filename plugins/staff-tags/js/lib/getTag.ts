@@ -260,10 +260,23 @@ function compactLabel(tag: ResolvedTag, short: string): ResolvedTag {
 /**
  * Resolved tags by guild, channel and user. Working a tag out means computing the member's
  * permissions from all their roles; in chat that ran again for every message row, even for the
- * same author. Cleared whenever members, roles, channels or settings change (see `index.ts`).
- * `null` remembers "no tag".
+ * same author. `tag: null` remembers "no tag".
+ *
+ * An entry is reused only while the member's `roles` array and role colour are the ones it was
+ * computed from, so a member whose roles change (or who was not loaded yet and now is) is worked
+ * out again, and nobody else is. The whole cache is cleared only by events that change
+ * permissions for everyone: roles, the guild, channel overwrites, settings (see `index.ts`).
+ *
+ * The first version of this cache was cleared on every change of GuildMemberStore and four other
+ * stores. GuildMemberStore changes on almost every incoming message, so in real use the cache was
+ * emptied constantly and permissions were recomputed nearly as often as without it.
  */
-const cache = new Map<string, ResolvedTag | null>()
+interface CachedTag {
+	tag: ResolvedTag | null
+	roles: unknown
+	color: unknown
+}
+const cache = new Map<string, CachedTag>()
 const MAX_CACHED = 5000
 
 export function clearTagCache() {
@@ -282,15 +295,23 @@ export default function getTag(
 	if (s[PLACE_SETTING[place]] === false) return undefined
 
 	const key = `${guild?.id ?? ''}|${channel?.id ?? ''}|${user.id}`
+	const member = guild
+		? (stores.guildMember()?.getMember(guild.id, user.id) as
+				| { roles?: unknown; colorString?: unknown }
+				| undefined)
+		: undefined
+	const roles = member?.roles
+	const color = member?.colorString
 	const known = cache.get(key)
-	if (known !== undefined) return known ?? undefined
+	if (known && known.roles === roles && known.color === color)
+		return known.tag ?? undefined
 
 	const tag = resolveTag(guild, channel, user, s.useRoleColor, s.compact)
 	// Until Discord's permission helper and tag component have loaded, the answer may be
 	// incomplete; keep asking instead of remembering it.
 	if (getTagModule() && (!guild || getPermissionHelper())) {
 		if (cache.size >= MAX_CACHED) cache.clear()
-		cache.set(key, tag ?? null)
+		cache.set(key, { tag: tag ?? null, roles, color })
 	}
 	return tag
 }
