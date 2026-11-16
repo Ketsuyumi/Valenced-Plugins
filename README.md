@@ -229,11 +229,9 @@ under the row's `message.attachments` and `message.embeds` are scaled by the sam
 alone. The settings page shows whether the row generator was found and how many items were resized, and has a
 "Copy debug info" row that lists the fields it saw.
 
-Uploads are drawn in Discord's image grid, which fills the message's width whatever size the images say they are, so
-for messages with uploads the grid is switched off (`useAttachmentGridLayout`) and each upload is drawn from its own,
-scaled, size: several uploads appear one under another. "Keep the image grid" (experimental) keeps the grid for
-several uploads and scales the width it fills (`constrainedWidth`) instead. Sizes are measured from that width, so
-35% smaller means 35% smaller than it was on screen.
+Uploads are drawn in Discord's image grid, which fills the message's width whatever size the images say they are, and
+the grid is the only way uploads are drawn (switching it off makes them disappear). So for a message with uploads the
+plugin leaves the grid on and scales the width it fills, the row's `constrainedWidth`.
 
 ## Building
 

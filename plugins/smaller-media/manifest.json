@@ -5,7 +5,7 @@
 	"description": "Makes images, GIFs and videos in chat 30 to 50% smaller, from you and everyone else. Only the preview shrinks: tapping still opens them full size and videos and GIFs still play.",
 	"author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
 	"icon": "ImageIcon",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

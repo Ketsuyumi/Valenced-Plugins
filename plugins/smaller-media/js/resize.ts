@@ -23,11 +23,6 @@ export interface ResizeOptions {
 	 * Media wider than this is drawn at this width, so the scale is applied from here.
 	 */
 	maxWidth?: number
-	/**
-	 * Keep Discord's image grid for messages with several uploads and shrink the grid instead
-	 * (experimental). Otherwise the grid is switched off and each upload is sized on its own.
-	 */
-	keepGrid?: boolean
 }
 
 /** Counters and a few samples, for the settings page. */
@@ -180,28 +175,26 @@ export function resizeContent<T>(
 		options = { ...options, maxWidth: constrained }
 
 	// Uploads are drawn in Discord's image grid, which fills the message's width whatever size
-	// the images say they are (this is why 1.0.2 shrank GIFs but not uploads). So either the
-	// grid is switched off, and each upload is drawn from its own, scaled, size; or, for several
-	// uploads with "keep the grid" on, the width the grid fills is scaled instead.
+	// the images say they are (this is why 1.0.2 shrank GIFs but not uploads). The grid is the
+	// only way this Discord draws uploads: 1.1.0 switched it off and they were not drawn at all.
+	// So the grid is left alone and the width it fills, the row's `constrainedWidth`, is scaled.
 	const uploads = content.attachments
 	if (options.uploads && Array.isArray(uploads) && uploads.length) {
 		if (stats.flags.length < MAX_SHAPES)
 			stats.flags.push(
 				`grid=${String(content.useAttachmentGridLayout)} constrainedWidth=${String(constrained)} uploads=${uploads.length}`,
 			)
-		if (options.keepGrid && uploads.length > 1) {
-			if (typeof constrained === 'number' && constrained > 0) {
-				copy = {
-					...content,
-					constrainedWidth: Math.round(constrained * options.scale),
-				}
-				stats.resized += uploads.length
-				// The grid does the sizing; leave the uploads' own sizes alone.
-				options = { ...options, uploads: false }
+		if (typeof constrained === 'number' && constrained > 0) {
+			copy = {
+				...content,
+				constrainedWidth: Math.round(constrained * options.scale),
 			}
-		} else if (content.useAttachmentGridLayout === true)
-			copy = { ...content, useAttachmentGridLayout: false }
+			stats.resized += uploads.length
+		}
 	}
+	// The grid does the sizing, so the uploads' own sizes are left as they are.
+	options = { ...options, uploads: false }
+
 	for (const [key, kind] of Object.entries(SECTIONS)) {
 		const section = content[key]
 		if (!section || typeof section !== 'object') continue
