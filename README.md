@@ -130,6 +130,10 @@ on the bar with your name, each with its own switch in the plugin's settings:
 The buttons are copies of the bell's own button, so they match the rest of the bar. Order: Performance Monitor,
 Reload, Plugins, then the bell.
 
+**Hide the Favorites button** (off by default): takes the star that YouBar+ or Better You Bar adds off the bar, so
+the Plugins button sits in its place. It works on what those plugins render, so it needs their button to be one of the
+things rendered with the bell (the usual case).
+
 ### No Blackout (`dev.ketsuyumi.no-blackout`)
 
 Stops the screen going black during calls when the proximity sensor is covered, for example when a finger moves

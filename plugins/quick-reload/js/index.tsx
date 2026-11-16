@@ -30,6 +30,8 @@ interface Settings {
 	monitorButton: boolean
 	/** A button on the bar that opens Valenced's Plugins page. */
 	pluginsButton: boolean
+	/** Take the Favorites (star) button that YouBar+ / Better You Bar adds off the bar. */
+	hideFavorites: boolean
 }
 
 type Api = PluginApi<{ jsonStorage: Settings }>
@@ -39,6 +41,7 @@ const DEFAULTS: Settings = {
 	settingsRow: true,
 	monitorButton: false,
 	pluginsButton: false,
+	hideFavorites: false,
 }
 
 const reload = () => BundleUpdaterManager.reload()
@@ -238,8 +241,56 @@ function copyOfBell(rendered: unknown, spec: BarButton): ReactElement | null {
 	return cloneElement(copy, { key: spec.key })
 }
 
+let starIcon: number | undefined | null = null
+
+/** A Favorites button as other bar plugins add it: a pressable labelled Favorites or with the star icon. */
+function isFavoritesButton(node: ReactElement<any>): boolean {
+	const props = node.props
+	if (typeof props?.onPress !== 'function') return false
+	if (
+		typeof props.accessibilityLabel === 'string' &&
+		/^favou?rites?$/i.test(props.accessibilityLabel.trim())
+	)
+		return true
+	if (starIcon === null) starIcon = getAssetIdByName('StarIcon')
+	return (
+		typeof starIcon === 'number' &&
+		(props.icon === starIcon || props.source === starIcon)
+	)
+}
+
+/**
+ * What the bar plugins and Discord rendered, without the Favorites button. A container left
+ * with nothing in it goes too, so no empty slot stays behind. Everything else is returned as it
+ * was (the same objects when nothing matched).
+ */
+function withoutFavorites(node: unknown, depth = 0): unknown {
+	if (depth > MAX_DEPTH || node == null || typeof node !== 'object') return node
+	if (Array.isArray(node)) {
+		let changed = false
+		const out: unknown[] = []
+		for (const child of node) {
+			const next = withoutFavorites(child, depth + 1)
+			if (next !== child) changed = true
+			if (next != null) out.push(next)
+		}
+		return changed ? out : node
+	}
+	if (!isValidElement<any>(node)) return node
+	if (isFavoritesButton(node)) return null
+	const children = node.props?.children
+	if (children == null || typeof children !== 'object') return node
+	const next = withoutFavorites(children, depth + 1)
+	if (next === children) return node
+	// Its only content was the star: drop the wrapper as well.
+	if (next == null || (Array.isArray(next) && next.length === 0)) return null
+	return cloneElement(node, undefined, ...(Array.isArray(next) ? next : [next]))
+}
+
 /** The bell with this plugin's enabled buttons in front of it. */
-function withBarButtons(rendered: unknown, settings: Settings) {
+function withBarButtons(input: unknown, settings: Settings) {
+	// The buttons are copied from the bell as it was rendered, so this comes first.
+	const rendered = settings.hideFavorites ? withoutFavorites(input) : input
 	const buttons = BAR_BUTTONS.filter(button => button.enabled(settings))
 	if (!buttons.length) return rendered
 	return createElement(
@@ -263,7 +314,7 @@ function SettingsPage({ api }: { api: Api }) {
 	return (
 		<ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
 			<Stack spacing={24}>
-				<TableRowGroup title="Where to show it">
+				<TableRowGroup title="Buttons on your bar">
 					<TableSwitchRow
 						label="Reload button on your bar"
 						subLabel="Next to the bell, on the bar with your name"
@@ -282,6 +333,16 @@ function SettingsPage({ api }: { api: Api }) {
 						value={settings.pluginsButton}
 						onValueChange={(pluginsButton: boolean) => set({ pluginsButton })}
 					/>
+				</TableRowGroup>
+				<TableRowGroup title="Other bar plugins">
+					<TableSwitchRow
+						label="Hide the Favorites button"
+						subLabel="Takes the star that YouBar+ or Better You Bar adds off the bar, so Plugins sits in its place"
+						value={settings.hideFavorites}
+						onValueChange={(hideFavorites: boolean) => set({ hideFavorites })}
+					/>
+				</TableRowGroup>
+				<TableRowGroup title="Discord's settings">
 					<TableSwitchRow
 						label="Row in Discord's settings"
 						subLabel='"Reload Discord", at the top of Settings'
