@@ -5,7 +5,7 @@
 	"description": "A reload button like the old clients: next to the bell on the bar with your name, and as \"Reload Discord\" in Discord's settings.",
 	"author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
 	"icon": "RefreshIcon",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

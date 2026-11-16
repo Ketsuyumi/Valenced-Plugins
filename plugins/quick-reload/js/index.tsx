@@ -13,9 +13,10 @@ import {
 } from '@valenced/modules/finders/filters'
 import { after } from '@valenced/patcher'
 import { lookupGeneratedIconComponent } from '@valenced/utils/discord'
-import { createElement, Fragment } from 'react'
+import { cloneElement, createElement, Fragment, isValidElement } from 'react'
 import { ScrollView } from 'react-native'
 import type { PluginApi } from '@valenced/plugins/types'
+import type { ReactElement } from 'react'
 
 interface Settings {
 	/** A reload button on the bar with your name, next to the bell. */
@@ -74,6 +75,7 @@ function iconId() {
 	return refreshIcon
 }
 
+/** Fallback when the bell's own button can't be copied: small, no outline. */
 function ReloadButton() {
 	const { IconButton } = Design
 	const icon = iconId()
@@ -81,12 +83,59 @@ function ReloadButton() {
 	return (
 		<IconButton
 			icon={icon}
-			variant="secondary"
-			size="md"
+			variant="tertiary"
+			size="sm"
 			accessibilityLabel="Reload Discord"
 			onPress={reload}
 		/>
 	)
+}
+
+const MAX_DEPTH = 8
+
+/** Path from `node` down to the first element with an onPress (the bell's pressable). */
+function pathToPressable(node: unknown, depth = 0): ReactElement<any>[] | null {
+	if (depth > MAX_DEPTH || !isValidElement<any>(node)) return null
+	if (typeof node.props?.onPress === 'function') return [node]
+	const children = node.props?.children
+	for (const child of Array.isArray(children) ? children : [children]) {
+		const path = pathToPressable(child, depth + 1)
+		if (path) return [node, ...path]
+	}
+	return null
+}
+
+/**
+ * A copy of the bell button Discord rendered, with the reload icon and action: same container,
+ * size and style as the bar's other buttons. Siblings along the way (like the unread badge) are
+ * dropped. Null if the bell doesn't have the expected shape.
+ */
+function copyOfBell(rendered: unknown): ReactElement | null {
+	const path = pathToPressable(rendered)
+	if (!path) return null
+	const button = path[path.length - 1]
+	const props = button.props as any
+	const icon = iconId()
+
+	let swapped: Record<string, unknown> | null = null
+	if (typeof props.icon === 'number' && icon !== undefined) swapped = { icon }
+	else if (props.IconComponent) {
+		const Refresh = lookupGeneratedIconComponent('RefreshIcon')
+		if (Refresh) swapped = { IconComponent: Refresh }
+	} else if (props.source !== undefined && icon !== undefined)
+		swapped = { source: icon }
+	if (!swapped) return null
+
+	let copy: ReactElement = cloneElement(button, {
+		...swapped,
+		onPress: reload,
+		accessibilityLabel: 'Reload Discord',
+		ref: null,
+	} as any)
+	// Rebuild the containers above it, keeping only the path to the button.
+	for (let i = path.length - 2; i >= 0; i--)
+		copy = cloneElement(path[i], { ref: null } as any, copy)
+	return cloneElement(copy, { key: 'quick-reload' })
 }
 
 function SettingsPage({ api }: { api: Api }) {
@@ -186,7 +235,10 @@ export default plugin<{ jsonStorage: Settings }>({
 											? createElement(
 													Fragment,
 													null,
-													createElement(ReloadButton),
+													copyOfBell(rendered) ??
+														createElement(ReloadButton, {
+															key: 'quick-reload',
+														}),
 													rendered as any,
 												)
 											: rendered) as never,
