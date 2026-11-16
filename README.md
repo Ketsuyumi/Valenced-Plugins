@@ -80,6 +80,16 @@ Hides the banner image at the top of a server's channel list, so every server us
 `GuildStore` so servers are handed out without their `banner` field (using the record's own `set`, so nothing else
 about the server changes). Turn the plugin off to bring banners back straight away.
 
+### Skip Confirmations (`dev.ketsuyumi.skip-confirmations`)
+
+Skip the confirmation dialogs you choose: deleting messages, embeds or attachments, leaving group DMs, ignoring
+users and any other confirmation Discord shows as an alert. Every confirmation you see is added to a list in the
+plugin's settings with its title and confirm button; turn **Skip** on for the ones you want, and next time the plugin
+presses that button for you instead of showing the dialog. Nothing is skipped until you turn it on, and if a skip
+fails the dialog is shown as usual.
+
+It hooks only Discord's `openAlert`, so it does nothing until a dialog is about to open.
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.
