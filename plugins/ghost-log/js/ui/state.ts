@@ -80,21 +80,24 @@ export function getLogVersion(): number {
  * The original had one counter for everything: a deletion caught in any channel, a media file
  * landing, even a storage-status refresh after an auto-backup, all made the hook re-index the
  * whole log and throw away the merged result of the chat on screen. Now:
- *  - notify()            the whole log changed (reload, clear, trim): new epoch
- *  - notify(channelIds)  only these channels' entries changed
+ *  - notify()            entries were added to or removed from the log (capture, remove, trim,
+ *                        reload, clear). The hook regroups the log once and keeps every channel
+ *                        whose entries are the same objects as before.
+ *  - notify(channelIds)  entries of these channels were changed in place (saved media landing)
  *  - notifyUi()          nothing in the log changed; pages just need to re-render
+ *
+ * (An earlier version treated "the log was trimmed" as a whole-log reset. A log at its size limit
+ * is trimmed on every capture, so that reset every channel on every caught deletion.)
  */
-let epoch = 0
-const channelVersions = new Map<string, number>()
+let structure = 0
+const channelContent = new Map<string, number>()
 
 function notify(channelIds?: Iterable<string>) {
 	version++
-	if (channelIds === undefined) {
-		epoch++
-		channelVersions.clear()
-	} else
+	if (channelIds === undefined) structure++
+	else
 		for (const id of channelIds)
-			channelVersions.set(id, (channelVersions.get(id) ?? 0) + 1)
+			channelContent.set(id, (channelContent.get(id) ?? 0) + 1)
 	for (const fn of listeners) fn()
 }
 
@@ -102,14 +105,14 @@ function notifyUi() {
 	for (const fn of listeners) fn()
 }
 
-/** Changes when the whole log was replaced. */
-export function getLogEpoch(): number {
-	return epoch
+/** Changes when entries were added to or removed from the log. */
+export function getLogStructure(): number {
+	return structure
 }
 
-/** Changes when [channelId]'s entries (or the whole log) changed. */
-export function getChannelLogVersion(channelId: string): number {
-	return epoch * 1_048_576 + (channelVersions.get(channelId) ?? 0)
+/** Changes when [channelId]'s entries were changed in place. */
+export function getChannelContentVersion(channelId: string): number {
+	return channelContent.get(channelId) ?? 0
 }
 
 export function subscribeLog(fn: () => void): () => void {
@@ -310,11 +313,8 @@ function dropFromCache(ids: Set<string>) {
 		addedDuringLoad.delete(id)
 		if (loading) removedDuringLoad.add(id)
 	}
-	const channels = new Set<string>()
-	for (const entry of cache)
-		if (ids.has(entry.id)) channels.add(entry.channelId)
 	cache = cache.filter(entry => !ids.has(entry.id))
-	notify(channels)
+	notify()
 }
 
 /**
@@ -374,13 +374,9 @@ function flushAdds() {
 	// ghosts drawn from it) until the Ghost Log page was next opened, and entries native had already
 	// dropped still showed as deleted, with Remove failing on them.
 	const { maxEntries, unlimitedEntries } = getSettings()
-	if (!unlimitedEntries && maxEntries > 0 && cache.length > maxEntries) {
+	if (!unlimitedEntries && maxEntries > 0 && cache.length > maxEntries)
 		cache = cache.slice(0, maxEntries)
-		// Trimming drops the oldest entries, which can belong to any channel.
-		notify()
-		return
-	}
-	notify(new Set(batch.map(entry => entry.channelId)))
+	notify()
 }
 
 /** Keep the JS cache in step with a freshly captured entry (native store is the source of truth). */

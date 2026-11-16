@@ -20,8 +20,8 @@ import { instead } from '@valenced/patcher'
 import { reportError } from '../shared/report'
 import {
 	getCachedLog,
-	getChannelLogVersion,
-	getLogEpoch,
+	getChannelContentVersion,
+	getLogStructure,
 	rehydrateChannel,
 } from '../ui/state'
 import type { GhostLogSettings } from '../types'
@@ -84,10 +84,8 @@ function mediaKey(entry: DeletedMessage): string {
 // log on every call that missed the clone memo -- including every call for a channel with nothing
 // logged, the normal case -- so with an unlimited log the render path paid O(log) several times a
 // frame. Now a channel with nothing logged costs one Map lookup.
-const channelIndex = new Map<
-	string,
-	{ version: number; list: DeletedMessage[] }
->()
+let byChannel = new Map<string, DeletedMessage[]>()
+let indexedStructure = -1
 
 // Entries whose record could not be built, with the media key they failed with. A bad entry used to
 // throw (and report) on every getMessages call; now it is retried only when its media changes
@@ -95,38 +93,47 @@ const channelIndex = new Map<
 const failedRecords = new Map<string, string>()
 
 /**
- * Ghost Log+: one channel's entries, newest first (entries without a usable time in front), built
- * the first time the channel is asked for and again only when that channel's version changes.
+ * Ghost Log+: the log grouped by channel, newest first (entries without a usable time in front).
  *
- * The original re-indexed the whole log (grouping, and a Set of every id) whenever anything in it
- * changed, which during a busy session was thousands of times. A channel with nothing logged now
- * costs one scan per log epoch and a Map lookup after that.
+ * Regrouped in one pass whenever entries were added or removed. A channel whose entries are the
+ * same objects in the same order as before keeps its old array, and the hook's memo is keyed on
+ * that array: so a deletion caught in another channel, or the oldest entry of another channel
+ * being trimmed off a full log, leaves the chat on screen with its merged result. A channel with
+ * nothing logged costs one comparison and a Map lookup per call.
  */
-const MAX_INDEXED_CHANNELS = 300
-function entriesFor(channelId: string, version: number): DeletedMessage[] {
-	const hit = channelIndex.get(channelId)
-	if (hit && hit.version === version) return hit.list
-	const list: DeletedMessage[] = []
-	for (const entry of getCachedLog())
-		if (entry.channelId === channelId) list.push(entry)
-	if (list.length > 1) list.sort((a, b) => sortTime(b) - sortTime(a))
-	if (channelIndex.size >= MAX_INDEXED_CHANNELS) channelIndex.clear()
-	channelIndex.set(channelId, { version, list })
-	pruneRecords()
-	return list
+function syncIndex() {
+	const structure = getLogStructure()
+	if (structure === indexedStructure) return
+	indexedStructure = structure
+	const log = getCachedLog()
+	const next = new Map<string, DeletedMessage[]>()
+	for (const entry of log) {
+		const list = next.get(entry.channelId)
+		if (list) list.push(entry)
+		else next.set(entry.channelId, [entry])
+	}
+	for (const [channelId, list] of next) {
+		if (list.length > 1) list.sort((a, b) => sortTime(b) - sortTime(a))
+		const before = byChannel.get(channelId)
+		if (before && sameEntries(before, list)) next.set(channelId, before)
+	}
+	byChannel = next
+	pruneRecords(log)
+}
+
+function sameEntries(a: DeletedMessage[], b: DeletedMessage[]): boolean {
+	if (a.length !== b.length) return false
+	for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false
+	return true
 }
 
 /**
- * Drop memoized records for entries that have left the log. Only when the whole log was replaced
- * (reload, clear, trim) or the memo has grown large: it is a memory bound, not a correctness one.
+ * Drop memoized records for entries that have left the log. A memory bound, not a correctness
+ * one, so it only runs once the memo holds clearly more than the log could account for.
  */
-let prunedEpoch = -1
-function pruneRecords() {
-	const epoch = getLogEpoch()
-	if (epoch === prunedEpoch && recordCache.size < 3000) return
-	prunedEpoch = epoch
-	if (!recordCache.size && !failedRecords.size) return
-	const live = new Set(getCachedLog().map(e => e.id))
+function pruneRecords(log: DeletedMessage[]) {
+	if (recordCache.size + failedRecords.size <= log.length + 200) return
+	const live = new Set(log.map(e => e.id))
 	for (const id of recordCache.keys()) if (!live.has(id)) recordCache.delete(id)
 	for (const id of failedRecords.keys())
 		if (!live.has(id)) failedRecords.delete(id)
@@ -459,6 +466,7 @@ function installRenderRestore(
 			length: number
 			head: string
 			tail: string
+			entries: DeletedMessage[]
 			version: number
 			clone: any
 		}
@@ -470,6 +478,7 @@ function installRenderRestore(
 			length: number
 			head: string
 			tail: string
+			entries: DeletedMessage[]
 			version: number
 			clone: any
 		},
@@ -533,7 +542,13 @@ function installRenderRestore(
 				// style disabled put them back on screen through the other door.
 				if (getSettings().deleteStyle === 'off') return ret
 
-				const version = getChannelLogVersion(channelId)
+				// First, and before anything else is computed: a channel with nothing logged, which
+				// is nearly every call, is done after one comparison and one Map lookup.
+				syncIndex()
+				const entries = byChannel.get(channelId)
+				if (!entries) return ret
+
+				const version = getChannelContentVersion(channelId)
 				const source: any[] = ret._array
 				const head = edgeId(source, 0)
 				const tail = edgeId(source, source.length - 1)
@@ -544,18 +559,18 @@ function installRenderRestore(
 					cached.length === source.length &&
 					cached.head === head &&
 					cached.tail === tail &&
+					cached.entries === entries &&
 					cached.version === version
 				) {
 					return cached.clone ?? ret
 				}
 
-				const entries = entriesFor(channelId, version)
-				if (!entries.length) return ret
 				const memo = {
 					source,
 					length: source.length,
 					head,
 					tail,
+					entries,
 					version,
 					clone: null as any,
 				}
@@ -663,8 +678,8 @@ function installRenderRestore(
 		cloneCache.clear()
 		recordCache.clear()
 		failedRecords.clear()
-		channelIndex.clear()
-		prunedEpoch = -1
+		byChannel = new Map()
+		indexedStructure = -1
 		try {
 			unpatch()
 		} catch (e) {
@@ -676,7 +691,7 @@ function installRenderRestore(
 export function resetRestoreState() {
 	recordCache.clear()
 	failedRecords.clear()
-	channelIndex.clear()
-	prunedEpoch = -1
+	byChannel = new Map()
+	indexedStructure = -1
 	createMessageRecord = undefined
 }
