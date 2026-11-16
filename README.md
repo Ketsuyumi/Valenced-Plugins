@@ -224,6 +224,10 @@ Makes images, GIFs and videos in chat 30 to 50% smaller (35% by default), whoeve
 changes: tapping still opens the full-size image, and videos and GIFs still play. Uploads and link/GIF-picker previews
 have separate switches.
 
+A list of servers, channels and DMs can either be left at full size ("Don't shrink in the places below") or be the
+only places that are shrunk ("Only shrink in the places below"). Places are added from the server and channel or DM
+you last had open, or by ID.
+
 It works on the descriptor Discord builds for each chat row (`RowManager.generate`): the `width` and `height` of media
 under the row's `message.attachments` and `message.embeds` are scaled by the same factor, on copies, with the URLs left
 alone. The settings page shows whether the row generator was found and how many items were resized, and has a
