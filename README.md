@@ -142,6 +142,26 @@ nicknames become a lookup table once when they change, each hook is a single loo
 function for everyone without a fake nickname, and the hooks are only installed while at least one nickname is saved.
 Nicknames are stored separately from the original plugin, so add them again after switching.
 
+### Staff Tags+ (`dev.ketsuyumi.staff-tags`)
+
+A fork of [Staff Tags](https://github.com/bleelblep/bleel-bazinga-repo) by **bleelblep** (with Fiery and シグマ siguma;
+GPL-3.0, this fork is GPL-3.0 too). Shows OWNER, ADMIN, STAFF, MOD, VC Mod, Chat Mod and WEBHOOK tags in chat, member
+lists and profiles, with the original's per-tag editor (text, colour, gradient, icon).
+
+New in this fork:
+
+- **Compact mode**: just the icon when a tag has one, otherwise a short label (ADM, MOD, VC...).
+- **Show tags in**: separate switches for chat, member list and profiles.
+- **Servers**: turn staff tags off in specific servers, with search.
+- **Your own tags**: give a specific person a tag (text and colour) by user ID. Only you see it; it shows in every
+  server and in DMs.
+
+Faster: the original worked out a member's permissions from all their roles again for every message row. Here each
+person's tag is cached per server and channel and cleared when members, roles, channels, permissions or settings
+change; settings are merged once per change, row colours are converted once per tag, Discord's own tags skip the
+painter, and member/profile rows check the cached tag before walking the rendered tree. The original's changelog popup
+is left out. Settings are separate from the original plugin, so turn the original off.
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.

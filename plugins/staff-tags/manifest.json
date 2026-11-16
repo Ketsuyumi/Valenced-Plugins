@@ -1,0 +1,25 @@
+{
+	"format": 1,
+	"id": "dev.ketsuyumi.staff-tags",
+	"name": "Staff Tags+",
+	"description": "OWNER, ADMIN, STAFF, MOD, VC Mod, Chat Mod and WEBHOOK tags, plus your own tags by user ID, compact mode, per-server and where-to-show switches. A faster fork of bleelblep's Staff Tags. GPL-3.0.",
+	"author": "bleelblep",
+	"contributors": [
+		"Fiery",
+		"シグマ siguma",
+		"ketsuyumi (https://github.com/ketsuyumi \"GitHub\")"
+	],
+	"icon": "ShieldIcon",
+	"version": "1.0.0",
+	"dependencies": {
+		"valenced.api": {
+			"version": ">=1 <2"
+		},
+		"discord": {
+			"version": ">=350.2"
+		}
+	},
+	"dist": {
+		"script": "index.js"
+	}
+}
