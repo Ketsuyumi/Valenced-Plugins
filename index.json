@@ -444,6 +444,35 @@
           }
         }
       }
+    },
+    "dev.ketsuyumi.staff-tags": {
+      "name": "Staff Tags+",
+      "description": "OWNER, ADMIN, STAFF, MOD, VC Mod, Chat Mod and WEBHOOK tags, plus your own tags by user ID, compact mode, per-server and where-to-show switches. A faster fork of bleelblep's Staff Tags. GPL-3.0.",
+      "author": "bleelblep",
+      "contributors": [
+        "Fiery",
+        "シグマ siguma",
+        "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")"
+      ],
+      "icon": "ShieldIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.staff-tags@1.0.0.zip",
+          "sha256": "9f68010e610f969bf077df9719b8e72502ca43ab201d79a9b9501ed640008075",
+          "size": 12337,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": ">=350.2"
+            }
+          }
+        }
+      }
     }
   }
 }
