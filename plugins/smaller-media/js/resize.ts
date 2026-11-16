@@ -25,13 +25,40 @@ export interface ResizeStats {
 	messages: number
 	resized: number
 	samples: string[]
+	/** Field names and values of the first media objects seen, to learn the row data's shape. */
+	shapes: string[]
+	/** The content object's own keys, once. */
+	contentKeys: string
 }
 
 export const newStats = (): ResizeStats => ({
 	messages: 0,
 	resized: 0,
 	samples: [],
+	shapes: [],
+	contentKeys: '',
 })
+
+const MAX_SHAPES = 6
+
+/** One object as "key=value" pairs: primitives shown (strings cut short), the rest by type. */
+export function describe(value: unknown, depth = 0): string {
+	if (value === null) return 'null'
+	if (Array.isArray(value))
+		return `[${value.length}${value.length && depth < 2 ? `: ${describe(value[0], depth + 1)}` : ''}]`
+	if (typeof value === 'string')
+		return JSON.stringify(
+			value.length > 28 ? `${value.slice(0, 28)}...` : value,
+		)
+	if (typeof value !== 'object') return String(value)
+	if (depth >= 2) return '{...}'
+	const parts: string[] = []
+	for (const key of Object.keys(value as object).slice(0, 40))
+		parts.push(
+			`${key}=${describe((value as Record<string, unknown>)[key], depth + 1)}`,
+		)
+	return `{${parts.join(', ')}}`
+}
 
 const MAX_SAMPLES = 12
 const MAX_DEPTH = 5
@@ -128,9 +155,19 @@ export function resizeContent<T>(
 	stats.messages++
 	let copy: Record<string, unknown> | undefined
 	for (const [key, kind] of Object.entries(SECTIONS)) {
-		if (!options[kind]) continue
 		const section = content[key]
 		if (!section || typeof section !== 'object') continue
+		// Record what the first few media objects look like, whatever the switches say.
+		if (
+			stats.shapes.length < MAX_SHAPES &&
+			Array.isArray(section) &&
+			section.length
+		) {
+			if (!stats.contentKeys)
+				stats.contentKeys = Object.keys(content).join(', ')
+			stats.shapes.push(`${key}[0] = ${describe(section[0])}`)
+		}
+		if (!options[kind]) continue
 		const next = resizeNode(section, options, stats, key, 0)
 		if (next !== section) {
 			copy ??= { ...content }

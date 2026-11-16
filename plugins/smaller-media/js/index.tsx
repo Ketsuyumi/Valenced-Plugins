@@ -47,6 +47,8 @@ function debugReport(settings: Settings) {
 		`hook: ${hooked}`,
 		`messages seen: ${stats.messages}, media resized: ${stats.resized}`,
 		...stats.samples,
+		`content keys: ${stats.contentKeys}`,
+		...stats.shapes,
 	].join('\n')
 }
 
