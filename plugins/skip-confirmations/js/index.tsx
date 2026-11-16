@@ -1,12 +1,22 @@
-import { AlertActionCreators } from '@valenced/discord/actions'
+import {
+	ActionSheetActionCreators,
+	AlertActionCreators,
+	ToastActionCreators,
+} from '@valenced/discord/actions'
 import { Design } from '@valenced/discord/design'
-import { getModules } from '@valenced/modules/finders'
+import { getModules, lookupModule } from '@valenced/modules/finders'
 import { withProps } from '@valenced/modules/finders/filters'
 import { instead } from '@valenced/patcher'
 import { ScrollView } from 'react-native'
-import { describe, findConfirm } from './alerts'
+import {
+	describe,
+	describeSheet,
+	findConfirm,
+	isConfirmationSheet,
+	REST_SHEETS,
+} from './alerts'
 import type { PluginApi } from '@valenced/plugins/types'
-import type { SeenAlert } from './alerts'
+import type { Http, SeenAlert } from './alerts'
 
 interface Settings {
 	/** Dialogs seen so far, newest first. */
@@ -88,6 +98,34 @@ export default plugin<{ jsonStorage: Settings }>({
 	start({ cleanup, jsonStorage, logger }) {
 		const settings = () => ({ ...DEFAULTS, ...jsonStorage.cache })
 
+		// Discord's REST helper, found once now (not while a dialog opens).
+		let http: Http | undefined
+		const getHttp = () =>
+			(http ??= lookupModule(
+				withProps('getAPIBaseURL', 'put', 'del'),
+			)[0] as unknown as Http | undefined)
+		getHttp()
+
+		/** Shows an error toast if an action done through the API fails after a skip. */
+		const report = (title: string, result: unknown) => {
+			if (result && typeof (result as Promise<unknown>).then === 'function')
+				(result as Promise<unknown>).catch((e: any) => {
+					logger.warn(`"${title}" failed: ${String(e?.body?.message ?? e)}`)
+					ToastActionCreators.open('skip-confirmations', {
+						text: `${title} failed: ${e?.body?.message ?? 'try again'}`,
+						variant: 'critical',
+					})
+				})
+			return result
+		}
+
+		/** Remembers a dialog (newest first); saving doesn't hold up the dialog. */
+		const remember = (seen: SeenAlert) => {
+			const s = settings()
+			const rest = s.seen.filter(a => a.id !== seen.id)
+			jsonStorage.set({ ...s, seen: [seen, ...rest].slice(0, MAX_SEEN) }, true)
+		}
+
 		/** Elements already handled, so a call passing through two patched objects counts once. */
 		const handled = new WeakSet<object>()
 
@@ -99,22 +137,19 @@ export default plugin<{ jsonStorage: Settings }>({
 
 			let seen: SeenAlert | null = null
 			try {
-				seen = describe(String(key ?? ''), element)
+				seen = describe(String(key ?? ''), element, getHttp)
 			} catch (e) {
 				logger.warn(`Couldn't read an alert: ${String(e)}`)
 			}
 			if (!seen) return original(...args)
 
-			const s = settings()
-			// Remember it (newest first); saving doesn't hold up the dialog.
-			const rest = s.seen.filter(a => a.id !== seen!.id)
-			jsonStorage.set({ ...s, seen: [seen, ...rest].slice(0, MAX_SEEN) }, true)
+			remember(seen)
 
-			if (s.skip.includes(seen.id)) {
-				const confirm = findConfirm(element)
+			if (settings().skip.includes(seen.id)) {
+				const confirm = findConfirm(element, String(key ?? ''), getHttp)
 				if (confirm) {
 					try {
-						confirm.run()
+						report(seen.title, confirm.run())
 						return undefined
 					} catch (e) {
 						logger.warn(
@@ -149,6 +184,31 @@ export default plugin<{ jsonStorage: Settings }>({
 				withProps('openAlert', 'dismissAlert'),
 				module => patch(module),
 				{ max: 5 },
+			),
+		)
+		// Confirmation action sheets (block, ignore): skipping does the action through the API,
+		// then tells Discord it succeeded, as the sheet would. Other sheets pass straight through.
+		cleanup(
+			instead(
+				ActionSheetActionCreators as any,
+				'openLazy',
+				(args: any[], original: any) => {
+					const [, key, props] = args
+					if (!isConfirmationSheet(key)) return original(...args)
+					const seen = describeSheet(key)
+					remember(seen)
+					const known = REST_SHEETS[key]
+					if (!known || !settings().skip.includes(seen.id))
+						return original(...args)
+					const api = getHttp()
+					const sent = api ? known.run(props, api) : undefined
+					if (!sent) return original(...args)
+					Promise.resolve(sent)
+						.then(() => props?.onSuccess?.())
+						.catch(() => {})
+					report(seen.title, sent)
+					return undefined
+				},
 			),
 		)
 		logger.log('Watching confirmation dialogs')

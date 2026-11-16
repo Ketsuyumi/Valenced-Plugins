@@ -17,6 +17,74 @@ export interface SeenAlert {
 
 const MAX_DEPTH = 8
 
+export interface Http {
+	put(request: { url: string; body?: unknown }): Promise<unknown>
+	del(request: { url: string; body?: unknown }): Promise<unknown>
+}
+
+interface RestAction {
+	/** What the skip does, shown in settings. */
+	label: string
+	run(props: any, http: Http): Promise<unknown> | undefined
+}
+
+/**
+ * Alerts with no confirm button in their props: skipping them means doing the action through
+ * Discord's API (keyed by the alert key).
+ */
+export const REST_ALERTS: Record<string, RestAction> = {
+	'guild-action-sheet-leave-server': {
+		label: 'Leave server',
+		run: (p, http) =>
+			p?.guild?.id
+				? http.del({
+						url: `/users/@me/guilds/${p.guild.id}`,
+						body: { lurking: false },
+					})
+				: undefined,
+	},
+	'remove-friend': {
+		label: 'Remove friend',
+		run: (p, http) =>
+			p?.user?.id
+				? http.del({ url: `/users/@me/relationships/${p.user.id}` })
+				: undefined,
+	},
+	'cancel-friend-request': {
+		label: 'Cancel friend request',
+		run: (p, http) =>
+			p?.user?.id
+				? http.del({ url: `/users/@me/relationships/${p.user.id}` })
+				: undefined,
+	},
+}
+
+/** Confirmation action sheets (opened with openLazy), keyed by sheet name. */
+export const REST_SHEETS: Record<string, RestAction & { title: string }> = {
+	BlockConfirmationActionSheet: {
+		title: 'Block user',
+		label: 'Block',
+		run: (p, http) =>
+			p?.userId
+				? http.put({
+						url: `/users/@me/relationships/${p.userId}`,
+						body: { type: 2 },
+					})
+				: undefined,
+	},
+	IgnoreConfirmationActionSheet: {
+		title: 'Ignore user',
+		label: 'Ignore',
+		run: (p, http) =>
+			p?.userId
+				? http.put({ url: `/users/@me/relationships/${p.userId}/ignore` })
+				: undefined,
+	},
+}
+
+export const isConfirmationSheet = (key: unknown): key is string =>
+	typeof key === 'string' && /ConfirmationActionSheet$/.test(key)
+
 /** All text inside a React node (title elements, nested Text, arrays). */
 export function textOf(node: ReactNode, depth = 0): string {
 	if (node == null || typeof node === 'boolean' || depth > MAX_DEPTH) return ''
@@ -52,9 +120,14 @@ function buttonsIn(node: ReactNode, out: Button[] = [], depth = 0): Button[] {
 	return out
 }
 
-/** The confirming action of an alert: an onConfirm prop, or its destructive/primary button. */
+/**
+ * The confirming action of an alert: an onConfirm prop, its destructive/primary button, or a
+ * known API action for alerts without a button.
+ */
 export function findConfirm(
 	element: unknown,
+	key = '',
+	http?: () => Http | undefined,
 ): { text: string; run: () => unknown } | null {
 	if (!isValidElement<any>(element)) return null
 	const props = element.props as any
@@ -70,11 +143,47 @@ export function findConfirm(
 		buttons.find(b => b.variant === 'destructive') ??
 		buttons.find(b => b.variant === 'primary') ??
 		buttons.find(b => b.variant !== 'secondary' && b.variant !== 'tertiary')
-	return confirm ? { text: confirm.text, run: () => confirm.onPress() } : null
+	if (confirm) return { text: confirm.text, run: () => confirm.onPress() }
+	const rest = REST_ALERTS[key]
+	if (rest && http)
+		return {
+			text: rest.label,
+			run: () => {
+				const api = http()
+				const sent = api ? rest.run(props, api) : undefined
+				if (!sent)
+					throw new Error(
+						`Couldn't ${rest.label.toLowerCase()}: missing details`,
+					)
+				return sent
+			},
+		}
+	return null
+}
+
+/** A confirmation action sheet, described like an alert. */
+export function describeSheet(key: string): SeenAlert {
+	const known = REST_SHEETS[key]
+	return {
+		id: `sheet:${key}`,
+		title:
+			known?.title ??
+			key
+				.replace(/ConfirmationActionSheet$/, '')
+				.replace(/([a-z])([A-Z])/g, '$1 $2'),
+		confirmText: known?.label ?? null,
+		key,
+		shape: 'action sheet',
+		lastSeen: Date.now(),
+	}
 }
 
 /** Describes an alert, with an id that stays the same across messages, users and servers. */
-export function describe(key: string, element: unknown): SeenAlert {
+export function describe(
+	key: string,
+	element: unknown,
+	http?: () => Http | undefined,
+): SeenAlert {
 	const props = isValidElement<any>(element) ? (element.props as any) : {}
 	const cleanKey = String(key)
 		.replace(/\d{5,}/g, '#')
@@ -83,7 +192,7 @@ export function describe(key: string, element: unknown): SeenAlert {
 		textOf(props.title).trim() ||
 		textOf(props.content).trim().slice(0, 60) ||
 		cleanKey
-	const confirm = findConfirm(element)
+	const confirm = findConfirm(element, String(key), http)
 	return {
 		id: `${cleanKey}|${title}`,
 		title,

@@ -88,7 +88,12 @@ plugin's settings with its title and confirm button; turn **Skip** on for the on
 presses that button for you instead of showing the dialog. Nothing is skipped until you turn it on, and if a skip
 fails the dialog is shown as usual.
 
-It hooks only Discord's `openAlert`, so it does nothing until a dialog is about to open.
+It also covers dialogs that have no confirm button to press: leaving a server, removing a friend or cancelling a
+friend request, and the Block and Ignore action sheets. For those, skipping does the action through Discord's API
+(an error toast shows if it fails).
+
+It hooks only Discord's `openAlert` and `openLazy` (and only reacts to confirmation sheets there), so it does nothing
+until a dialog is about to open, and its HTTP helper is found once at start rather than while a dialog opens.
 
 ## Building
 
