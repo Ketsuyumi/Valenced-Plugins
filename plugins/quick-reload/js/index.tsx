@@ -8,10 +8,11 @@ import {
 	registerSettingsSection,
 } from '@valenced/discord/modules/settings'
 import { BundleUpdaterManager } from '@valenced/discord/native'
-import { getModules } from '@valenced/modules/finders'
+import { getModules, lookupModule } from '@valenced/modules/finders'
 import {
 	createFilterGenerator,
 	FilterScopes,
+	withProps,
 } from '@valenced/modules/finders/filters'
 import { after } from '@valenced/patcher'
 import { lookupGeneratedIconComponent } from '@valenced/utils/discord'
@@ -27,6 +28,8 @@ interface Settings {
 	settingsRow: boolean
 	/** A button on the bar that opens the Performance Monitor plugin's page. */
 	monitorButton: boolean
+	/** A button on the bar that opens Valenced's Plugins page. */
+	pluginsButton: boolean
 }
 
 type Api = PluginApi<{ jsonStorage: Settings }>
@@ -35,6 +38,7 @@ const DEFAULTS: Settings = {
 	barButton: true,
 	settingsRow: true,
 	monitorButton: false,
+	pluginsButton: false,
 }
 
 const reload = () => BundleUpdaterManager.reload()
@@ -42,20 +46,50 @@ const reload = () => BundleUpdaterManager.reload()
 /** dariussbezy's Performance Monitor. Valenced registers a plugin's settings page as a route named after its id. */
 const MONITOR_ROUTE = 'dariuss.performance-monitor'
 
-function openMonitor() {
+/** Opens a screen of Discord's settings from anywhere. Shows [failure] as a toast if it can't. */
+function openSettingsScreen(route: string, failure: string) {
 	try {
 		const navigation = RootNavigationRef.getRootNavigationRef() as any
 		if (typeof navigation?.navigate !== 'function')
 			throw new Error('no navigation')
-		navigation.navigate('settings', { screen: MONITOR_ROUTE })
+		navigation.navigate('settings', { screen: route })
 	} catch {
 		try {
-			ToastActionCreators.open('quick-reload-monitor', {
-				text: "Couldn't open Performance Monitor. Is the plugin installed and on?",
-			} as never)
+			ToastActionCreators.open('quick-access-open', { text: failure } as never)
 		} catch {}
 	}
 }
+
+const openMonitor = () =>
+	openSettingsScreen(
+		MONITOR_ROUTE,
+		"Couldn't open Performance Monitor. Is the plugin installed and on?",
+	)
+
+/** Valenced's own Plugins page: the settings item's key, and the route it has by Valenced's naming. */
+const PLUGINS_SETTING = 'ValencedPlugins'
+const PLUGINS_ROUTE_FALLBACK = 'Valenced Plugins'
+
+/**
+ * The route of Valenced's Plugins page, read from Discord's settings registry (where Valenced
+ * registers its items) so a renamed route still works; the conventional name otherwise.
+ */
+function pluginsRoute(): string {
+	try {
+		const found = lookupModule(
+			withProps<{ SETTING_RENDERER_CONFIG: Record<string, any> }>(
+				'SETTING_RENDERER_CONFIG',
+			),
+		)?.[0]
+		const config = found?.SETTING_RENDERER_CONFIG
+		const route = config?.[PLUGINS_SETTING]?.screen?.route
+		if (typeof route === 'string' && route) return route
+	} catch {}
+	return PLUGINS_ROUTE_FALLBACK
+}
+
+const openPlugins = () =>
+	openSettingsScreen(pluginsRoute(), "Couldn't open the Plugins page.")
 
 /** One button on the bar: what it shows and does. */
 interface BarButton {
@@ -66,6 +100,7 @@ interface BarButton {
 	enabled: (settings: Settings) => boolean
 }
 
+/** In bar order, left to right; the bell comes after the last one. */
 const BAR_BUTTONS: BarButton[] = [
 	{
 		key: 'quick-reload-monitor',
@@ -80,6 +115,13 @@ const BAR_BUTTONS: BarButton[] = [
 		icons: ['RefreshIcon', 'ArrowsCircularIcon', 'RetryIcon'],
 		onPress: reload,
 		enabled: settings => settings.barButton,
+	},
+	{
+		key: 'quick-access-plugins',
+		label: 'Plugins',
+		icons: ['PuzzlePieceIcon', 'AppsIcon', 'WrenchIcon', 'SettingsIcon'],
+		onPress: openPlugins,
+		enabled: settings => settings.pluginsButton,
 	},
 ]
 
@@ -223,7 +265,7 @@ function SettingsPage({ api }: { api: Api }) {
 			<Stack spacing={24}>
 				<TableRowGroup title="Where to show it">
 					<TableSwitchRow
-						label="Button on your bar"
+						label="Reload button on your bar"
 						subLabel="Next to the bell, on the bar with your name"
 						value={settings.barButton}
 						onValueChange={(barButton: boolean) => set({ barButton })}
@@ -235,6 +277,12 @@ function SettingsPage({ api }: { api: Api }) {
 						onValueChange={(monitorButton: boolean) => set({ monitorButton })}
 					/>
 					<TableSwitchRow
+						label="Plugins button on your bar"
+						subLabel="Opens Valenced's Plugins page"
+						value={settings.pluginsButton}
+						onValueChange={(pluginsButton: boolean) => set({ pluginsButton })}
+					/>
+					<TableSwitchRow
 						label="Row in Discord's settings"
 						subLabel='"Reload Discord", at the top of Settings'
 						value={settings.settingsRow}
@@ -243,6 +291,7 @@ function SettingsPage({ api }: { api: Api }) {
 				</TableRowGroup>
 				<TableRowGroup>
 					<TableRow label="Reload Discord now" arrow onPress={reload} />
+					<TableRow label="Open Plugins" arrow onPress={openPlugins} />
 					<TableRow
 						label="Open Performance Monitor"
 						arrow
@@ -268,7 +317,7 @@ export default plugin<{ jsonStorage: Settings }>({
 			onSettingsModulesLoaded(() => {
 				cleanup(
 					registerSettingsSection('QUICK_RELOAD', {
-						label: 'Quick Reload',
+						label: 'Quick Access',
 						settings: ['QUICK_RELOAD_RELOAD'],
 						index: 0,
 					}),

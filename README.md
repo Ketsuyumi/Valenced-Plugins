@@ -116,14 +116,19 @@ Changed in this fork: the original intercepted every element Discord creates (`b
 four minutes) to find the Messages icon. This one patches `GuildsBarAnimatedItemWrapper` directly, so it only runs
 when that component renders. Switch the original off if you install this one.
 
-### Quick Reload (`dev.ketsuyumi.quick-reload`)
+### Quick Access (`dev.ketsuyumi.quick-reload`)
 
-A reload button like the old clients had. It adds a ⟳ button next to the bell on the bar with your name, and a
-"Reload Discord" row at the top of Discord's settings; each can be turned off in the plugin's settings. Reloading
-restarts Discord's JavaScript (`BundleUpdaterManager.reload()`), which also applies waiting plugin updates.
+Formerly Quick Reload (the ID is unchanged, so existing installs update in place). Shortcut buttons next to the bell
+on the bar with your name, each with its own switch in the plugin's settings:
 
-Optional (off by default): a second bar button that opens the page of dariussbezy's Performance Monitor plugin
-(`dariuss.performance-monitor`), which has to be installed and on.
+- **Reload** (on by default): restarts Discord's JavaScript (`BundleUpdaterManager.reload()`), like the reload in older
+  clients; it also applies waiting plugin updates. There is a "Reload Discord" row at the top of Discord's settings too.
+- **Plugins** (off by default): opens Valenced's Plugins page.
+- **Performance Monitor** (off by default): opens the page of dariussbezy's Performance Monitor plugin
+  (`dariuss.performance-monitor`), which has to be installed and on.
+
+The buttons are copies of the bell's own button, so they match the rest of the bar. Order: Performance Monitor,
+Reload, Plugins, then the bell.
 
 ### No Blackout (`dev.ketsuyumi.no-blackout`)
 
