@@ -126,7 +126,17 @@ const sortTime = (entry: DeletedMessage) =>
 // which the hook asks for by having the store announce a change.
 const BUILD_BUDGET = 12
 const BUILD_SPACING_MS = 8
+// The count alone was not enough: on a real phone a record can cost well over the half
+// millisecond measured earlier, and twelve of them still made a 30 ms call. So a call also stops
+// building once it has spent BUILD_TIME_MS, after at least one record (so it always progresses).
+const BUILD_TIME_MS = 4
+const clock = (): number =>
+	typeof performance !== 'undefined' && typeof performance.now === 'function'
+		? performance.now()
+		: Date.now()
 let buildsLeft = BUILD_BUDGET
+let buildStartedAt = 0
+let builtThisCall = 0
 let lastBudgetedAt = 0
 /** Set when a record was left for a later call. */
 let buildDeferred = false
@@ -134,6 +144,8 @@ let buildDeferred = false
 function startBuildBudget() {
 	buildDeferred = false
 	buildsLeft = Date.now() - lastBudgetedAt < BUILD_SPACING_MS ? 0 : BUILD_BUDGET
+	buildStartedAt = clock()
+	builtThisCall = 0
 }
 
 /** Build once, reuse thereafter. Returns undefined if the record could not be built (yet). */
@@ -142,11 +154,15 @@ function recordFor(entry: DeletedMessage, channelId: string): any {
 	const hit = recordCache.get(entry.id)
 	if (hit && hit.media === media) return hit.record
 	if (failedRecords.get(entry.id) === media) return undefined
-	if (buildsLeft <= 0) {
+	if (
+		buildsLeft <= 0 ||
+		(builtThisCall > 0 && clock() - buildStartedAt > BUILD_TIME_MS)
+	) {
 		buildDeferred = true
 		return undefined
 	}
 	buildsLeft--
+	builtThisCall++
 	lastBudgetedAt = Date.now()
 	try {
 		const record = createMessageRecord!(buildRaw(entry, channelId))
