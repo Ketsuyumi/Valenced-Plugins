@@ -4,10 +4,12 @@ import { Design } from '@valenced/discord/design'
 import { useState } from 'react'
 import { Image, ScrollView } from 'react-native'
 import { openEditor, toast } from './editor'
+import { currentMode } from './names'
 import {
 	avatarUrl,
 	clearNicknames,
 	realName,
+	setFastMode,
 	setNickname,
 	username,
 } from './state'
@@ -85,7 +87,7 @@ export function SettingsPage({
 }: ComponentProps<
 	PluginSettingsComponent<{ jsonStorage: FakeNicknameSettings }>
 >) {
-	const { TableRowGroup, TableRow } = D
+	const { TableRowGroup, TableRow, TableSwitchRow } = D
 	const stored: Partial<FakeNicknameSettings> = jsonStorage.use() ?? {}
 	const known = stored.nicknames ?? {}
 	const entries = Object.entries(known).sort(([, a], [, b]) =>
@@ -130,6 +132,19 @@ export function SettingsPage({
 				</TableRowGroup>
 
 				<AddGroup known={known} />
+
+				<TableRowGroup title="Performance">
+					<TableSwitchRow
+						label="Fast mode"
+						subLabel={
+							stored.fastMode !== false && currentMode() === 'hook'
+								? "Not available: Discord's member data is read-only here, so the slower method is in use."
+								: "Writes nicknames into Discord's member data instead of intercepting every member lookup. Turn off if a nickname flickers back to the real name."
+						}
+						value={stored.fastMode !== false}
+						onValueChange={(value: boolean) => void setFastMode(value)}
+					/>
+				</TableRowGroup>
 
 				{entries.length ? (
 					<TableRowGroup>

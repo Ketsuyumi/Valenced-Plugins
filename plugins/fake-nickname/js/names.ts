@@ -1,6 +1,13 @@
 import { getModuleWithImportedPath } from '@valenced/discord/utils/modules/finders'
 import { instead } from '@valenced/patcher'
-import { fastNickname, nicknameCount, onLookupChange, store } from './state'
+import { refreshDirect, startDirect, stopDirect } from './direct'
+import {
+	fastMode,
+	fastNickname,
+	nicknameCount,
+	onLookupChange,
+	store,
+} from './state'
 
 type Cleanup = (fn: () => void) => void
 type Fn = (...args: any[]) => any
@@ -65,27 +72,57 @@ function patchUserUtils() {
 		for (const method of USER_NAME_METHODS) patch(target, method, byUser)
 }
 
-function install() {
-	if (unpatches) return
+type Mode = 'off' | 'direct' | 'hook'
+let mode: Mode = 'off'
+/** Fast mode could not write to Discord's member records this session: stay on the hook. */
+let directUnusable = false
+
+function install(next: Exclude<Mode, 'off'>) {
 	unpatches = []
 	patch(store('RelationshipStore'), 'getNickname', byFirstArg)
 	const guildMembers = store('GuildMemberStore')
 	patch(guildMembers, 'getNick', bySecondArg)
-	patch(guildMembers, 'getMember', memberHook)
+	// Fast mode writes the nickname into the member records (direct.ts), so getMember, by far
+	// the most-called of these, is not hooked at all. Otherwise it is hooked as before.
+	if (
+		next === 'direct' &&
+		!startDirect(() => {
+			directUnusable = true
+			sync()
+		})
+	) {
+		directUnusable = true
+		next = 'hook'
+	}
+	if (next === 'hook') patch(guildMembers, 'getMember', memberHook)
 	patchUserUtils()
+	mode = next
 }
 
 function uninstall() {
+	stopDirect()
 	const list = unpatches
 	unpatches = undefined
+	mode = 'off'
 	if (list) for (const unpatch of list) unpatch()
 }
 
 /** Hooks exist only while at least one fake nickname is saved. */
 function sync() {
-	if (nicknameCount() > 0) install()
-	else uninstall()
+	const want: Mode =
+		nicknameCount() === 0
+			? 'off'
+			: fastMode() && !directUnusable
+				? 'direct'
+				: 'hook'
+	if (want !== mode) {
+		uninstall()
+		if (want !== 'off') install(want)
+	}
+	if (mode === 'direct') refreshDirect()
 }
+
+export const currentMode = () => mode
 
 export function patchNames(cleanup: Cleanup) {
 	cleanup(

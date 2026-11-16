@@ -142,6 +142,11 @@ nicknames become a lookup table once when they change, each hook is a single loo
 function for everyone without a fake nickname, and the hooks are only installed while at least one nickname is saved.
 Nicknames are stored separately from the original plugin, so add them again after switching.
 
+**Fast mode** (on by default, switch in the plugin's settings): instead of intercepting `getMember`, one of Discord's
+most-called functions, the nickname is written into the member records of the server you are viewing and written again
+when Discord refreshes a member. Real nicknames are put back when a fake one is removed or the plugin stops. If
+Discord's member data is read-only, it falls back to the hook automatically.
+
 ### Staff Tags+ (`dev.ketsuyumi.staff-tags`)
 
 A fork of [Staff Tags](https://github.com/bleelblep/bleel-bazinga-repo) by **bleelblep** (with Fiery and シグマ siguma;

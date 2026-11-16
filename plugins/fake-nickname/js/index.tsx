@@ -9,6 +9,8 @@
  * - The hooks are plain functions created once (no closure per call), and getMember only
  *   copies a member when that user actually has a fake nickname.
  * - The name hooks are only installed while at least one fake nickname is saved.
+ * - Fast mode (direct.ts, on by default): GuildMemberStore.getMember is no longer hooked;
+ *   nicknames are written into the member records of the server being viewed instead.
  */
 import { patchMenu } from './menu'
 import { patchNames } from './names'

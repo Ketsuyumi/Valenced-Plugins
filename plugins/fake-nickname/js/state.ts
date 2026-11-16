@@ -2,9 +2,14 @@ import { Stores } from '@valenced/discord/flux'
 
 export interface FakeNicknameSettings {
 	nicknames: Record<string, string>
+	/**
+	 * Write nicknames into Discord's member data instead of hooking GuildMemberStore.getMember
+	 * (see direct.ts). On unless switched off.
+	 */
+	fastMode?: boolean
 }
 
-export const defaults: FakeNicknameSettings = { nicknames: {} }
+export const defaults: FakeNicknameSettings = { nicknames: {}, fastMode: true }
 
 export const MAX_LENGTH = 32
 
@@ -33,10 +38,35 @@ export function bindStorage(next: Storage | undefined) {
 	syncLookup()
 }
 
+let lastFastMode: boolean | undefined
+
+export const fastMode = () => storage?.cache?.fastMode !== false
+
+/** id -> nickname pairs, for code that needs to walk them. */
+export const nicknameEntries = () => lookup.entries()
+
+export async function setFastMode(value: boolean) {
+	await storage?.set(
+		{ ...defaults, ...(storage.cache ?? {}), fastMode: value },
+		true,
+	)
+	syncLookup()
+	refreshNames()
+}
+
 /** Rebuilds the lookup if the saved nicknames object changed. Cheap when it did not. */
 export function syncLookup() {
 	const source = storage?.cache?.nicknames
-	if (source === lookupSource) return
+	const mode = fastMode()
+	if (source === lookupSource) {
+		// Only the mode changed: the listeners decide how names are applied.
+		if (mode !== lastFastMode) {
+			lastFastMode = mode
+			for (const listener of listeners) listener()
+		}
+		return
+	}
+	lastFastMode = mode
 	lookupSource = source
 	const next = new Map<string, string>()
 	if (source && typeof source === 'object')
