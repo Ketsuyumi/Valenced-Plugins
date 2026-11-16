@@ -1,0 +1,816 @@
+import { Tokens } from '@valenced/discord/common/tokens'
+import { Stores } from '@valenced/discord/flux'
+import { getModuleWithImportedPath } from '@valenced/discord/utils/modules/finders'
+import { instead } from '@valenced/patcher'
+import { lookupGeneratedIconComponent } from '@valenced/utils/discord'
+import { cloneElement } from 'react'
+import { Image, Text, View } from 'react-native'
+import { EMOJI_COLORS } from './colors'
+import { find } from './lookup'
+import { emojiColor } from './png'
+import { settings, update, useSettings } from './store'
+
+/** 디스코드에 들어 있는 아이콘 (못 찾으면 undefined) */
+const icon = (name: string): any => {
+	try {
+		return (
+			(lookupGeneratedIconComponent(name as any) as any) ?? find(name)?.[name]
+		)
+	} catch {
+		return find(name)?.[name]
+	}
+}
+
+/**
+ * 원래 플러그인의 "Redesign" 부분.
+ *  - 채널 아이콘(#) 자리에 채널 이모지를 색 바탕 칸으로 (크기 Medium, Small, Tiny)
+ *  - 채널 이모지는 디스코드가 정한 것(iconEmoji), 직접 바꾼 것이 있으면 그것, 없으면 🌐
+ *  - 음성 채널은 오른쪽에 사람 수/최대 인원 (인원 제한이 있을 때)
+ *  - 채널 이름 옆에 제한된 채널, 연령 제한 채널 표시
+ *  - Medium 일 때 포럼 채널 아래에 열린 글 수
+ */
+
+const S = () => Stores as any
+
+export const ChannelTypes = {
+	TEXT: 0,
+	VOICE: 2,
+	ANNOUNCEMENT: 5,
+	STAGE: 13,
+	FORUM: 15,
+	MEDIA: 16,
+}
+const ICON_TYPES = new Set([0, 2, 5, 13, 15, 16])
+
+export const SIZES = {
+	medium: { box: 42, emoji: 20, radius: 21 },
+	small: { box: 32, emoji: 16, radius: 16 },
+	tiny: { box: 20, emoji: 14, radius: 10 },
+} as const
+
+export const status = {
+	icons: 0,
+	badges: 0,
+	nameIcons: 0,
+	voice: '',
+	error: '',
+	fromDiscord: new Set<string>(),
+}
+
+const typeName = (t: any): string =>
+	typeof t === 'string'
+		? t
+		: (t?.displayName ??
+			t?.name ??
+			t?.type?.displayName ??
+			t?.type?.name ??
+			t?.render?.name ??
+			(t?.$$typeof ? String(t.$$typeof.description ?? '?') : '?'))
+const rootName = (n: any): string =>
+	Array.isArray(n)
+		? `[${n.length}]`
+		: n && typeof n === 'object'
+			? typeName(n.type)
+			: String(n)
+
+export interface ChannelEmoji {
+	name: string
+	id?: string
+}
+
+export function channelEmoji(channel: any): ChannelEmoji {
+	const own = settings().icons?.[channel?.id]
+	if (own) {
+		// 서버 이모지는 <:이름:ID> 로 저장한다
+		const m = /^<a?:([^:]*):(\d+)>$/.exec(own)
+		return m ? { name: m[1], id: m[2] } : { name: own }
+	}
+	const e = channel?.iconEmoji ?? channel?.icon_emoji
+	if (e?.name || e?.id) {
+		status.fromDiscord.add(channel.id)
+		return { name: e.name ?? '', id: e.id ?? undefined }
+	}
+	if (settings().autoEmoji !== false) {
+		const guess = guessEmoji(channel)
+		if (guess) return { name: guess }
+	}
+	return { name: '🌐' }
+}
+
+/** 채널 이름 안의 첫 이모지 */
+// 휴대폰 JS 엔진이 \p{...} 를 모르면 이모지 범위로 대신한다
+const EMOJI_RE: RegExp = (() => {
+	try {
+		return /(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic}|[\u{1F3FB}-\u{1F3FF}])*|[\u{1F1E6}-\u{1F1FF}]{2})/u
+	} catch {}
+	try {
+		return /((?:[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}])(?:\uFE0F|\u200D(?:[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]))*|[\u{1F1E6}-\u{1F1FF}]{2})/u
+	} catch {
+		return /(?!)/
+	}
+})()
+
+/** 이름에 들어 있는 낱말로 고르는 이모지 (디스코드가 정한 이모지가 없는 채널용) */
+const KEYWORDS: Array<[RegExp, string]> = [
+	[/rule|규칙/, '📜'],
+	[/announce|news|update|공지|소식/, '📢'],
+	[/welcome|hello|intro|환영|인사/, '👋'],
+	[/role|역할/, '🏷️'],
+	[/faq|question|help|support|ask|질문|도움/, '❓'],
+	[/general|chat|lounge|talk|main|일반|잡담|채팅/, '💬'],
+	[/off[-_ ]?topic|random|misc/, '🎲'],
+	[/meme|funny|shitpost|밈/, '😂'],
+	[/media|image|pic|photo|art|gallery|사진|그림|짤/, '🖼️'],
+	[/video|clip|영상/, '🎬'],
+	[/music|song|playlist|음악|노래/, '🎵'],
+	[/game|gaming|play|게임/, '🎮'],
+	[/bot|command|cmd|봇|명령/, '🤖'],
+	[/dev|code|coding|program|github|git|개발|코딩/, '💻'],
+	[/plugin|addon|extension|mod|플러그인/, '🧩'],
+	[/theme|design|style|테마|디자인/, '🎨'],
+	[/request|suggest|idea|feedback|요청|건의|제안/, '💡'],
+	[/bug|issue|report|버그|신고/, '🐛'],
+	[/log|audit|기록/, '📋'],
+	[/staff|mod|admin|관리/, '🛡️'],
+	[/event|giveaway|이벤트/, '🎉'],
+	[/partner|파트너/, '🤝'],
+	[/link|resource|repo|자료/, '🔗'],
+	[/stream|live|방송/, '📺'],
+	[/afk|sleep|잠수/, '💤'],
+	[/pet|animal|cat|dog|동물/, '🐾'],
+	[/food|cook|음식/, '🍔'],
+	[/vent|serious/, '🫂'],
+	[/nsfw/, '🔞'],
+]
+
+/** 채널 이름에서 이모지를 뺀 것 (이모지 칸에 이미 보이니까). 남는 것이 없으면 원래 이름 */
+const EMOJI_ALL: RegExp | undefined = (() => {
+	try {
+		return new RegExp(EMOJI_RE.source, 'gu')
+	} catch {}
+})()
+export function cleanName(name: string): string {
+	if (!EMOJI_ALL || !name) return name
+	const out = name
+		.replace(EMOJI_ALL, '')
+		// biome-ignore lint/suspicious/noMisleadingCharacterClass: these are stripped one by one on purpose
+		.replace(/[\uFE0F\u200D\u20E3]/g, '')
+		.replace(/\s{2,}/g, ' ')
+		.trim()
+	return out.trim() ? out : name
+}
+
+export function guessEmoji(channel: any): string | undefined {
+	const name = String(channel?.name ?? '')
+	const m = EMOJI_RE.exec(name)
+	if (m) return m[1]
+	const low = name.toLowerCase()
+	for (const [re, emoji] of KEYWORDS) if (re.test(low)) return emoji
+	if (channel?.type === 2) return '🔊'
+	if (channel?.type === 13) return '🎙️'
+	if (channel?.type === 15 || channel?.type === 16) return '🗂️'
+}
+
+function isDark() {
+	try {
+		const t = S().ThemeStore?.theme
+		return t !== 'light'
+	} catch {
+		return true
+	}
+}
+
+/** #RRGGBB 에 투명도 붙이기 (원래 플러그인처럼 어두운 테마 0.2, 밝은 테마 0.16) */
+function withAlpha(hex: string, a: number) {
+	return (
+		hex +
+		Math.round(a * 255)
+			.toString(16)
+			.padStart(2, '0')
+	)
+}
+
+export function EmojiTile({
+	channel,
+	size,
+	emoji,
+	muted,
+	locked,
+}: {
+	channel?: any
+	size?: keyof typeof SIZES
+	emoji?: ChannelEmoji
+	muted?: boolean
+	locked?: boolean
+}) {
+	// 설정(바꾼 이모지, 크기)이 바뀌면 이 칸만 바로 다시 그린다
+	useSettings()
+	const sz = SIZES[size ?? settings().iconSize] ?? SIZES.medium
+	const e = emoji ?? channelEmoji(channel)
+	// 서버 이모지는 그림에서 색을 골라 한 번 저장해 둔다
+	let base: string | undefined = EMOJI_COLORS[e.name]
+	if (e.id) {
+		base = settings().colors?.[e.id]
+		if (!base)
+			emojiColor(e.id, color =>
+				update({ colors: { ...(settings().colors ?? {}), [e.id!]: color } }),
+			)
+	}
+	const bg = withAlpha(base ?? '#607D8B', isDark() ? 0.2 : 0.16)
+	return (
+		<View
+			style={{
+				width: sz.box,
+				height: sz.box,
+				borderRadius: sz.radius,
+				backgroundColor: bg,
+				alignItems: 'center',
+				justifyContent: 'center',
+				flexShrink: 0,
+				marginRight: 10,
+				opacity: muted ? 0.3 : 1,
+			}}
+		>
+			{e.id ? (
+				<Image
+					source={{
+						uri: `https://cdn.discordapp.com/emojis/${e.id}.png?size=64`,
+					}}
+					style={{ width: sz.emoji, height: sz.emoji }}
+					resizeMode="contain"
+				/>
+			) : (
+				<Text
+					allowFontScaling={false}
+					style={{
+						fontSize: sz.emoji,
+						lineHeight: Math.round(sz.emoji * 1.25),
+						textAlign: 'center',
+					}}
+				>
+					{e.name}
+				</Text>
+			)}
+			{locked ? <LockBadge box={sz.box} /> : null}
+		</View>
+	)
+}
+
+/** 제한된 채널: 이모지 칸 오른쪽 아래의 작은 자물쇠 */
+function LockBadge({ box }: { box: number }) {
+	const Lock = icon('LockIcon')
+	const d = Math.max(14, Math.round(box * 0.42))
+	return (
+		<View
+			style={{
+				position: 'absolute',
+				right: -2,
+				bottom: -2,
+				width: d,
+				height: d,
+				borderRadius: d / 2,
+				backgroundColor: token(
+					[
+						'BACKGROUND_BASE_LOWEST',
+						'BACKGROUND_TERTIARY',
+						'BACKGROUND_PRIMARY',
+					],
+					'#111214',
+				),
+				alignItems: 'center',
+				justifyContent: 'center',
+			}}
+		>
+			{Lock ? <Lock size="xxs" color={mutedColor()} /> : null}
+		</View>
+	)
+}
+
+/** @everyone 이 채널을 못 보거나(음성은 못 들어가거나) 막혀 있으면 "제한된 채널" */
+export function isLimited(channel: any): boolean {
+	try {
+		const ow = channel?.permissionOverwrites?.[channel.guild_id]
+		if (!ow?.deny) return false
+		const deny = BigInt(String(ow.deny))
+		const VIEW = BigInt(1024)
+		const CONNECT = BigInt(1048576)
+		const zero = BigInt(0)
+		if ((deny & VIEW) !== zero) return true
+		if (
+			(channel.type === ChannelTypes.VOICE ||
+				channel.type === ChannelTypes.STAGE) &&
+			(deny & CONNECT) !== zero
+		)
+			return true
+	} catch {}
+	return false
+}
+
+function isNSFW(channel: any) {
+	try {
+		return typeof channel?.isNSFW === 'function'
+			? !!channel.isNSFW()
+			: !!channel?.nsfw
+	} catch {
+		return false
+	}
+}
+
+function mutedColor() {
+	try {
+		const t: any = Tokens?.default
+		const theme = S().ThemeStore?.theme ?? 'dark'
+		for (const n of ['INTERACTIVE_MUTED', 'TEXT_MUTED', 'CHANNEL_ICON']) {
+			const key = t?.colors?.[n]
+			if (!key) continue
+			const c = t.internal.resolveSemanticColor(theme, key)
+			if (typeof c === 'string' && c) return c
+		}
+	} catch {}
+	return '#80848e'
+}
+
+function SmallIcon({ name }: { name: string }) {
+	const Icon = icon(name)
+	if (!Icon) return null
+	return (
+		<View style={{ marginLeft: 3, flexShrink: 0 }}>
+			<Icon size="xs" color={mutedColor()} />
+		</View>
+	)
+}
+
+function NameIcons({ channel }: { channel: any; locked?: boolean }) {
+	// 자물쇠는 이모지 칸에 붙인다
+	const limited = false
+	const nsfw = isNSFW(channel)
+	if (!limited && !nsfw) return null
+	return (
+		<>
+			{limited ? <SmallIcon name="LockIcon" /> : null}
+			{nsfw ? <SmallIcon name="WarningIcon" /> : null}
+		</>
+	)
+}
+
+function voiceCount(channel: any): number {
+	try {
+		const sorted =
+			S().SortedVoiceStateStore?.getVoiceStatesForChannel?.(channel)
+		if (Array.isArray(sorted)) return sorted.length
+	} catch {}
+	try {
+		const states = S().VoiceStateStore?.getVoiceStatesForChannel?.(channel.id)
+		if (states) return Object.keys(states).length
+	} catch {}
+	return 0
+}
+
+function VoiceBadge({ channel }: { channel: any }) {
+	const limit = channel?.userLimit ?? channel?.user_limit ?? 0
+	const hasLimit = limit > 0 && limit !== 10000
+	const pad = (n: number) => String(n).padStart(2, '0')
+	const color = textColor()
+	const stage = channel?.type === ChannelTypes.STAGE
+	const locked = isLimited(channel)
+	const iconName = stage ? 'StageIcon' : 'VoiceNormalIcon'
+	const Icon = icon(iconName)
+	return (
+		<View
+			style={{
+				flexDirection: 'row',
+				alignItems: 'center',
+				gap: 5,
+				marginLeft: 6,
+				paddingHorizontal: 8,
+				paddingVertical: 5,
+				borderRadius: 100,
+				backgroundColor: badgeColor(),
+				flexShrink: 0,
+			}}
+		>
+			{Icon ? <Icon size="xs" color={color} /> : null}
+			{hasLimit ? (
+				<Text
+					style={{
+						color,
+						fontSize: 12,
+						fontWeight: '500',
+						fontFamily: 'monospace',
+					}}
+				>{`${pad(voiceCount(channel))}/${pad(limit)}`}</Text>
+			) : null}
+		</View>
+	)
+}
+
+function token(names: string[], fallback: string) {
+	try {
+		const t: any = (Tokens as any).default
+		const theme = S().ThemeStore?.theme ?? 'dark'
+		for (const n of names) {
+			const key = t?.colors?.[n]
+			if (!key) continue
+			const c = t.internal.resolveSemanticColor(theme, key)
+			if (typeof c === 'string' && c) return c
+		}
+	} catch {}
+	return fallback
+}
+const textColor = () => token(['TEXT_DEFAULT', 'TEXT_NORMAL'], '#dbdee1')
+const badgeColor = () =>
+	token(
+		[
+			'BACKGROUND_SECONDARY_ALT',
+			'BACKGROUND_MOD_SUBTLE',
+			'BACKGROUND_TERTIARY',
+		],
+		'#232428',
+	)
+
+const NAME_MARK = '__bclName'
+
+/** 디스코드가 음성 채널 오른쪽에 넣는 자물쇠 (자물쇠는 이모지 칸에 붙이므로 뺀다) */
+function dropLocks(node: any, depth = 0): any {
+	if (!node || typeof node !== 'object' || depth > 8) return node
+	if (Array.isArray(node)) return node.map(n => dropLocks(n, depth + 1))
+	const p = node.props
+	if (!p) return node
+	const keys = Object.keys(p)
+	if ('bypassLimit' in p || (keys.length <= 2 && 'locked' in p)) return null
+	if (p.children == null || typeof p.children !== 'object') return node
+	return cloneElement(
+		node,
+		undefined,
+		...[].concat(dropLocks(p.children, depth + 1)),
+	)
+}
+
+/** 이 노드 안에 채널 이름 글이 있는지 */
+/** 이름 비교용: 이모지, 하이픈, 밑줄, 공백 차이를 없앤다 */
+function normName(s: string) {
+	let t = String(s)
+	try {
+		if (EMOJI_ALL) t = t.replace(EMOJI_ALL, '')
+	} catch {}
+	return (
+		t
+			// biome-ignore lint/suspicious/noMisleadingCharacterClass: these are stripped one by one on purpose
+			.replace(/[\uFE0F\u200D\u20E3]/g, '')
+			.replace(/[-_\s]+/g, ' ')
+			.trim()
+			.toLowerCase()
+	)
+}
+
+/**
+ * 이 글이 채널 이름인지. 새 디스코드는 이름의 "-" 를 띄어쓰기로 바꿔 보여 주고(help-support-here → help support here),
+ * 이름 속 이모지를 따로 그리기도 해서, 글자가 똑같지 않아도 같은 이름으로 본다. 맞으면 보이는 글을 돌려준다
+ */
+function nameText(c: any, name: string): string | undefined {
+	if (c === name) return name
+	let text: string | undefined
+	if (typeof c === 'string') text = c
+	else if (
+		Array.isArray(c) &&
+		c.length &&
+		c.length <= 3 &&
+		c.some(x => typeof x === 'string')
+	)
+		text = c.filter(x => typeof x === 'string').join('')
+	if (text == null) return
+	const a = normName(text)
+	return a && a === normName(name) ? text : undefined
+}
+
+function hasName(node: any, name: string, depth = 0): boolean {
+	if (!node || typeof node !== 'object' || depth > 10) return false
+	if (Array.isArray(node)) return node.some(n => hasName(n, name, depth + 1))
+	const c = node.props?.children
+	if (nameText(c, name) != null || node.props?.[NAME_MARK]) return true
+	return c != null && typeof c === 'object' && hasName(c, name, depth + 1)
+}
+
+/**
+ * 채널 줄 컴포넌트가 그린 것을 고친다.
+ * 채널 이름 글이 들어 있는 칸(이름 칸) 바로 앞이 디스코드 채널 아이콘이라, 그것을 이모지 칸으로 바꾸고
+ * 같은 가로 줄 끝에 음성 인원 칸을, 채널 이름 뒤에 제한, 연령 제한 아이콘을 단다.
+ */
+export function redesignTree(
+	out: any,
+	channel: any,
+	muted?: boolean,
+	wrap?: (el: any) => any,
+): any {
+	const s = settings()
+	if (!s.redesign || !channel || !ICON_TYPES.has(channel.type)) return out
+	const name = channel.name
+	if (typeof name !== 'string' || !name) return out
+	const voice =
+		channel.type === ChannelTypes.VOICE || channel.type === ChannelTypes.STAGE
+	let iconDone = false
+	let nameDone = false
+
+	const walk = (node: any, depth: number): any => {
+		if (!node || typeof node !== 'object' || depth > 14) return node
+		if (Array.isArray(node)) {
+			// 안쪽부터 고친다 (가장 안쪽의 "아이콘, 이름 칸" 줄을 찾도록)
+			let changed = false
+			let list = node.map(n => {
+				const r = walk(n, depth + 1)
+				if (r !== n) changed = true
+				return r
+			})
+			// 이름 칸 바로 앞 칸(아이콘)을 바꾼다. 이름 칸이 맨 앞이면 이 줄이 아니다
+			if (!iconDone) {
+				const i = list.findIndex(n => hasName(n, name))
+				if (
+					i > 0 &&
+					list[i - 1] &&
+					typeof list[i - 1] === 'object' &&
+					!hasName(list[i - 1], name)
+				) {
+					iconDone = true
+					changed = true
+					status.icons++
+					list = [...list]
+					list[i - 1] = (
+						<EmojiTile
+							key="bcl-icon"
+							channel={channel}
+							muted={muted}
+							locked={isLimited(channel)}
+						/>
+					)
+					if (voice) {
+						status.badges++
+						list.push(<VoiceBadge key="bcl-voice-badge" channel={channel} />)
+					}
+				}
+			}
+			return changed ? list : node
+		}
+		const props = node.props
+		if (!props) return node
+		// 음성 채널 줄(BaseChannelItem)은 아이콘과 이름을 icon, name 으로 받는다
+		if (
+			!iconDone &&
+			props.icon &&
+			typeof props.icon === 'object' &&
+			props.name &&
+			typeof props.name === 'object'
+		) {
+			iconDone = true
+			status.icons++
+			const patch: any = {
+				icon: (
+					<EmojiTile
+						channel={channel}
+						muted={muted}
+						locked={isLimited(channel)}
+					/>
+				),
+			}
+			// 음성 채널 이름은 name 에 든 BaseChannelName({ name }) 이 그린다
+			if (s.stripNameEmoji && typeof props.name?.props?.name === 'string') {
+				const clean = cleanName(props.name.props.name)
+				if (clean !== props.name.props.name)
+					patch.name = cloneElement(props.name, { name: clean })
+			}
+			if (voice) {
+				status.badges++
+				// 새 View 로 감싸면 디스코드가 이 칸 폭을 넓게 재서 아래 사람 목록이 좁아진다. 원래 칸 안에 나란히 넣는다
+				patch.channelInfo = [
+					dropLocks(props.channelInfo) ?? null,
+					<VoiceBadge key="bcl-voice-badge" channel={channel} />,
+				]
+			}
+			if (isNSFW(channel)) {
+				status.nameIcons++
+				patch.name = (
+					<View
+						style={{
+							flexDirection: 'row',
+							alignItems: 'center',
+							minWidth: 0,
+							flexShrink: 1,
+						}}
+					>
+						<View style={{ flexShrink: 1, minWidth: 0 }}>{props.name}</View>
+						<NameIcons channel={channel} />
+					</View>
+				)
+			}
+			return cloneElement(node, patch)
+		}
+		const shown =
+			typeof props.children === 'object' || typeof props.children === 'string'
+				? nameText(props.children, name)
+				: undefined
+		if (!nameDone && shown != null) {
+			nameDone = true
+			const nsfw = isNSFW(channel)
+			// 설정: 채널 이름 속 이모지 빼기
+			if (s.stripNameEmoji) {
+				const clean = cleanName(shown)
+				if (clean !== shown || Array.isArray(props.children))
+					node = cloneElement(node, { [NAME_MARK]: true }, clean)
+			}
+			if (!nsfw) return node
+			status.nameIcons++
+			// 이름 글과 디스코드 아이콘을 가로로 놓는다.
+			// 원래 이름 글은 flex: 1 이라 그대로 두면 폭이 0 이 되어서, 글 길이만큼만 차지하게 바꾼다
+			return (
+				<View
+					key={node.key ?? 'bcl-name'}
+					{...{ [NAME_MARK]: true }}
+					style={{
+						flexDirection: 'row',
+						alignItems: 'center',
+						alignSelf: 'stretch',
+						minWidth: 0,
+					}}
+				>
+					{cloneElement(node, {
+						experimental_useNativeText: false,
+						style: [
+							props.style,
+							{ flex: 0, flexGrow: 0, flexShrink: 1, flexBasis: 'auto' },
+						],
+					})}
+					<NameIcons channel={channel} />
+				</View>
+			)
+		}
+		const c = props.children
+		if (c == null || typeof c !== 'object') return node
+		// 자식이 하나일 때도 배열처럼 다뤄 아이콘 자리를 찾는다
+		const kids = walk(Array.isArray(c) ? c : [c], depth + 1)
+		if (
+			kids === c ||
+			(!Array.isArray(c) &&
+				Array.isArray(kids) &&
+				kids.length === 1 &&
+				kids[0] === c)
+		)
+			return node
+		return cloneElement(
+			node,
+			undefined,
+			...(Array.isArray(kids) ? kids : [kids]),
+		)
+	}
+	/**
+	 * 아이콘과 이름을 못 찾았으면 (음성 채널처럼) 안쪽 컴포넌트가 그리는 것이라,
+	 * 같은 채널을 받는 안쪽 컴포넌트를 찾아 그것도 감싸서 거기서 다시 고친다
+	 */
+	const deeper = (node: any, depth: number): any => {
+		if (!node || typeof node !== 'object' || depth > 14) return node
+		if (Array.isArray(node)) {
+			let changed = false
+			const list = node.map(n => {
+				const r = deeper(n, depth + 1)
+				if (r !== n) changed = true
+				return r
+			})
+			return changed ? list : node
+		}
+		const props = node.props
+		if (!props) return node
+		if (
+			!iconDone &&
+			typeof node.type !== 'string' &&
+			node.type &&
+			props.channel?.id === channel.id
+		) {
+			const w = wrap?.(node)
+			trace(
+				`inner ${typeName(node.type)}${w && w !== node ? '' : ' (cannot wrap)'}`,
+			)
+			if (w && w !== node) {
+				iconDone = true
+				return w
+			}
+		}
+		const c = props.children
+		if (c == null || typeof c !== 'object') return node
+		const kids = deeper(c, depth + 1)
+		return kids === c
+			? node
+			: cloneElement(node, undefined, ...(Array.isArray(kids) ? kids : [kids]))
+	}
+	const trace = voice
+		? (msg: string) => (status.voice = (status.voice + ' ' + msg).slice(-160))
+		: () => {}
+	try {
+		trace(`root ${rootName(out)}`)
+		const r = walk(out, 0)
+		if (iconDone) {
+			trace('icon ok')
+			return r
+		}
+		if (!wrap) return r
+		const d = deeper(r, 0)
+		trace(iconDone ? 'wrapped inner' : 'no inner')
+		return d
+	} catch (e: any) {
+		status.error = String(e?.message ?? e)
+		trace(`error ${status.error}`)
+		return out
+	}
+}
+
+/** 이모지 칸이 들어가도록 줄 높이를 늘린다 (원래 플러그인처럼) */
+export function extraHeight(channel: any, base: number): number {
+	const s = settings()
+	if (!s.redesign || !channel || !ICON_TYPES.has(channel.type)) return base
+	const sz = SIZES[s.iconSize] ?? SIZES.medium
+	// 줄 안쪽 위아래 여백 8 + 바깥 여백
+	return Math.max(base, sz.box + 16 + 4)
+}
+
+export function activePosts(channel: any): number {
+	try {
+		const t = S().ActiveThreadsStore?.getThreadsForParent?.(
+			channel.guild_id,
+			channel.id,
+		)
+		return t ? Object.keys(t).length : 0
+	} catch {
+		return 0
+	}
+}
+
+/**
+ * 음성 채널 줄은 BaseChannelItem 이 icon, name, channelInfo 를 받아 그린다.
+ * 줄 컴포넌트들을 감싸면 안에 든 사람 목록 폭이 좁아져서, BaseChannelItem 자체에서 받는 값만 바꾼다.
+ * 채널은 icon(ChannelIcon) 이 받는 channel 로 안다.
+ */
+export function patchBaseChannelItem(cleanup: (...f: any[]) => void) {
+	cleanup(
+		getModuleWithImportedPath(
+			'modules/guild_sidebar/native/BaseChannelItem.tsx',
+			(mod: any) => {
+				if (typeof mod?.default !== 'function') return
+				cleanup(
+					instead(
+						mod,
+						'default',
+						function (this: unknown, args: any[], orig: (...a: any[]) => any) {
+							const p = args[0]
+							const channel = p?.icon?.props?.channel
+							const s = settings()
+							if (
+								!s.redesign ||
+								!channel ||
+								!(
+									channel.type === ChannelTypes.VOICE ||
+									channel.type === ChannelTypes.STAGE
+								)
+							)
+								return orig.apply(this, args)
+							try {
+								const next: any = {
+									...p,
+									icon: (
+										<EmojiTile
+											channel={channel}
+											muted={p.mode === 'muted' || p.icon?.props?.muted}
+											locked={isLimited(channel)}
+										/>
+									),
+								}
+								status.icons++
+								status.badges++
+								next.channelInfo = [
+									dropLocks(p.channelInfo) ?? null,
+									<VoiceBadge key="bcl-voice-badge" channel={channel} />,
+								]
+								// 들어온 사람 목록은 왼쪽으로 들여써져 있어서(36), 줄 왼쪽 끝부터 쓰게 당긴다
+								const kids = p.children
+								const hasKids = Array.isArray(kids)
+									? kids.some((k: any) => k != null && k !== false)
+									: kids != null && kids !== false
+								if (hasKids)
+									next.children = (
+										<View style={{ marginLeft: -36 }}>{kids}</View>
+									)
+								if (
+									s.stripNameEmoji &&
+									typeof p.name?.props?.name === 'string'
+								) {
+									const clean = cleanName(p.name.props.name)
+									if (clean !== p.name.props.name)
+										next.name = cloneElement(p.name, { name: clean })
+								}
+								return orig.apply(this, [next, ...args.slice(1)])
+							} catch {
+								return orig.apply(this, args)
+							}
+						},
+					),
+				)
+			},
+		) as any,
+	)
+}

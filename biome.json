@@ -24,7 +24,8 @@
 			"**/*.ts",
 			"**/*.tsx",
 			"**/*.jsx",
-			"**/*.mjs"
+			"**/*.mjs",
+			"!**/pako.ts"
 		],
 		"ignoreUnknown": true
 	},

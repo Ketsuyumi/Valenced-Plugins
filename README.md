@@ -182,6 +182,24 @@ It has its own ID, so its log is separate from the original's. To move a log ove
 encryption > set a recovery password > Export bundle; then in Ghost Log+, Backup & encryption > Import bundle. Turn the
 original off afterwards: two message loggers at once fight over the same messages.
 
+### Better Channel List+ (`dev.ketsuyumi.better-channel-list`)
+
+A fork of [Better Channel List](https://github.com/Yumistra/Freestyle-Valenced) by **Yumistra** (GPL-3.0; this fork is
+GPL-3.0 too). Shows the last message under each channel and gives channels emoji icons, with the original's settings
+and per-channel emoji picker.
+
+New in this fork:
+
+- **Message age**: how long ago the last message was sent (5m, 3h, 2d) after the author's name.
+- **Only unread channels**: channels you've read show no last message.
+- **Skip muted channels**: no last message under channels you've muted.
+
+Faster: the original rebuilt each channel's preview (text clean-up, name style, role colours, and searches through
+Discord's modules) every time a row's height was measured, again when it was drawn and a third time inside the row.
+Previews are now built once per message and cached per channel, module lookups are remembered, settings are merged once
+per change, and the settings page no longer re-renders every second. Settings are separate from the original, so turn
+the original off and re-pick any custom channel emojis.
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.
