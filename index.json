@@ -503,12 +503,12 @@
       }
     },
     "dev.ketsuyumi.quick-reload": {
-      "name": "Quick Reload",
-      "description": "A reload button like the old clients: next to the bell on the bar with your name, and as \"Reload Discord\" in Discord's settings. Optional bar button that opens Performance Monitor.",
+      "name": "Quick Access",
+      "description": "Shortcut buttons next to the bell on the bar with your name: reload Discord, open Plugins, open Performance Monitor. Each has its own switch. Also a \"Reload Discord\" row in Discord's settings. Formerly Quick Reload.",
       "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
       "icon": "RefreshIcon",
       "channels": {
-        "latest": "1.1.0"
+        "latest": "1.2.0"
       },
       "versions": {
         "1.0.0": {
@@ -541,6 +541,19 @@
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.1.0.zip",
           "sha256": "940a1deb38e6996450da398d403e47c31a62e9870b103a48e06ee184559c2d21",
           "size": 2780,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.2.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.2.0.zip",
+          "sha256": "c095dcdcbfce95d900a8b338772a426584e56083f54c824a63827dda2a740f3c",
+          "size": 3026,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
