@@ -107,6 +107,15 @@ dialog was opening, which made Discord hitch for up to ~100 ms. Here the transla
 title is resolved in a warm-up shortly after start, template patterns are compiled once, and the HTTP helper is
 fetched up front. Switch the original off if you install this one.
 
+### Read All Servers+ (`dev.ketsuyumi.read-all`)
+
+A fork of [Read All Servers](https://github.com/aeongdesu/slimplugins) by **sapphire** (GPL-3.0; this fork is GPL-3.0
+too). Long press the Messages icon at the top of the server list to mark every unread server as read.
+
+Changed in this fork: the original intercepted every element Discord creates (`before jsx`/`jsxs`, ~240,000 calls in
+four minutes) to find the Messages icon. This one patches `GuildsBarAnimatedItemWrapper` directly, so it only runs
+when that component renders. Switch the original off if you install this one.
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.

@@ -1,0 +1,21 @@
+{
+	"format": 1,
+	"id": "dev.ketsuyumi.read-all",
+	"name": "Read All Servers+",
+	"description": "Long press the Messages icon to mark every server as read. A lighter fork of sapphire's Read All Servers that doesn't intercept every element Discord draws. GPL-3.0.",
+	"icon": "ChatCheckIcon",
+	"author": "sapphire <757982547861962752>",
+	"contributors": ["ketsuyumi (https://github.com/ketsuyumi \"GitHub\")"],
+	"version": "1.0.0",
+	"dependencies": {
+		"valenced.api": {
+			"version": ">=1 <2"
+		},
+		"discord": {
+			"version": "*"
+		}
+	},
+	"dist": {
+		"script": "index.js"
+	}
+}
