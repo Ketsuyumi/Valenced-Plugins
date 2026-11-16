@@ -1,5 +1,7 @@
 import { getAssetIdByName } from '@valenced/assets'
+import { ToastActionCreators } from '@valenced/discord/actions'
 import { Design } from '@valenced/discord/design'
+import { RootNavigationRef } from '@valenced/discord/modules/main_tabs_v2'
 import {
 	onSettingsModulesLoaded,
 	registerSettingsItem,
@@ -23,13 +25,63 @@ interface Settings {
 	barButton: boolean
 	/** A "Reload Discord" row in Discord's settings. */
 	settingsRow: boolean
+	/** A button on the bar that opens the Performance Monitor plugin's page. */
+	monitorButton: boolean
 }
 
 type Api = PluginApi<{ jsonStorage: Settings }>
 
-const DEFAULTS: Settings = { barButton: true, settingsRow: true }
+const DEFAULTS: Settings = {
+	barButton: true,
+	settingsRow: true,
+	monitorButton: false,
+}
 
 const reload = () => BundleUpdaterManager.reload()
+
+/** dariussbezy's Performance Monitor. Valenced registers a plugin's settings page as a route named after its id. */
+const MONITOR_ROUTE = 'dariuss.performance-monitor'
+
+function openMonitor() {
+	try {
+		const navigation = RootNavigationRef.getRootNavigationRef() as any
+		if (typeof navigation?.navigate !== 'function')
+			throw new Error('no navigation')
+		navigation.navigate('settings', { screen: MONITOR_ROUTE })
+	} catch {
+		try {
+			ToastActionCreators.open('quick-reload-monitor', {
+				text: "Couldn't open Performance Monitor. Is the plugin installed and on?",
+			} as never)
+		} catch {}
+	}
+}
+
+/** One button on the bar: what it shows and does. */
+interface BarButton {
+	key: string
+	label: string
+	icons: string[]
+	onPress: () => void
+	enabled: (settings: Settings) => boolean
+}
+
+const BAR_BUTTONS: BarButton[] = [
+	{
+		key: 'quick-reload-monitor',
+		label: 'Performance Monitor',
+		icons: ['AnalyticsIcon', 'ChartIcon', 'StatsIcon', 'PollsIcon'],
+		onPress: openMonitor,
+		enabled: settings => settings.monitorButton,
+	},
+	{
+		key: 'quick-reload',
+		label: 'Reload Discord',
+		icons: ['RefreshIcon', 'ArrowsCircularIcon', 'RetryIcon'],
+		onPress: reload,
+		enabled: settings => settings.barButton,
+	},
+]
 
 /** Name of a component: plain, memo, forwardRef, or memo(forwardRef(...)). */
 const nameOf = (value: unknown, depth = 0): string => {
@@ -66,27 +118,31 @@ const withComponentName = createFilterGenerator<[name: string]>(
 	FilterScopes.Initialized,
 )
 
-let refreshIcon: number | undefined | null = null
-function iconId() {
-	if (refreshIcon === null)
-		refreshIcon = ['RefreshIcon', 'ArrowsCircularIcon', 'RetryIcon']
-			.map(name => getAssetIdByName(name))
-			.find((id): id is number => typeof id === 'number')
-	return refreshIcon
+/** Asset id of the first icon name that exists, looked up once per button. */
+const iconIds = new Map<string, number | undefined>()
+function iconId(button: BarButton) {
+	if (!iconIds.has(button.key))
+		iconIds.set(
+			button.key,
+			button.icons
+				.map(name => getAssetIdByName(name))
+				.find((id): id is number => typeof id === 'number'),
+		)
+	return iconIds.get(button.key)
 }
 
 /** Fallback when the bell's own button can't be copied: small, no outline. */
-function ReloadButton() {
+function FallbackButton({ button }: { button: BarButton }) {
 	const { IconButton } = Design
-	const icon = iconId()
+	const icon = iconId(button)
 	if (icon === undefined) return null
 	return (
 		<IconButton
 			icon={icon}
 			variant="tertiary"
 			size="sm"
-			accessibilityLabel="Reload Discord"
-			onPress={reload}
+			accessibilityLabel={button.label}
+			onPress={button.onPress}
 		/>
 	)
 }
@@ -110,32 +166,50 @@ function pathToPressable(node: unknown, depth = 0): ReactElement<any>[] | null {
  * size and style as the bar's other buttons. Siblings along the way (like the unread badge) are
  * dropped. Null if the bell doesn't have the expected shape.
  */
-function copyOfBell(rendered: unknown): ReactElement | null {
+function copyOfBell(rendered: unknown, spec: BarButton): ReactElement | null {
 	const path = pathToPressable(rendered)
 	if (!path) return null
 	const button = path[path.length - 1]
 	const props = button.props as any
-	const icon = iconId()
+	const icon = iconId(spec)
 
 	let swapped: Record<string, unknown> | null = null
 	if (typeof props.icon === 'number' && icon !== undefined) swapped = { icon }
 	else if (props.IconComponent) {
-		const Refresh = lookupGeneratedIconComponent('RefreshIcon')
-		if (Refresh) swapped = { IconComponent: Refresh }
+		const Icon = spec.icons
+			.map(name => lookupGeneratedIconComponent(name as never))
+			.find(Boolean)
+		if (Icon) swapped = { IconComponent: Icon }
 	} else if (props.source !== undefined && icon !== undefined)
 		swapped = { source: icon }
 	if (!swapped) return null
 
 	let copy: ReactElement = cloneElement(button, {
 		...swapped,
-		onPress: reload,
-		accessibilityLabel: 'Reload Discord',
+		onPress: spec.onPress,
+		accessibilityLabel: spec.label,
 		ref: null,
 	} as any)
 	// Rebuild the containers above it, keeping only the path to the button.
 	for (let i = path.length - 2; i >= 0; i--)
 		copy = cloneElement(path[i], { ref: null } as any, copy)
-	return cloneElement(copy, { key: 'quick-reload' })
+	return cloneElement(copy, { key: spec.key })
+}
+
+/** The bell with this plugin's enabled buttons in front of it. */
+function withBarButtons(rendered: unknown, settings: Settings) {
+	const buttons = BAR_BUTTONS.filter(button => button.enabled(settings))
+	if (!buttons.length) return rendered
+	return createElement(
+		Fragment,
+		null,
+		...buttons.map(
+			button =>
+				copyOfBell(rendered, button) ??
+				createElement(FallbackButton, { key: button.key, button }),
+		),
+		rendered as any,
+	)
 }
 
 function SettingsPage({ api }: { api: Api }) {
@@ -155,6 +229,12 @@ function SettingsPage({ api }: { api: Api }) {
 						onValueChange={(barButton: boolean) => set({ barButton })}
 					/>
 					<TableSwitchRow
+						label="Performance Monitor button on your bar"
+						subLabel="Opens the Performance Monitor plugin's page. Needs that plugin installed and on."
+						value={settings.monitorButton}
+						onValueChange={(monitorButton: boolean) => set({ monitorButton })}
+					/>
+					<TableSwitchRow
 						label="Row in Discord's settings"
 						subLabel='"Reload Discord", at the top of Settings'
 						value={settings.settingsRow}
@@ -163,6 +243,11 @@ function SettingsPage({ api }: { api: Api }) {
 				</TableRowGroup>
 				<TableRowGroup>
 					<TableRow label="Reload Discord now" arrow onPress={reload} />
+					<TableRow
+						label="Open Performance Monitor"
+						arrow
+						onPress={openMonitor}
+					/>
 				</TableRowGroup>
 				<Text variant="text-sm/medium" color="text-muted">
 					Reloading restarts Discord's JavaScript, like the reload in older
@@ -231,16 +316,8 @@ export default plugin<{ jsonStorage: Settings }>({
 									target,
 									prop as never,
 									((rendered: unknown) =>
-										active && settings().barButton
-											? createElement(
-													Fragment,
-													null,
-													copyOfBell(rendered) ??
-														createElement(ReloadButton, {
-															key: 'quick-reload',
-														}),
-													rendered as any,
-												)
+										active
+											? withBarButtons(rendered, settings())
 											: rendered) as never,
 								),
 							)

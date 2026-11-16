@@ -122,6 +122,9 @@ A reload button like the old clients had. It adds a ⟳ button next to the bell 
 "Reload Discord" row at the top of Discord's settings; each can be turned off in the plugin's settings. Reloading
 restarts Discord's JavaScript (`BundleUpdaterManager.reload()`), which also applies waiting plugin updates.
 
+Optional (off by default): a second bar button that opens the page of dariussbezy's Performance Monitor plugin
+(`dariuss.performance-monitor`), which has to be installed and on.
+
 ### No Blackout (`dev.ketsuyumi.no-blackout`)
 
 Stops the screen going black during calls when the proximity sensor is covered, for example when a finger moves

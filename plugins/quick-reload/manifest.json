@@ -2,10 +2,10 @@
 	"format": 1,
 	"id": "dev.ketsuyumi.quick-reload",
 	"name": "Quick Reload",
-	"description": "A reload button like the old clients: next to the bell on the bar with your name, and as \"Reload Discord\" in Discord's settings.",
+	"description": "A reload button like the old clients: next to the bell on the bar with your name, and as \"Reload Discord\" in Discord's settings. Optional bar button that opens Performance Monitor.",
 	"author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
 	"icon": "RefreshIcon",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"
