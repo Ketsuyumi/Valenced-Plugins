@@ -293,6 +293,30 @@
         }
       }
     },
+    "dev.ketsuyumi.quick-reload": {
+      "name": "Quick Reload",
+      "description": "A reload button like the old clients: next to the bell on the bar with your name, and as \"Reload Discord\" in Discord's settings.",
+      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "icon": "RefreshIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.0.0.zip",
+          "sha256": "2b6e61afc295198167f14b42c4407b4b91d2a702f1ee27ab9be4bd2d9b8c29f2",
+          "size": 2081,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.read-all": {
       "name": "Read All Servers+",
       "description": "Long press the Messages icon to mark every server as read. A lighter fork of sapphire's Read All Servers that doesn't intercept every element Discord draws. GPL-3.0.",
