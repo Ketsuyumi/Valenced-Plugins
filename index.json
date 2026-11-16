@@ -175,7 +175,7 @@
       "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
       "icon": "EyeSlashIcon",
       "channels": {
-        "latest": "1.0.1"
+        "latest": "1.0.2"
       },
       "versions": {
         "1.0.0": {
@@ -195,6 +195,19 @@
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-dms@1.0.1.zip",
           "sha256": "e4ecdbadf8253d51d4e3525f2cd62af9bc74cbc114176e3725cef2eb966c0e4e",
           "size": 2540,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.2": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-dms@1.0.2.zip",
+          "sha256": "bba74e06362a635046e4ba630d5eb700366a2a6e6873835fa6707bbaae43b407",
+          "size": 2751,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
