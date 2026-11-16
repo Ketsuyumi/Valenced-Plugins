@@ -169,6 +169,33 @@
         }
       }
     },
+    "dev.ketsuyumi.ghost-log": {
+      "name": "Ghost Log+",
+      "description": "Encrypted deleted-message log, edit history and saved media, plus an ignore list, keyword alerts and a better search. A faster fork of bleelblep's Ghost Log Next Gen (no freeze when opening a channel with many logged deletions).",
+      "author": "bleelblep",
+      "contributors": [
+        "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")"
+      ],
+      "icon": "TrashIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ghost-log@1.0.0.zip",
+          "sha256": "e484963a7ca28bc60c72ebffeeb68957e10eb8ed005898adfb16ac0408de1d12",
+          "size": 182251,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.hide-dms": {
       "name": "Hide DMs",
       "description": "Hide chosen DMs and group DMs, or all of them, from your DM list without leaving them.",
