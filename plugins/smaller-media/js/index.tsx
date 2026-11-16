@@ -16,11 +16,18 @@ interface Settings {
 	uploads: boolean
 	/** Link previews and GIFs from Tenor, Giphy and similar. */
 	embeds: boolean
+	/** Several uploads in one message: keep Discord's grid and shrink it (experimental). */
+	keepGrid: boolean
 }
 
 type Api = PluginApi<{ jsonStorage: Settings }>
 
-const DEFAULTS: Settings = { percent: 35, uploads: true, embeds: true }
+const DEFAULTS: Settings = {
+	percent: 35,
+	uploads: true,
+	embeds: true,
+	keepGrid: false,
+}
 const PERCENTS = [30, 35, 40, 50]
 
 let stats = newStats()
@@ -34,6 +41,7 @@ function optionsFrom(settings: Settings): ResizeOptions {
 		scale: 1 - percent / 100,
 		uploads: settings.uploads,
 		embeds: settings.embeds,
+		keepGrid: settings.keepGrid,
 		screenWidth: width || 400,
 		screenHeight: height || 800,
 	}
@@ -49,6 +57,7 @@ function debugReport(settings: Settings) {
 		`rows: ${stats.rows}, messages: ${stats.messages}, media resized: ${stats.resized}`,
 		`row keys: ${stats.rowKeys}`,
 		...stats.samples,
+		...stats.flags,
 		`message keys: ${stats.contentKeys}`,
 		...stats.shapes,
 	].join('\n')
@@ -104,6 +113,16 @@ function SettingsPage({ api }: { api: Api }) {
 						subLabel="Link previews, and GIFs from Tenor, Giphy and similar"
 						value={settings.embeds}
 						onValueChange={(embeds: boolean) => set({ embeds })}
+					/>
+				</TableRowGroup>
+
+				<TableRowGroup title="Several uploads in one message">
+					<TableSwitchRow
+						label="Keep the image grid"
+						subLabel="Experimental. Off: each image is shown on its own, smaller, one under another. On: Discord's grid stays and the whole grid is made smaller."
+						value={settings.keepGrid}
+						disabled={!settings.uploads}
+						onValueChange={(keepGrid: boolean) => set({ keepGrid })}
 					/>
 				</TableRowGroup>
 

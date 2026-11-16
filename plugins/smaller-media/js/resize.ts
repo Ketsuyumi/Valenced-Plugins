@@ -18,6 +18,16 @@ export interface ResizeOptions {
 	/** The screen, in layout units. A size larger than it is the file's own size, not a display size. */
 	screenWidth: number
 	screenHeight: number
+	/**
+	 * The widest Discord draws media in this message (the row's `constrainedWidth`), when known.
+	 * Media wider than this is drawn at this width, so the scale is applied from here.
+	 */
+	maxWidth?: number
+	/**
+	 * Keep Discord's image grid for messages with several uploads and shrink the grid instead
+	 * (experimental). Otherwise the grid is switched off and each upload is sized on its own.
+	 */
+	keepGrid?: boolean
 }
 
 /** Counters and a few samples, for the settings page. */
@@ -29,6 +39,8 @@ export interface ResizeStats {
 	shapes: string[]
 	/** The content object's own keys, once. */
 	contentKeys: string
+	/** Grid flag and width of the first messages with uploads. */
+	flags: string[]
 	/** Chat rows that passed through the hook. */
 	rows: number
 	/** The row descriptor's own keys, once. */
@@ -41,6 +53,7 @@ export const newStats = (): ResizeStats => ({
 	samples: [],
 	shapes: [],
 	contentKeys: '',
+	flags: [],
 	rows: 0,
 	rowKeys: '',
 })
@@ -89,15 +102,16 @@ export function scaled(
 	if (Math.max(width, height) <= MIN_SIDE) return undefined
 	let w = width
 	let h = height
-	// Larger than the screen: this is the file's own size, which Discord will fit to the chat
-	// itself. Fit it to roughly what Discord allows first, so the scale shows afterwards.
-	const boxW = options.screenWidth * 0.72
-	const boxH = options.screenHeight * 0.45
-	if (w > options.screenWidth || h > options.screenHeight) {
-		const fit = Math.min(boxW / w, boxH / h, 1)
-		w *= fit
-		h *= fit
-	}
+	// Discord draws media no wider than the message allows, whatever the file's own size. Bring
+	// it down to that first, so "35% smaller" is 35% smaller than what was on screen.
+	const boxW =
+		options.maxWidth && options.maxWidth > 0
+			? options.maxWidth
+			: options.screenWidth * 0.86
+	const boxH = options.screenHeight
+	const fit = Math.min(boxW / w, boxH / h, 1)
+	w *= fit
+	h *= fit
 	w = Math.round(w * options.scale)
 	h = Math.round(h * options.scale)
 	if (w < 1 || h < 1) return undefined
@@ -161,6 +175,33 @@ export function resizeContent<T>(
 	stats.messages++
 	if (!stats.contentKeys) stats.contentKeys = Object.keys(content).join(', ')
 	let copy: Record<string, unknown> | undefined
+	const constrained = content.constrainedWidth
+	if (typeof constrained === 'number' && constrained > 0)
+		options = { ...options, maxWidth: constrained }
+
+	// Uploads are drawn in Discord's image grid, which fills the message's width whatever size
+	// the images say they are (this is why 1.0.2 shrank GIFs but not uploads). So either the
+	// grid is switched off, and each upload is drawn from its own, scaled, size; or, for several
+	// uploads with "keep the grid" on, the width the grid fills is scaled instead.
+	const uploads = content.attachments
+	if (options.uploads && Array.isArray(uploads) && uploads.length) {
+		if (stats.flags.length < MAX_SHAPES)
+			stats.flags.push(
+				`grid=${String(content.useAttachmentGridLayout)} constrainedWidth=${String(constrained)} uploads=${uploads.length}`,
+			)
+		if (options.keepGrid && uploads.length > 1) {
+			if (typeof constrained === 'number' && constrained > 0) {
+				copy = {
+					...content,
+					constrainedWidth: Math.round(constrained * options.scale),
+				}
+				stats.resized += uploads.length
+				// The grid does the sizing; leave the uploads' own sizes alone.
+				options = { ...options, uploads: false }
+			}
+		} else if (content.useAttachmentGridLayout === true)
+			copy = { ...content, useAttachmentGridLayout: false }
+	}
 	for (const [key, kind] of Object.entries(SECTIONS)) {
 		const section = content[key]
 		if (!section || typeof section !== 'object') continue
