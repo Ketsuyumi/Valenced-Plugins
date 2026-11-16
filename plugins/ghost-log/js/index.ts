@@ -66,6 +66,16 @@ const DEBUG: boolean = false
 
 const TAG = '[GhostLogNG]'
 
+/**
+ * Ghost Log+: a delete event another plugin dispatched locally to take a message off screen, marked
+ * with the flags message loggers have used for this since Vendetta (`otherPluginBypass`, and
+ * `mlDeleted` for a logger's own removals). Nothing was deleted on Discord, so there is nothing to
+ * log, and keeping the message on screen would undo what the user just asked for.
+ */
+function isLocalRemoval(payload: any): boolean {
+	return payload?.otherPluginBypass === true || payload?.mlDeleted === true
+}
+
 export default plugin<{ jsonStorage: GhostLogSettings }>({
 	jsonStorage: {
 		load: true,
@@ -146,6 +156,9 @@ export default plugin<{ jsonStorage: GhostLogSettings }>({
 					)
 					const messageId = String(payload?.id ?? '')
 					if (!channelId || !messageId) return payload
+					// Ghost Log+: another plugin removing a message from view (Hide Messages and
+					// similar), not someone deleting it. Not logged, not kept on screen.
+					if (isLocalRemoval(payload)) return payload
 					handleDelete(channelId, messageId)
 					const message = (Stores.MessageStore as any)?.getMessage?.(
 						channelId,
@@ -167,6 +180,7 @@ export default plugin<{ jsonStorage: GhostLogSettings }>({
 			}),
 			onFluxEventDispatched('MESSAGE_DELETE_BULK', (payload: any) => {
 				try {
+					if (isLocalRemoval(payload)) return payload
 					for (const id of payload.ids ?? [])
 						handleDelete(payload.channelId, id)
 				} catch (error) {
