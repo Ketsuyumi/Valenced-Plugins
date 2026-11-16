@@ -293,6 +293,33 @@
         }
       }
     },
+    "dev.ketsuyumi.read-all": {
+      "name": "Read All Servers+",
+      "description": "Long press the Messages icon to mark every server as read. A lighter fork of sapphire's Read All Servers that doesn't intercept every element Discord draws. GPL-3.0.",
+      "author": "sapphire <757982547861962752>",
+      "contributors": [
+        "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")"
+      ],
+      "icon": "ChatCheckIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.read-all@1.0.0.zip",
+          "sha256": "ae0f7909c7158a633a3e8af22337889683c84077be35443728bdc42415fb0408",
+          "size": 1605,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.skip-confirmations": {
       "name": "Skip Confirmations",
       "description": "Skip the confirmation dialogs you choose (delete message, leave group, ignore and more). Learns each dialog the first time you see it; nothing is skipped until you turn it on.",
