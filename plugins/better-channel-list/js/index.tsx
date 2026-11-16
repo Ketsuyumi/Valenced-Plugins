@@ -128,6 +128,25 @@ function redraw() {
 	}, 150)
 }
 
+/**
+ * Better Channel List+: messages another plugin took off screen with a local delete event
+ * (Hide Messages and similar mark it `otherPluginBypass` / `mlDeleted`). Discord still has them,
+ * so the gateway keeps answering with them as a channel's last message; the original put them
+ * straight back into the message store, which un-hid the message about a second later.
+ */
+const hiddenLocally = new Set<string>()
+const isLocalRemoval = (e: any) =>
+	e?.otherPluginBypass === true || e?.mlDeleted === true
+function noteHidden(ids: unknown[]) {
+	for (const id of ids) if (typeof id === 'string') hiddenLocally.add(id)
+	// Bounded: oldest first (a Set keeps insertion order).
+	while (hiddenLocally.size > 1000) {
+		const oldest = hiddenLocally.values().next()
+		if (oldest.done) break
+		hiddenLocally.delete(oldest.value)
+	}
+}
+
 function onPreviews({ messages }: any) {
 	if (!Array.isArray(messages)) return
 	status.received += messages.length
@@ -135,6 +154,7 @@ function onPreviews({ messages }: any) {
 		try {
 			if (!m?.channel_id || S().MessageStore?.getMessage?.(m.channel_id, m.id))
 				continue
+			if (hiddenLocally.has(m.id)) continue
 			Dispatcher.dispatch({
 				type: 'LOAD_MESSAGES_SUCCESS',
 				channelId: m.channel_id,
@@ -1193,9 +1213,24 @@ export default plugin({
 			[
 				'MESSAGE_DELETE',
 				(e: any) => {
+					// A local hide: remember it and redraw. Asking the gateway would only bring
+					// the hidden message back.
+					if (isLocalRemoval(e)) {
+						noteHidden([e?.id])
+						redraw()
+						return
+					}
 					const g = S().ChannelStore?.getChannel?.(e?.channelId)?.guild_id
 					if (g && g === S().SelectedGuildStore?.getGuildId?.())
 						request(g, [e.channelId])
+				},
+			],
+			[
+				'MESSAGE_DELETE_BULK',
+				(e: any) => {
+					if (!isLocalRemoval(e)) return
+					noteHidden(Array.isArray(e?.ids) ? e.ids : [])
+					redraw()
 				},
 			],
 		]
@@ -1264,6 +1299,7 @@ export default plugin({
 				} catch {}
 			touched.clear()
 			previews.clear()
+			hiddenLocally.clear()
 			clearLookups()
 			unbind()
 		})
