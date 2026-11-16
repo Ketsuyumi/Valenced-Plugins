@@ -59,25 +59,49 @@ export function isKnownHuman(userId: string): boolean {
 	return userStore()?.getUser?.(userId)?.bot === false
 }
 
-/** Builds the check used on every incoming message from the current settings. */
-export function createMessageFilter(getSettings: () => Settings | undefined) {
-	return (message: RawMessage | undefined): boolean => {
-		const settings = getSettings()
-		const author = message?.author
-		if (!settings || !author?.id) return false
+/** Settings in the shape the per-message check needs, rebuilt only when settings change. */
+export interface FilterSnapshot {
+	/** False when nothing can be hidden: every message passes without further checks. */
+	active: boolean
+	ids: Set<string>
+	hideAllApps: boolean
+	keepMyCommandReplies: boolean
+}
 
-		const listed = settings.ignored.some(e => e.id === author.id)
-		const hidden = listed || (settings.hideAllApps && author.bot === true)
+export function snapshotOf(settings: Settings | undefined): FilterSnapshot {
+	const ids = new Set((settings?.ignored ?? []).map(e => e.id))
+	const hideAllApps = !!settings?.hideAllApps
+	return {
+		active: ids.size > 0 || hideAllApps,
+		ids,
+		hideAllApps,
+		keepMyCommandReplies: settings?.keepMyCommandReplies ?? true,
+	}
+}
+
+/**
+ * The per-message check. Runs for every message Discord receives, so it does as little as
+ * possible: a set lookup, and the store is resolved once here rather than on first use.
+ */
+export function createMessageFilter(getSnapshot: () => FilterSnapshot) {
+	const users = userStore()
+	return (message: RawMessage | undefined): boolean => {
+		const snap = getSnapshot()
+		if (!snap.active) return false
+		const author = message?.author
+		if (!author?.id) return false
+
+		const hidden =
+			snap.ids.has(author.id) || (snap.hideAllApps && author.bot === true)
 		if (!hidden) return false
 
-		if (settings.keepMyCommandReplies) {
-			const me = userStore()?.getCurrentUser?.()?.id
+		if (snap.keepMyCommandReplies) {
 			const invoker =
 				message?.interaction_metadata?.user?.id ??
 				message?.interaction?.user?.id
-			if (me && invoker === me) return false
+			if (invoker && invoker === (users ?? userStore())?.getCurrentUser?.()?.id)
+				return false
 		}
-
 		return true
 	}
 }

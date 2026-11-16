@@ -5,7 +5,7 @@
 	"description": "Hide messages from apps and bots that Discord doesn't let you block or ignore, like MEE6.",
 	"author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
 	"icon": "EyeSlashIcon",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

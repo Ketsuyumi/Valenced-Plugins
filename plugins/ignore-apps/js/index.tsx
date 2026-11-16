@@ -9,6 +9,7 @@ import {
 	describeUser,
 	isKnownHuman,
 	parseUserId,
+	snapshotOf,
 } from './filter'
 import type { PluginApi } from '@valenced/plugins/types'
 import type { Settings } from './filter'
@@ -151,11 +152,18 @@ export default plugin<{ jsonStorage: Settings }>({
 		default: DEFAULT_SETTINGS,
 	},
 	start({ cleanup, jsonStorage }) {
-		const isHidden = createMessageFilter(() =>
+		// Rebuilt only when settings change; every message just reads it.
+		let snapshot = snapshotOf(
 			jsonStorage.cache
 				? { ...DEFAULT_SETTINGS, ...jsonStorage.cache }
 				: undefined,
 		)
+		cleanup(
+			jsonStorage.subscribe(() => {
+				snapshot = snapshotOf({ ...DEFAULT_SETTINGS, ...jsonStorage.cache })
+			}),
+		)
+		const isHidden = createMessageFilter(() => snapshot)
 
 		for (const type of SINGLE_MESSAGE_EVENTS)
 			cleanup(
@@ -167,7 +175,7 @@ export default plugin<{ jsonStorage: Settings }>({
 		for (const type of MESSAGE_LIST_EVENTS)
 			cleanup(
 				onFluxEventDispatched(type, payload => {
-					if (Array.isArray(payload.messages))
+					if (snapshot.active && Array.isArray(payload.messages))
 						payload.messages = payload.messages.filter(
 							(m: unknown) => !isHidden(m as never),
 						)
