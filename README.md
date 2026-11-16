@@ -130,6 +130,18 @@ near the top of the screen. During calls Discord holds a proximity wake lock; th
 awake for the call but the sensor never switches the screen off. Turn the plugin off to get the normal behaviour back.
 Android only.
 
+### Fake Nickname+ (`dev.ketsuyumi.fake-nickname`)
+
+A fork of [Fake Nickname](https://github.com/il1ll/ValencedPlugins) by **coder.gg** (GPL-3.0; this fork is GPL-3.0
+too). Give anyone a nickname that only you see, without being friends: long-press a profile's menu, or add them by ID
+in the settings. Same features and settings as the original.
+
+Changed in this fork: the original's name hooks (`getMember`, `getGlobalName`, `getName` and others) ran tens of
+thousands of times, each reading storage, trimming the saved name and creating a new function. Here the saved
+nicknames become a lookup table once when they change, each hook is a single lookup that goes straight to Discord's
+function for everyone without a fake nickname, and the hooks are only installed while at least one nickname is saved.
+Nicknames are stored separately from the original plugin, so add them again after switching.
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.
