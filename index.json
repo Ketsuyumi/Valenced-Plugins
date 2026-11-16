@@ -253,6 +253,33 @@
         }
       }
     },
+    "dev.ketsuyumi.instant-actions": {
+      "name": "Instant Actions+",
+      "description": "No more 'Are you sure?' Skips deletes, leaves, blocks, and other prompts, each toggled individually. A faster fork of k1ng_op's Instant Actions (no hitch when a dialog opens). GPL-3.0.",
+      "author": "k1ng_op <641266820187160576> (https://github.com/k1ng0p \"GitHub\")",
+      "contributors": [
+        "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")"
+      ],
+      "icon": "FlashIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.instant-actions@1.0.0.zip",
+          "sha256": "71fb679c4031c2f493f4d5ba0b8f1b557bb8c7fadaabeba9bb752dddb0d76db0",
+          "size": 3150,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.skip-confirmations": {
       "name": "Skip Confirmations",
       "description": "Skip the confirmation dialogs you choose (delete message, leave group, ignore and more). Learns each dialog the first time you see it; nothing is skipped until you turn it on.",
