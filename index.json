@@ -3,6 +3,33 @@
   "name": "Valenced Plugins by ketsuyumi",
   "description": "Plugins for Valenced.",
   "plugins": {
+    "dev.ketsuyumi.better-channel-list": {
+      "name": "Better Channel List+",
+      "description": "Shows the last message under each channel and gives channels emoji icons. A faster fork of Yumistra's Better Channel List, with message age, unread-only previews and a muted-channel switch. GPL-3.0.",
+      "author": "Yumistra",
+      "contributors": [
+        "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")"
+      ],
+      "icon": "ChatIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.better-channel-list@1.0.0.zip",
+          "sha256": "12ecd07d2bc1ca01e7fc9aa8b213ee91ab01f5972c378bd2fd728fa9f253f2aa",
+          "size": 39439,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.block-by-id": {
       "name": "Block by ID",
       "description": "Block any Discord user by pasting their user ID, even if you share no server or DM with them.",
