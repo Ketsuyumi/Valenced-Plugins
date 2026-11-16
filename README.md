@@ -218,6 +218,16 @@ Previews are now built once per message and cached per channel, module lookups a
 per change, and the settings page no longer re-renders every second. Settings are separate from the original, so turn
 the original off and re-pick any custom channel emojis.
 
+### Smaller Media (`dev.ketsuyumi.smaller-media`)
+
+Makes images, GIFs and videos in chat 30 to 50% smaller (35% by default), whoever sent them. Only the preview in chat
+changes: tapping still opens the full-size image, and videos and GIFs still play. Uploads and link/GIF-picker previews
+have separate switches.
+
+It works on the data Discord builds for each chat row (`createMessageContent`): the `width` and `height` of media under
+`attachments` and `embeds` are scaled by the same factor, on copies, with the URLs left alone. The settings page shows
+whether the message builder was found and how many items were resized, and has a "Copy debug info" row.
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.
