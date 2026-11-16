@@ -668,6 +668,30 @@
         }
       }
     },
+    "dev.ketsuyumi.smaller-media": {
+      "name": "Smaller Media",
+      "description": "Makes images, GIFs and videos in chat 30 to 50% smaller, from you and everyone else. Only the preview shrinks: tapping still opens them full size and videos and GIFs still play.",
+      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "icon": "ImageIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.smaller-media@1.0.0.zip",
+          "sha256": "261a082ba74039ad0458857f198cb83ed902b9580007ba57ccf86d137283564e",
+          "size": 2612,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.staff-tags": {
       "name": "Staff Tags+",
       "description": "OWNER, ADMIN, STAFF, MOD, VC Mod, Chat Mod and WEBHOOK tags, plus your own tags by user ID, compact mode, per-server and where-to-show switches. A faster fork of bleelblep's Staff Tags. GPL-3.0.",
