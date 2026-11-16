@@ -120,7 +120,7 @@ export default plugin<{ jsonStorage: Settings }>({
 		default: DEFAULT_SETTINGS,
 	},
 	start({ cleanup, jsonStorage, logger }) {
-		const { unpatches, patched } = patchStores(() =>
+		const { unpatches, patched, refresh } = patchStores(() =>
 			jsonStorage.cache
 				? { ...DEFAULT_SETTINGS, ...jsonStorage.cache }
 				: undefined,
@@ -135,9 +135,17 @@ export default plugin<{ jsonStorage: Settings }>({
 			// Cleanups run in reverse order, so this runs last on stop,
 			// after the unpatches: show everything again.
 			() => refreshLists(),
-			jsonStorage.subscribe(() => refreshLists()),
+			jsonStorage.subscribe(() => {
+				refresh()
+				refreshLists()
+			}),
 			...unpatches,
 		)
+		// Settings load asynchronously; pick them up once they are in.
+		jsonStorage.get().then(() => {
+			refresh()
+			refreshLists()
+		})
 		refreshLists()
 	},
 	SettingsComponent: SettingsPage,
