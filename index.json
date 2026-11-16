@@ -204,13 +204,26 @@
       ],
       "icon": "PencilIcon",
       "channels": {
-        "latest": "1.0.0"
+        "latest": "1.1.0"
       },
       "versions": {
         "1.0.0": {
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.fake-nickname@1.0.0.zip",
           "sha256": "668fb4eac8dc7605e3706d41e0003f00749b7d894d5b72a21cf0cefce3227c53",
           "size": 4390,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.1.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.fake-nickname@1.1.0.zip",
+          "sha256": "6962732ef08661296d2f4da00cf76ff694a00f1325a0e9d47581461fe367913a",
+          "size": 5159,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -231,7 +244,7 @@
       ],
       "icon": "TrashIcon",
       "channels": {
-        "latest": "1.0.3"
+        "latest": "1.0.4"
       },
       "versions": {
         "1.0.0": {
@@ -277,6 +290,19 @@
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ghost-log@1.0.3.zip",
           "sha256": "ea3bcd23d7b2145e50a3f74f54c9b5999f42ecd235b47a34555df30ed13744df",
           "size": 182563,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.4": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ghost-log@1.0.4.zip",
+          "sha256": "bcfad83a52993b8fdc517535b131b60e8bb746bb459a4e9b1b20817484e3dc5b",
+          "size": 182709,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -588,13 +614,26 @@
       ],
       "icon": "ShieldIcon",
       "channels": {
-        "latest": "1.0.0"
+        "latest": "1.0.1"
       },
       "versions": {
         "1.0.0": {
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.staff-tags@1.0.0.zip",
           "sha256": "9f68010e610f969bf077df9719b8e72502ca43ab201d79a9b9501ed640008075",
           "size": 12337,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": ">=350.2"
+            }
+          }
+        },
+        "1.0.1": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.staff-tags@1.0.1.zip",
+          "sha256": "cbf9429c8bc9984b99ca48442565dbb49bcbeb4abc9506d46bba3723e33f87f5",
+          "size": 12439,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
