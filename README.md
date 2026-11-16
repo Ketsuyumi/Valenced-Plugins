@@ -162,6 +162,26 @@ change; settings are merged once per change, row colours are converted once per 
 painter, and member/profile rows check the cached tag before walking the rendered tree. The original's changelog popup
 is left out. Settings are separate from the original plugin, so turn the original off.
 
+### Ghost Log+ (`dev.ketsuyumi.ghost-log`)
+
+A fork of [Ghost Log Next Gen](https://github.com/bleelblep/bleel-bazinga-repo) by **bleelblep** (CC0-1.0 with parts
+under BSD-3-Clause; see the plugin's `NOTICE.md`). An encrypted log of deleted messages, edit history and saved media,
+with deleted messages kept visible in chat. The native half is unchanged.
+
+New in this fork:
+
+- **Ignore list**: servers, channels and people that are never logged, added by ID.
+- **Keyword alerts**: a notice when a deleted message contains one of your words, even with catch toasts off.
+- **Better search**: every word has to match, in any order; IDs match; `from:`, `in:` and `server:` filters.
+
+Faster: opening a channel used to build a full message record for every logged deletion in it, then drop the ones
+outside the loaded messages. With a few hundred logged deletions in one channel that froze Discord for hundreds of
+milliseconds. Records are now built only for deletions inside the loaded window; older ones appear as you scroll back.
+
+It has its own ID, so its log is separate from the original's. To move a log over: in the original, Backup &
+encryption > set a recovery password > Export bundle; then in Ghost Log+, Backup & encryption > Import bundle. Turn the
+original off afterwards: two message loggers at once fight over the same messages.
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.

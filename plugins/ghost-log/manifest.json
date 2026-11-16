@@ -1,0 +1,25 @@
+{
+	"format": 1,
+	"id": "dev.ketsuyumi.ghost-log",
+	"name": "Ghost Log+",
+	"description": "Encrypted deleted-message log, edit history and saved media, plus an ignore list, keyword alerts and a better search. A faster fork of bleelblep's Ghost Log Next Gen (no freeze when opening a channel with many logged deletions).",
+	"author": "bleelblep",
+	"contributors": ["ketsuyumi (https://github.com/ketsuyumi \"GitHub\")"],
+	"icon": "TrashIcon",
+	"version": "1.0.0",
+	"dependencies": {
+		"valenced.api": {
+			"version": ">=1 <2"
+		},
+		"discord": {
+			"version": "*"
+		}
+	},
+	"dist": {
+		"script": "index.js",
+		"android": {
+			"path": "plugin.jar",
+			"class": "com.bleelblep.ghostlogng.GhostLogNG"
+		}
+	}
+}
