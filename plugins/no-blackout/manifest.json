@@ -1,0 +1,23 @@
+{
+	"format": 1,
+	"id": "dev.ketsuyumi.no-blackout",
+	"name": "No Blackout",
+	"description": "Stops the screen going black during calls when the proximity sensor is covered (for example by a finger near the top of the screen). Android only.",
+	"author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+	"icon": "MobilePhoneIcon",
+	"version": "1.0.0",
+	"dependencies": {
+		"valenced.api": {
+			"version": ">=1 <2"
+		},
+		"discord": {
+			"version": "*"
+		}
+	},
+	"dist": {
+		"android": {
+			"path": "plugin.jar",
+			"class": "dev.ketsuyumi.noblackout.NoBlackout"
+		}
+	}
+}
