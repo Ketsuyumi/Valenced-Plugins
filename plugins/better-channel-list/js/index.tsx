@@ -686,13 +686,55 @@ function useLastMessage(channelId: string | undefined) {
 	const [v, setV] = useState(read)
 	useEffect(() => {
 		if (!channelId) return
-		const store = S().MessageStore
 		const f = () => setV(read())
-		store?.addChangeListener?.(f)
+		const off = watchChannel(channelId, f)
 		f()
-		return () => store?.removeChangeListener?.(f)
+		return off
 	}, [channelId])
 	return v
+}
+
+/**
+ * Better Channel List+: rows waiting to hear that their channel's messages changed.
+ *
+ * The original gave every visible row its own MessageStore change listener, so any message
+ * change anywhere made every row call getMessages (rows x changes, tens of thousands of calls,
+ * each also running whatever other plugins hook getMessages with). Rows now register per channel,
+ * and only the channel a message event names is told, once per burst.
+ */
+const channelWatchers = new Map<string, Set<() => void>>()
+const changedChannels = new Set<string>()
+let changedTimer: any
+
+function watchChannel(channelId: string, f: () => void): () => void {
+	let set = channelWatchers.get(channelId)
+	if (!set) {
+		set = new Set()
+		channelWatchers.set(channelId, set)
+	}
+	set.add(f)
+	return () => {
+		set.delete(f)
+		if (!set.size && channelWatchers.get(channelId) === set)
+			channelWatchers.delete(channelId)
+	}
+}
+
+/** A message event for [channelId]. Deferred, so the stores have handled the event first. */
+function channelChanged(channelId: unknown) {
+	if (typeof channelId !== 'string' || !channelWatchers.has(channelId)) return
+	changedChannels.add(channelId)
+	if (changedTimer) return
+	changedTimer = setTimeout(() => {
+		changedTimer = undefined
+		const ids = [...changedChannels]
+		changedChannels.clear()
+		for (const id of ids)
+			for (const f of channelWatchers.get(id) ?? [])
+				try {
+					f()
+				} catch {}
+	}, 0)
 }
 
 function wrapperFor(type: any) {
@@ -1234,6 +1276,23 @@ export default plugin({
 				},
 			],
 		]
+		// Better Channel List+: tell only the rows of the channel a message event is about.
+		const messageEvents: Array<[string, (e: any) => unknown]> = [
+			['MESSAGE_CREATE', e => e?.channelId ?? e?.message?.channel_id],
+			['MESSAGE_UPDATE', e => e?.message?.channel_id ?? e?.channelId],
+			['MESSAGE_DELETE', e => e?.channelId],
+			['MESSAGE_DELETE_BULK', e => e?.channelId],
+			['LOAD_MESSAGES_SUCCESS', e => e?.channelId],
+			['LOAD_MESSAGES_SUCCESS_CACHED', e => e?.channelId],
+		]
+		for (const [type, channelOf] of messageEvents)
+			subs.push([type, e => channelChanged(channelOf(e))])
+		cleanup(() => {
+			clearTimeout(changedTimer)
+			changedTimer = undefined
+			changedChannels.clear()
+			channelWatchers.clear()
+		})
 		// Better Channel List+: cached previews hold names and role colours, so they are dropped
 		// when member or user data changes. Trailing and at most every 1.5 s: member chunks
 		// arrive in bursts while a server loads.

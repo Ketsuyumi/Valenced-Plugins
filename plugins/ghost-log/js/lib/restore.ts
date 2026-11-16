@@ -101,6 +101,11 @@ function syncIndex(allEntries: DeletedMessage[], version: number) {
 		if (list) list.push(entry)
 		else next.set(entry.channelId, [entry])
 	}
+	// Ghost Log+: newest first, entries without a usable time in front. The hook then walks a
+	// channel's list only as far back as the loaded window reaches, instead of filtering every
+	// logged deletion in the channel on each miss.
+	for (const list of next.values())
+		if (list.length > 1) list.sort((a, b) => sortTime(b) - sortTime(a))
 	byChannel = next
 	if (recordCache.size || failedRecords.size) {
 		const live = new Set(allEntries.map(e => e.id))
@@ -111,12 +116,38 @@ function syncIndex(allEntries: DeletedMessage[], version: number) {
 	}
 }
 
-/** Build once, reuse thereafter. Returns undefined if the record could not be built. */
+const sortTime = (entry: DeletedMessage) =>
+	typeof entry.sentAt === 'number' ? entry.sentAt : Number.POSITIVE_INFINITY
+
+// Ghost Log+: a budget for building records. One record costs about half a millisecond, and a
+// purge can leave a hundred logged deletions inside the loaded window: built in one call that
+// was a 50 ms stall. At most BUILD_BUDGET are built per call, and not again within
+// BUILD_SPACING_MS (getMessages runs several times a frame); the rest are built by later calls,
+// which the hook asks for by having the store announce a change.
+const BUILD_BUDGET = 12
+const BUILD_SPACING_MS = 8
+let buildsLeft = BUILD_BUDGET
+let lastBudgetedAt = 0
+/** Set when a record was left for a later call. */
+let buildDeferred = false
+
+function startBuildBudget() {
+	buildDeferred = false
+	buildsLeft = Date.now() - lastBudgetedAt < BUILD_SPACING_MS ? 0 : BUILD_BUDGET
+}
+
+/** Build once, reuse thereafter. Returns undefined if the record could not be built (yet). */
 function recordFor(entry: DeletedMessage, channelId: string): any {
 	const media = mediaKey(entry)
 	const hit = recordCache.get(entry.id)
 	if (hit && hit.media === media) return hit.record
 	if (failedRecords.get(entry.id) === media) return undefined
+	if (buildsLeft <= 0) {
+		buildDeferred = true
+		return undefined
+	}
+	buildsLeft--
+	lastBudgetedAt = Date.now()
 	try {
 		const record = createMessageRecord!(buildRaw(entry, channelId))
 		if (!record) {
@@ -430,6 +461,27 @@ function installRenderRestore(
 	// through the clone already.)
 	const edgeId = (array: any[], index: number) => String(array[index]?.id ?? '')
 
+	// Ghost Log+: records left over by the build budget. The partial result is memoized like any
+	// other, so repeat calls in this frame stay O(1); a frame later the memo is dropped and the
+	// store announces a change, which makes the chat read getMessages again and build the next
+	// batch. Ends when nothing is deferred (failed builds are remembered, so it cannot loop).
+	const continuing = new Map<string, ReturnType<typeof setTimeout>>()
+	const continueLater = (channelId: string) => {
+		if (continuing.has(channelId)) return
+		continuing.set(
+			channelId,
+			setTimeout(() => {
+				continuing.delete(channelId)
+				cloneCache.delete(channelId)
+				try {
+					ms.emitChange?.()
+				} catch (error) {
+					reportError(`${TAG} could not continue restoring:`, error)
+				}
+			}, 16),
+		)
+	}
+
 	const unpatch = instead(
 		ms,
 		'getMessages',
@@ -491,17 +543,22 @@ function installRenderRestore(
 				// by a later call, once Discord has paginated back to them (the memo is keyed on the
 				// array's ends, so it is rebuilt then).
 				const oldest = oldestLoaded(source)
-				const missing = entries.filter(
-					e =>
-						!present.has(e.id) &&
-						(oldest === undefined ||
-							typeof e.sentAt !== 'number' ||
-							e.sentAt >= oldest),
-				)
+				// `entries` is newest first (syncIndex), so the walk stops at the first one older than
+				// the window. A message still in the store is inside the window by definition, so the
+				// same walk finds the `localised` ones.
+				const missing: DeletedMessage[] = []
 				// Still in the store (a blocked deletion) but with media saved locally: see hasLocalMedia.
-				const localised = entries.filter(
-					e => present.has(e.id) && hasLocalMedia(e),
-				)
+				const localised: DeletedMessage[] = []
+				for (const e of entries) {
+					if (
+						oldest !== undefined &&
+						typeof e.sentAt === 'number' &&
+						e.sentAt < oldest
+					)
+						break
+					if (!present.has(e.id)) missing.push(e)
+					else if (hasLocalMedia(e)) localised.push(e)
+				}
 				// No loaded message to place them against: keep it to the newest few so this call
 				// stays short however large the log is.
 				if (oldest === undefined && missing.length > MAX_UNANCHORED) {
@@ -513,6 +570,7 @@ function installRenderRestore(
 					return ret
 				}
 
+				startBuildBudget()
 				const records: any[] = []
 				for (const entry of missing) {
 					const record = recordFor(entry, channelId)
@@ -556,9 +614,11 @@ function installRenderRestore(
 					}
 					memo.clone = clone
 					remember(channelId, memo)
+					if (buildDeferred) continueLater(channelId)
 					return clone
 				}
 				remember(channelId, memo)
+				if (buildDeferred) continueLater(channelId)
 			} catch (error) {
 				reportError(`${TAG} render restore hook failed:`, error)
 			}
@@ -567,6 +627,8 @@ function installRenderRestore(
 	)
 
 	return () => {
+		for (const timer of continuing.values()) clearTimeout(timer)
+		continuing.clear()
 		cloneCache.clear()
 		recordCache.clear()
 		failedRecords.clear()
