@@ -185,13 +185,26 @@
       "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
       "icon": "ImageIcon",
       "channels": {
-        "latest": "1.0.0"
+        "latest": "1.1.0"
       },
       "versions": {
         "1.0.0": {
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-server-banners@1.0.0.zip",
           "sha256": "55a8262be1131554356338f8cd55ba9485876e8b12224c1295c1751c498bc394",
           "size": 1089,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.1.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-server-banners@1.1.0.zip",
+          "sha256": "e6969416dbc2858c8dbc7ba111413a69a979cecc6cb7902ca41d42ae90eec790",
+          "size": 1346,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
