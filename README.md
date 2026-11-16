@@ -123,12 +123,13 @@ on the bar with your name, each with its own switch in the plugin's settings:
 
 - **Reload** (on by default): restarts Discord's JavaScript (`BundleUpdaterManager.reload()`), like the reload in older
   clients; it also applies waiting plugin updates. There is a "Reload Discord" row at the top of Discord's settings too.
+- **Friends** (off by default): opens your Friends list.
 - **Plugins** (off by default): opens Valenced's Plugins page.
 - **Performance Monitor** (off by default): opens the page of dariussbezy's Performance Monitor plugin
   (`dariuss.performance-monitor`), which has to be installed and on.
 
 The buttons are copies of the bell's own button, so they match the rest of the bar. Order: Performance Monitor,
-Reload, Plugins, then the bell.
+Reload, Friends, Plugins, then the bell. Buttons that are switched off take no space, so the others close up.
 
 **Hide the Favorites button** (off by default): takes the star that YouBar+ or Better You Bar adds off the bar, so
 the Plugins button sits in its place. It works on what those plugins render, so it needs their button to be one of the

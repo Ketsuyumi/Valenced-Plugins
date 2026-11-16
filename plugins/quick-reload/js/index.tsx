@@ -30,6 +30,8 @@ interface Settings {
 	monitorButton: boolean
 	/** A button on the bar that opens Valenced's Plugins page. */
 	pluginsButton: boolean
+	/** A button on the bar that opens the Friends list. */
+	friendsButton: boolean
 	/** Take the Favorites (star) button that YouBar+ / Better You Bar adds off the bar. */
 	hideFavorites: boolean
 }
@@ -41,6 +43,7 @@ const DEFAULTS: Settings = {
 	settingsRow: true,
 	monitorButton: false,
 	pluginsButton: false,
+	friendsButton: false,
 	hideFavorites: false,
 }
 
@@ -94,6 +97,41 @@ function pluginsRoute(): string {
 const openPlugins = () =>
 	openSettingsScreen(pluginsRoute(), "Couldn't open the Plugins page.")
 
+/**
+ * The Friends screen of Discord's root navigator. Its name is read from the navigator's own
+ * list of screens (so a rename is followed); `friends` is what it has been called.
+ */
+function friendsRoute(navigation: any): string {
+	try {
+		const names: unknown = navigation?.getRootState?.()?.routeNames
+		if (Array.isArray(names)) {
+			const all = names.filter((n): n is string => typeof n === 'string')
+			const exact = all.find(n => /^friends?$/i.test(n))
+			if (exact) return exact
+			const close = all.find(
+				n => /friend/i.test(n) && !/add|request|suggest/i.test(n),
+			)
+			if (close) return close
+		}
+	} catch {}
+	return 'friends'
+}
+
+function openFriends() {
+	try {
+		const navigation = RootNavigationRef.getRootNavigationRef() as any
+		if (typeof navigation?.navigate !== 'function')
+			throw new Error('no navigation')
+		navigation.navigate(friendsRoute(navigation))
+	} catch {
+		try {
+			ToastActionCreators.open('quick-access-open', {
+				text: "Couldn't open Friends.",
+			} as never)
+		} catch {}
+	}
+}
+
 /** One button on the bar: what it shows and does. */
 interface BarButton {
 	key: string
@@ -118,6 +156,13 @@ const BAR_BUTTONS: BarButton[] = [
 		icons: ['RefreshIcon', 'ArrowsCircularIcon', 'RetryIcon'],
 		onPress: reload,
 		enabled: settings => settings.barButton,
+	},
+	{
+		key: 'quick-access-friends',
+		label: 'Friends',
+		icons: ['FriendsIcon', 'GroupIcon', 'UserPlusIcon', 'UserIcon'],
+		onPress: openFriends,
+		enabled: settings => settings.friendsButton,
 	},
 	{
 		key: 'quick-access-plugins',
@@ -328,6 +373,12 @@ function SettingsPage({ api }: { api: Api }) {
 						onValueChange={(monitorButton: boolean) => set({ monitorButton })}
 					/>
 					<TableSwitchRow
+						label="Friends button on your bar"
+						subLabel="Opens your Friends list"
+						value={settings.friendsButton}
+						onValueChange={(friendsButton: boolean) => set({ friendsButton })}
+					/>
+					<TableSwitchRow
 						label="Plugins button on your bar"
 						subLabel="Opens Valenced's Plugins page"
 						value={settings.pluginsButton}
@@ -352,6 +403,7 @@ function SettingsPage({ api }: { api: Api }) {
 				</TableRowGroup>
 				<TableRowGroup>
 					<TableRow label="Reload Discord now" arrow onPress={reload} />
+					<TableRow label="Open Friends" arrow onPress={openFriends} />
 					<TableRow label="Open Plugins" arrow onPress={openPlugins} />
 					<TableRow
 						label="Open Performance Monitor"
