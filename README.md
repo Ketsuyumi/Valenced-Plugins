@@ -116,6 +116,12 @@ Changed in this fork: the original intercepted every element Discord creates (`b
 four minutes) to find the Messages icon. This one patches `GuildsBarAnimatedItemWrapper` directly, so it only runs
 when that component renders. Switch the original off if you install this one.
 
+### Quick Reload (`dev.ketsuyumi.quick-reload`)
+
+A reload button like the old clients had. It adds a ⟳ button next to the bell on the bar with your name, and a
+"Reload Discord" row at the top of Discord's settings; each can be turned off in the plugin's settings. Reloading
+restarts Discord's JavaScript (`BundleUpdaterManager.reload()`), which also applies waiting plugin updates.
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.
