@@ -28,3 +28,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.READ_PACKAGES_TOKEN }}
         run: ./gradlew --no-daemon packageAllPlugins
+
+      # The plugins in private/ are never published. Their packaged files are kept here as a
+      # build artifact instead, to install by hand.
+      - name: Collect the private plugins
+        run: |
+          mkdir -p build/private
+          for manifest in private/*/manifest.json; do
+            id=$(jq -r .id "$manifest")
+            version=$(jq -r .version "$manifest")
+            cp "build/dist/${id}@${version}.zip" build/private/ 2>/dev/null || echo "::warning::no package for ${id}@${version}"
+          done
+          ls -l build/private
+      - uses: actions/upload-artifact@v4
+        with:
+          name: private-plugins
+          path: build/private/*.zip

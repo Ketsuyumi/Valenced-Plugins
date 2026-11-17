@@ -95,27 +95,6 @@ friend request, and the Block and Ignore action sheets. For those, skipping does
 It hooks only Discord's `openAlert` and `openLazy` (and only reacts to confirmation sheets there), so it does nothing
 until a dialog is about to open, and its HTTP helper is found once at start rather than while a dialog opens.
 
-### Instant Actions+ (`dev.ketsuyumi.instant-actions`)
-
-A fork of [Instant Actions](https://github.com/k1ng0p/Valenced-Plugins-by-k1ng0p) by **k1ng_op** (GPL-3.0; this fork
-is GPL-3.0 too). Skips "Are you sure?" prompts for deleting messages, embeds and attachments, masked links, channels,
-leaving servers and groups, roles, unfriending, blocking, ignoring, cancelling friend requests, voice calls and
-pins, each with its own switch. Same features and settings as the original.
-
-Changed in this fork: the original looked translated dialog titles up by scanning every Discord module while a
-dialog was opening, which made Discord hitch for up to ~100 ms. Here the translation modules are found once, every
-title is resolved in a warm-up shortly after start, template patterns are compiled once, and the HTTP helper is
-fetched up front. Switch the original off if you install this one.
-
-### Read All Servers+ (`dev.ketsuyumi.read-all`)
-
-A fork of [Read All Servers](https://github.com/aeongdesu/slimplugins) by **sapphire** (GPL-3.0; this fork is GPL-3.0
-too). Long press the Messages icon at the top of the server list to mark every unread server as read.
-
-Changed in this fork: the original intercepted every element Discord creates (`before jsx`/`jsxs`, ~240,000 calls in
-four minutes) to find the Messages icon. This one patches `GuildsBarAnimatedItemWrapper` directly, so it only runs
-when that component renders. Switch the original off if you install this one.
-
 ### Quick Access (`dev.ketsuyumi.quick-reload`)
 
 Formerly Quick Reload (the ID is unchanged, so existing installs update in place). Shortcut buttons next to the bell
@@ -142,81 +121,6 @@ near the top of the screen. During calls Discord holds a proximity wake lock; th
 `PowerManager.newWakeLock` inside Discord only and turns proximity wake locks into partial ones, so the phone stays
 awake for the call but the sensor never switches the screen off. Turn the plugin off to get the normal behaviour back.
 Android only.
-
-### Fake Nickname+ (`dev.ketsuyumi.fake-nickname`)
-
-A fork of [Fake Nickname](https://github.com/il1ll/ValencedPlugins) by **coder.gg** (GPL-3.0; this fork is GPL-3.0
-too). Give anyone a nickname that only you see, without being friends: long-press a profile's menu, or add them by ID
-in the settings. Same features and settings as the original.
-
-Changed in this fork: the original's name hooks (`getMember`, `getGlobalName`, `getName` and others) ran tens of
-thousands of times, each reading storage, trimming the saved name and creating a new function. Here the saved
-nicknames become a lookup table once when they change, each hook is a single lookup that goes straight to Discord's
-function for everyone without a fake nickname, and the hooks are only installed while at least one nickname is saved.
-Nicknames are stored separately from the original plugin, so add them again after switching.
-
-**Fast mode** (on by default, switch in the plugin's settings): instead of intercepting `getMember`, one of Discord's
-most-called functions, the nickname is written into the member records of the server you are viewing and written again
-when Discord refreshes a member. Real nicknames are put back when a fake one is removed or the plugin stops. If
-Discord's member data is read-only, it falls back to the hook automatically.
-
-### Staff Tags+ (`dev.ketsuyumi.staff-tags`)
-
-A fork of [Staff Tags](https://github.com/bleelblep/bleel-bazinga-repo) by **bleelblep** (with Fiery and シグマ siguma;
-GPL-3.0, this fork is GPL-3.0 too). Shows OWNER, ADMIN, STAFF, MOD, VC Mod, Chat Mod and WEBHOOK tags in chat, member
-lists and profiles, with the original's per-tag editor (text, colour, gradient, icon).
-
-New in this fork:
-
-- **Compact mode**: just the icon when a tag has one, otherwise a short label (ADM, MOD, VC...).
-- **Show tags in**: separate switches for chat, member list and profiles.
-- **Servers**: turn staff tags off in specific servers, with search.
-- **Your own tags**: give a specific person a tag (text and colour) by user ID. Only you see it; it shows in every
-  server and in DMs.
-
-Faster: the original worked out a member's permissions from all their roles again for every message row. Here each
-person's tag is cached per server and channel and cleared when members, roles, channels, permissions or settings
-change; settings are merged once per change, row colours are converted once per tag, Discord's own tags skip the
-painter, and member/profile rows check the cached tag before walking the rendered tree. The original's changelog popup
-is left out. Settings are separate from the original plugin, so turn the original off.
-
-### Ghost Log+ (`dev.ketsuyumi.ghost-log`)
-
-A fork of [Ghost Log Next Gen](https://github.com/bleelblep/bleel-bazinga-repo) by **bleelblep** (CC0-1.0 with parts
-under BSD-3-Clause; see the plugin's `NOTICE.md`). An encrypted log of deleted messages, edit history and saved media,
-with deleted messages kept visible in chat. The native half is unchanged.
-
-New in this fork:
-
-- **Ignore list**: servers, channels and people that are never logged, added by ID.
-- **Keyword alerts**: a notice when a deleted message contains one of your words, even with catch toasts off.
-- **Better search**: every word has to match, in any order; IDs match; `from:`, `in:` and `server:` filters.
-
-Faster: opening a channel used to build a full message record for every logged deletion in it, then drop the ones
-outside the loaded messages. With a few hundred logged deletions in one channel that froze Discord for hundreds of
-milliseconds. Records are now built only for deletions inside the loaded window; older ones appear as you scroll back.
-
-It has its own ID, so its log is separate from the original's. To move a log over: in the original, Backup &
-encryption > set a recovery password > Export bundle; then in Ghost Log+, Backup & encryption > Import bundle. Turn the
-original off afterwards: two message loggers at once fight over the same messages.
-
-### Better Channel List+ (`dev.ketsuyumi.better-channel-list`)
-
-A fork of [Better Channel List](https://github.com/Yumistra/Freestyle-Valenced) by **Yumistra** (GPL-3.0; this fork is
-GPL-3.0 too). Shows the last message under each channel and gives channels emoji icons, with the original's settings
-and per-channel emoji picker.
-
-New in this fork:
-
-- **Message age**: how long ago the last message was sent (5m, 3h, 2d) after the author's name.
-- **Only unread channels**: channels you've read show no last message.
-- **Skip muted channels**: no last message under channels you've muted.
-
-Faster: the original rebuilt each channel's preview (text clean-up, name style, role colours, and searches through
-Discord's modules) every time a row's height was measured, again when it was drawn and a third time inside the row.
-Previews are now built once per message and cached per channel, module lookups are remembered, settings are merged once
-per change, and the settings page no longer re-renders every second. Settings are separate from the original, so turn
-the original off and re-pick any custom channel emojis.
 
 ### Smaller Media (`dev.ketsuyumi.smaller-media`)
 
