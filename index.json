@@ -12,7 +12,7 @@
       ],
       "icon": "ChatIcon",
       "channels": {
-        "latest": "1.0.2"
+        "latest": "1.0.3"
       },
       "versions": {
         "1.0.0": {
@@ -45,6 +45,19 @@
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.better-channel-list@1.0.2.zip",
           "sha256": "8b0606eaa90da97310cb3fa19ceb6ebac2d161a3f4a1f0f4c893e1ab45c60d91",
           "size": 39811,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.3": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.better-channel-list@1.0.3.zip",
+          "sha256": "f8a4e4ec5cfc09ad576cded65fda2883e731971d0392db68762b77ca00624ba4",
+          "size": 39944,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
