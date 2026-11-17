@@ -3,72 +3,6 @@
   "name": "Valenced Plugins by ketsuyumi",
   "description": "Plugins for Valenced.",
   "plugins": {
-    "dev.ketsuyumi.better-channel-list": {
-      "name": "Better Channel List+",
-      "description": "Shows the last message under each channel and gives channels emoji icons. A faster fork of Yumistra's Better Channel List, with message age, unread-only previews and a muted-channel switch. GPL-3.0.",
-      "author": "Yumistra",
-      "contributors": [
-        "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")"
-      ],
-      "icon": "ChatIcon",
-      "channels": {
-        "latest": "1.0.3"
-      },
-      "versions": {
-        "1.0.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.better-channel-list@1.0.0.zip",
-          "sha256": "12ecd07d2bc1ca01e7fc9aa8b213ee91ab01f5972c378bd2fd728fa9f253f2aa",
-          "size": 39439,
-          "dependencies": {
-            "valenced.api": {
-              "version": ">=1 <2"
-            },
-            "discord": {
-              "version": "*"
-            }
-          }
-        },
-        "1.0.1": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.better-channel-list@1.0.1.zip",
-          "sha256": "c85ca9d92e72d11d2830791949e6980a7dff83c7091c45ec49377f21daf4ef66",
-          "size": 39591,
-          "dependencies": {
-            "valenced.api": {
-              "version": ">=1 <2"
-            },
-            "discord": {
-              "version": "*"
-            }
-          }
-        },
-        "1.0.2": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.better-channel-list@1.0.2.zip",
-          "sha256": "8b0606eaa90da97310cb3fa19ceb6ebac2d161a3f4a1f0f4c893e1ab45c60d91",
-          "size": 39811,
-          "dependencies": {
-            "valenced.api": {
-              "version": ">=1 <2"
-            },
-            "discord": {
-              "version": "*"
-            }
-          }
-        },
-        "1.0.3": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.better-channel-list@1.0.3.zip",
-          "sha256": "f8a4e4ec5cfc09ad576cded65fda2883e731971d0392db68762b77ca00624ba4",
-          "size": 39944,
-          "dependencies": {
-            "valenced.api": {
-              "version": ">=1 <2"
-            },
-            "discord": {
-              "version": "*"
-            }
-          }
-        }
-      }
-    },
     "dev.ketsuyumi.block-by-id": {
       "name": "Block by ID",
       "description": "Block any Discord user by pasting their user ID, even if you share no server or DM with them.",
@@ -197,151 +131,6 @@
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.2.2.zip",
           "sha256": "6e481adb7cb198b505a0dbb5bd5aba2c7b85658e7608d1972789fba3be022282",
           "size": 6068,
-          "dependencies": {
-            "valenced.api": {
-              "version": ">=1 <2"
-            },
-            "discord": {
-              "version": "*"
-            }
-          }
-        }
-      }
-    },
-    "dev.ketsuyumi.fake-nickname": {
-      "name": "Fake Nickname+",
-      "description": "Change anyone's nickname without being friends. A faster fork of coder.gg's Fake Nickname (name lookups no longer slow Discord down). GPL-3.0.",
-      "author": "coder.gg <1099039269391171765> (https://il1ll.github.io \"Website\") (https://github.com/il1ll \"GitHub\")",
-      "contributors": [
-        "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")"
-      ],
-      "icon": "PencilIcon",
-      "channels": {
-        "latest": "1.1.0"
-      },
-      "versions": {
-        "1.0.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.fake-nickname@1.0.0.zip",
-          "sha256": "668fb4eac8dc7605e3706d41e0003f00749b7d894d5b72a21cf0cefce3227c53",
-          "size": 4390,
-          "dependencies": {
-            "valenced.api": {
-              "version": ">=1 <2"
-            },
-            "discord": {
-              "version": "*"
-            }
-          }
-        },
-        "1.1.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.fake-nickname@1.1.0.zip",
-          "sha256": "6962732ef08661296d2f4da00cf76ff694a00f1325a0e9d47581461fe367913a",
-          "size": 5159,
-          "dependencies": {
-            "valenced.api": {
-              "version": ">=1 <2"
-            },
-            "discord": {
-              "version": "*"
-            }
-          }
-        }
-      }
-    },
-    "dev.ketsuyumi.ghost-log": {
-      "name": "Ghost Log+",
-      "description": "Encrypted deleted-message log, edit history and saved media, plus an ignore list, keyword alerts and a better search. A faster fork of bleelblep's Ghost Log Next Gen (no freeze when opening a channel with many logged deletions).",
-      "author": "bleelblep",
-      "contributors": [
-        "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")"
-      ],
-      "icon": "TrashIcon",
-      "channels": {
-        "latest": "1.0.6"
-      },
-      "versions": {
-        "1.0.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ghost-log@1.0.0.zip",
-          "sha256": "e484963a7ca28bc60c72ebffeeb68957e10eb8ed005898adfb16ac0408de1d12",
-          "size": 182251,
-          "dependencies": {
-            "valenced.api": {
-              "version": ">=1 <2"
-            },
-            "discord": {
-              "version": "*"
-            }
-          }
-        },
-        "1.0.1": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ghost-log@1.0.1.zip",
-          "sha256": "d0418a43874faf16268323b37d93a1db5ef68fa163df87c0340e9660149d730b",
-          "size": 182286,
-          "dependencies": {
-            "valenced.api": {
-              "version": ">=1 <2"
-            },
-            "discord": {
-              "version": "*"
-            }
-          }
-        },
-        "1.0.2": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ghost-log@1.0.2.zip",
-          "sha256": "97143b762d2b48f1c2e80e79a33c9e442e73516f5b6640afd65f160cd0c8470b",
-          "size": 182500,
-          "dependencies": {
-            "valenced.api": {
-              "version": ">=1 <2"
-            },
-            "discord": {
-              "version": "*"
-            }
-          }
-        },
-        "1.0.3": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ghost-log@1.0.3.zip",
-          "sha256": "ea3bcd23d7b2145e50a3f74f54c9b5999f42ecd235b47a34555df30ed13744df",
-          "size": 182563,
-          "dependencies": {
-            "valenced.api": {
-              "version": ">=1 <2"
-            },
-            "discord": {
-              "version": "*"
-            }
-          }
-        },
-        "1.0.4": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ghost-log@1.0.4.zip",
-          "sha256": "bcfad83a52993b8fdc517535b131b60e8bb746bb459a4e9b1b20817484e3dc5b",
-          "size": 182709,
-          "dependencies": {
-            "valenced.api": {
-              "version": ">=1 <2"
-            },
-            "discord": {
-              "version": "*"
-            }
-          }
-        },
-        "1.0.5": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ghost-log@1.0.5.zip",
-          "sha256": "eca5645206d3394507f6c5891b34ace5bff4a7a949cbacc5112287e74d8a8b7f",
-          "size": 182709,
-          "dependencies": {
-            "valenced.api": {
-              "version": ">=1 <2"
-            },
-            "discord": {
-              "version": "*"
-            }
-          }
-        },
-        "1.0.6": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ghost-log@1.0.6.zip",
-          "sha256": "33e7cd25dcf9adaa82f5f0304072ed41d823ee4ba8ee075a6f443fe9173e62a6",
-          "size": 183081,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -490,33 +279,6 @@
         }
       }
     },
-    "dev.ketsuyumi.instant-actions": {
-      "name": "Instant Actions+",
-      "description": "No more 'Are you sure?' Skips deletes, leaves, blocks, and other prompts, each toggled individually. A faster fork of k1ng_op's Instant Actions (no hitch when a dialog opens). GPL-3.0.",
-      "author": "k1ng_op <641266820187160576> (https://github.com/k1ng0p \"GitHub\")",
-      "contributors": [
-        "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")"
-      ],
-      "icon": "FlashIcon",
-      "channels": {
-        "latest": "1.0.0"
-      },
-      "versions": {
-        "1.0.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.instant-actions@1.0.0.zip",
-          "sha256": "71fb679c4031c2f493f4d5ba0b8f1b557bb8c7fadaabeba9bb752dddb0d76db0",
-          "size": 3150,
-          "dependencies": {
-            "valenced.api": {
-              "version": ">=1 <2"
-            },
-            "discord": {
-              "version": "*"
-            }
-          }
-        }
-      }
-    },
     "dev.ketsuyumi.no-blackout": {
       "name": "No Blackout",
       "description": "Stops the screen going black during calls when the proximity sensor is covered (for example by a finger near the top of the screen). Android only.",
@@ -619,33 +381,6 @@
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.4.0.zip",
           "sha256": "5fff1318562cc50564c42901381328847bf8edee16152e895e2f75e09b8af520",
           "size": 3589,
-          "dependencies": {
-            "valenced.api": {
-              "version": ">=1 <2"
-            },
-            "discord": {
-              "version": "*"
-            }
-          }
-        }
-      }
-    },
-    "dev.ketsuyumi.read-all": {
-      "name": "Read All Servers+",
-      "description": "Long press the Messages icon to mark every server as read. A lighter fork of sapphire's Read All Servers that doesn't intercept every element Discord draws. GPL-3.0.",
-      "author": "sapphire <757982547861962752>",
-      "contributors": [
-        "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")"
-      ],
-      "icon": "ChatCheckIcon",
-      "channels": {
-        "latest": "1.0.0"
-      },
-      "versions": {
-        "1.0.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.read-all@1.0.0.zip",
-          "sha256": "ae0f7909c7158a633a3e8af22337889683c84077be35443728bdc42415fb0408",
-          "size": 1605,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -778,48 +513,6 @@
             },
             "discord": {
               "version": "*"
-            }
-          }
-        }
-      }
-    },
-    "dev.ketsuyumi.staff-tags": {
-      "name": "Staff Tags+",
-      "description": "OWNER, ADMIN, STAFF, MOD, VC Mod, Chat Mod and WEBHOOK tags, plus your own tags by user ID, compact mode, per-server and where-to-show switches. A faster fork of bleelblep's Staff Tags. GPL-3.0.",
-      "author": "bleelblep",
-      "contributors": [
-        "Fiery",
-        "シグマ siguma",
-        "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")"
-      ],
-      "icon": "ShieldIcon",
-      "channels": {
-        "latest": "1.0.1"
-      },
-      "versions": {
-        "1.0.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.staff-tags@1.0.0.zip",
-          "sha256": "9f68010e610f969bf077df9719b8e72502ca43ab201d79a9b9501ed640008075",
-          "size": 12337,
-          "dependencies": {
-            "valenced.api": {
-              "version": ">=1 <2"
-            },
-            "discord": {
-              "version": ">=350.2"
-            }
-          }
-        },
-        "1.0.1": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.staff-tags@1.0.1.zip",
-          "sha256": "cbf9429c8bc9984b99ca48442565dbb49bcbeb4abc9506d46bba3723e33f87f5",
-          "size": 12439,
-          "dependencies": {
-            "valenced.api": {
-              "version": ">=1 <2"
-            },
-            "discord": {
-              "version": ">=350.2"
             }
           }
         }
