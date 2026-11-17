@@ -147,6 +147,38 @@ function noteHidden(ids: unknown[]) {
 	}
 }
 
+/**
+ * Better Channel List+: channels whose row currently shows one of our previews.
+ *
+ * The original redrew the whole channel list on every new or edited message anywhere in the open
+ * server (and this fork added more on member updates): in a busy server that was a full list
+ * rebuild every few seconds, about 400 in 27 minutes in the Performance Monitor, each one making
+ * Discord and every plugin that touches channel rows do the whole list again.
+ *
+ * A row already redraws itself when its channel's last message changes (useLastMessage), so the
+ * list only has to be laid out again when a row's HEIGHT changes: a channel that showed no
+ * preview is about to get one. Channels in this set already have the taller row.
+ */
+const shownIds = new Set<string>()
+const relayoutAt = new Map<string, number>()
+/** A channel that never ends up with a preview (collapsed, hidden) must not redraw the list on every message. */
+const RELAYOUT_EVERY_MS = 30_000
+
+function relayoutIfNeeded(channelId: unknown) {
+	if (typeof channelId !== 'string') return
+	const s = settings()
+	if (!s.lastMessage || shownIds.has(channelId)) return
+	try {
+		const channel = S().ChannelStore?.getChannel?.(channelId)
+		if (channel && !wantsPreview(channel, s)) return
+	} catch {}
+	const now = Date.now()
+	if (now - (relayoutAt.get(channelId) ?? 0) < RELAYOUT_EVERY_MS) return
+	if (relayoutAt.size > 500) relayoutAt.clear()
+	relayoutAt.set(channelId, now)
+	redraw()
+}
+
 function onPreviews({ messages }: any) {
 	if (!Array.isArray(messages)) return
 	status.received += messages.length
@@ -166,9 +198,9 @@ function onPreviews({ messages }: any) {
 				limit: 1,
 				messages: [m],
 			} as any)
+			relayoutIfNeeded(m.channel_id)
 		} catch {}
 	}
-	redraw()
 }
 
 // ── 미리보기 글 만들기 ─────────────────────────────────────────────────────
@@ -1027,11 +1059,13 @@ function fillPreviews(args: any[]): any {
 					enumerable: true,
 				})
 			touched.add(ch)
+			if (typeof rec.id === 'string') shownIds.add(rec.id)
 			status.withMessage++
 		} else if (ours) {
 			delete ch.subtitle
 			if (ch.subtitle !== undefined) ch.subtitle = undefined
 			touched.delete(ch)
+			if (typeof rec.id === 'string') shownIds.delete(rec.id)
 		}
 	} catch (e: any) {
 		status.lastError = String(e?.message ?? e)
@@ -1229,14 +1263,14 @@ export default plugin({
 				(e: any) =>
 					e?.guildId &&
 					e.guildId === S().SelectedGuildStore?.getGuildId?.() &&
-					redraw(),
+					relayoutIfNeeded(e.channelId ?? e.message?.channel_id),
 			],
 			[
 				'MESSAGE_UPDATE',
 				(e: any) =>
 					e?.guildId &&
 					e.guildId === S().SelectedGuildStore?.getGuildId?.() &&
-					redraw(),
+					relayoutIfNeeded(e.message?.channel_id ?? e.channelId),
 			],
 			['CHANNEL_SELECT', (e: any) => request(e?.guildId)],
 			[
@@ -1294,16 +1328,17 @@ export default plugin({
 			channelWatchers.clear()
 		})
 		// Better Channel List+: cached previews hold names and role colours, so they are dropped
-		// when member or user data changes. Trailing and at most every 1.5 s: member chunks
-		// arrive in bursts while a server loads.
+		// when member or user data changes, at most every 5 s (member updates arrive in bursts).
+		// Only the cache is dropped: the next time a row is drawn it builds its preview again.
+		// Redrawing the whole list here, as an earlier version did, rebuilt it every 1.5 s in a
+		// busy server.
 		let dropTimer: any
 		const dropSoon = () => {
 			if (dropTimer) return
 			dropTimer = setTimeout(() => {
 				dropTimer = undefined
 				dropPreviews()
-				redraw()
-			}, 1500)
+			}, 5000)
 		}
 		cleanup(() => clearTimeout(dropTimer))
 		for (const type of [
@@ -1358,6 +1393,8 @@ export default plugin({
 				} catch {}
 			touched.clear()
 			previews.clear()
+			shownIds.clear()
+			relayoutAt.clear()
 			hiddenLocally.clear()
 			clearLookups()
 			unbind()
