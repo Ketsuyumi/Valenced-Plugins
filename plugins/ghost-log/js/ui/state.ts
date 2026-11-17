@@ -92,6 +92,62 @@ export function getLogVersion(): number {
 let structure = 0
 const channelContent = new Map<string, number>()
 
+/**
+ * Ghost Log+ 1.0.6: what was added and removed since the chat hook last looked, so it can update
+ * just those channels. 1.0.5 regrouped and sorted the whole log after every capture, which with a
+ * large log was one long call (up to 144 ms in the Performance Monitor) per caught deletion.
+ * `full` means "start over" (reload, clear, or more changes than are worth replaying).
+ */
+interface LogChanges {
+	full: boolean
+	added: DeletedMessage[]
+	removed: DeletedMessage[]
+}
+let changes: LogChanges = { full: true, added: [], removed: [] }
+const MAX_JOURNAL = 2000
+
+function journal(added: DeletedMessage[], removed: DeletedMessage[]) {
+	if (changes.full) return
+	if (
+		changes.added.length +
+			changes.removed.length +
+			added.length +
+			removed.length >
+		MAX_JOURNAL
+	) {
+		changes = { full: true, added: [], removed: [] }
+		return
+	}
+	changes.added.push(...added)
+	changes.removed.push(...removed)
+}
+
+/** Hands the changes since the last call to the chat hook and starts a new journal. */
+export function takeLogChanges(): LogChanges {
+	const taken = changes
+	changes = { full: false, added: [], removed: [] }
+	return taken
+}
+
+/**
+ * Entries were added to or removed from the log. With [added]/[removed] the chat hook updates
+ * just those channels; without them it regroups everything (reload, clear).
+ */
+function notifyStructure(added?: DeletedMessage[], removed?: DeletedMessage[]) {
+	if (added === undefined && removed === undefined) {
+		changes = { full: true, added: [], removed: [] }
+		loggedIdsStale = true
+	} else {
+		journal(added ?? [], removed ?? [])
+		// Removals first: an entry caught again is in both lists, the old copy and the new.
+		if (!loggedIdsStale) {
+			for (const entry of removed ?? []) loggedIds.delete(entry.id)
+			for (const entry of added ?? []) loggedIds.add(entry.id)
+		}
+	}
+	notify()
+}
+
 function notify(channelIds?: Iterable<string>) {
 	version++
 	if (channelIds === undefined) structure++
@@ -176,7 +232,7 @@ export async function refreshLog(): Promise<DeletedMessage[]> {
 		// with empty attachments/embeds and never rebuilt them once the rich content landed.
 		cache = [...carried, ...snapshot.filter(entry => !carriedIds.has(entry.id))]
 		if (DEBUG) console.log(`${TAG} cache loaded ${cache.length} entries`)
-		notify()
+		notifyStructure()
 	} catch (error) {
 		// Keep what we had: an empty cache here un-restores every message and turns the guards off.
 		reportError(`${TAG} getLog failed; keeping the cached log:`, error)
@@ -313,8 +369,13 @@ function dropFromCache(ids: Set<string>) {
 		addedDuringLoad.delete(id)
 		if (loading) removedDuringLoad.add(id)
 	}
-	cache = cache.filter(entry => !ids.has(entry.id))
-	notify()
+	const removed: DeletedMessage[] = []
+	cache = cache.filter(entry => {
+		if (!ids.has(entry.id)) return true
+		removed.push(entry)
+		return false
+	})
+	notifyStructure([], removed)
 }
 
 /**
@@ -348,7 +409,7 @@ export async function clearNativeLog(): Promise<boolean> {
 	}
 	rehydratedChannels.clear()
 	rehydrateAttempts.clear()
-	notify()
+	notifyStructure()
 	backupAfterRemoval()
 	return true
 }
@@ -369,14 +430,24 @@ function flushAdds() {
 	// Newest first, matching the native log's own order.
 	const batch = pendingAdds.splice(0, pendingAdds.length).reverse()
 	const incoming = new Set(batch.map(entry => entry.id))
-	cache = [...batch, ...cache.filter(e => !incoming.has(e.id))]
+	const removed: DeletedMessage[] = []
+	cache = [
+		...batch,
+		...cache.filter(e => {
+			if (!incoming.has(e.id)) return true
+			removed.push(e)
+			return false
+		}),
+	]
 	// The same cap native trims to on every catch. Without it a mass delete grew this copy (and the
 	// ghosts drawn from it) until the Ghost Log page was next opened, and entries native had already
 	// dropped still showed as deleted, with Remove failing on them.
 	const { maxEntries, unlimitedEntries } = getSettings()
-	if (!unlimitedEntries && maxEntries > 0 && cache.length > maxEntries)
+	if (!unlimitedEntries && maxEntries > 0 && cache.length > maxEntries) {
+		removed.push(...cache.slice(maxEntries))
 		cache = cache.slice(0, maxEntries)
-	notify()
+	}
+	notifyStructure(batch, removed)
 }
 
 /** Keep the JS cache in step with a freshly captured entry (native store is the source of truth). */
@@ -482,7 +553,8 @@ export function getCachedLog(): DeletedMessage[] {
 }
 
 let loggedIds = new Set<string>()
-let loggedIdsVersion = -1
+/** Ghost Log+ 1.0.6: rebuilt only after a reload or clear; captures and removals update it in place. */
+let loggedIdsStale = true
 
 /**
  * Whether a message id is in the deleted log, in O(1). Messages restored after a reload exist only in
@@ -490,8 +562,8 @@ let loggedIdsVersion = -1
  * Staged captures count too, so a message is known the moment it is caught.
  */
 export function isLoggedId(messageId: string): boolean {
-	if (loggedIdsVersion !== version) {
-		loggedIdsVersion = version
+	if (loggedIdsStale) {
+		loggedIdsStale = false
 		loggedIds = new Set(cache.map(entry => entry.id))
 	}
 	if (loggedIds.has(messageId)) return true
@@ -516,6 +588,8 @@ export function useLog(): DeletedMessage[] {
 /** Clears every module-scope structure, for stop() (requireReload still runs, but the next start
  *  must not inherit a half-lived session's state). */
 export function resetState() {
+	loggedIdsStale = true
+	changes = { full: true, added: [], removed: [] }
 	cache = []
 	loading = false
 	addedDuringLoad.clear()
@@ -532,6 +606,6 @@ export function resetState() {
 	rehydratedChannels.clear()
 	rehydrateAttempts.clear()
 	loggedIds = new Set()
-	loggedIdsVersion = -1
+	loggedIdsStale = true
 	listeners.clear()
 }

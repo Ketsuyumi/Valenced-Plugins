@@ -23,6 +23,7 @@ import {
 	getChannelContentVersion,
 	getLogStructure,
 	rehydrateChannel,
+	takeLogChanges,
 } from '../ui/state'
 import type { GhostLogSettings } from '../types'
 import type { DeletedMessage } from '../ui/state'
@@ -105,6 +106,46 @@ function syncIndex() {
 	const structure = getLogStructure()
 	if (structure === indexedStructure) return
 	indexedStructure = structure
+	const changes = takeLogChanges()
+	if (changes.full) {
+		regroupAll()
+		return
+	}
+	// Ghost Log+ 1.0.6: only the channels named by the added and removed entries get a new array;
+	// every other channel keeps its array, and with it the chat's merged result.
+	const added = new Map<string, DeletedMessage[]>()
+	for (const entry of changes.added) {
+		const list = added.get(entry.channelId)
+		if (list) list.push(entry)
+		else added.set(entry.channelId, [entry])
+	}
+	const removed = new Map<string, Set<DeletedMessage>>()
+	for (const entry of changes.removed) {
+		const set = removed.get(entry.channelId)
+		if (set) set.add(entry)
+		else removed.set(entry.channelId, new Set([entry]))
+	}
+	for (const channelId of new Set([...added.keys(), ...removed.keys()])) {
+		const before = byChannel.get(channelId) ?? []
+		const gone = removed.get(channelId)
+		const next = gone
+			? before.filter(entry => !gone.has(entry))
+			: before.slice()
+		const fresh = added.get(channelId)
+		if (fresh) {
+			next.push(...fresh)
+			next.sort((a, b) => sortTime(b) - sortTime(a))
+		}
+		if (next.length) byChannel.set(channelId, next)
+		else byChannel.delete(channelId)
+	}
+	const log = getCachedLog()
+	if (recordCache.size + failedRecords.size > log.length + 200)
+		pruneRecords(log)
+}
+
+/** The whole log grouped again (first use, reload, clear, or a burst too large to replay). */
+function regroupAll() {
 	const log = getCachedLog()
 	const next = new Map<string, DeletedMessage[]>()
 	for (const entry of log) {
