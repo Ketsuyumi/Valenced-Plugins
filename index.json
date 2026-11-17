@@ -257,7 +257,7 @@
       ],
       "icon": "TrashIcon",
       "channels": {
-        "latest": "1.0.5"
+        "latest": "1.0.6"
       },
       "versions": {
         "1.0.0": {
@@ -329,6 +329,19 @@
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ghost-log@1.0.5.zip",
           "sha256": "eca5645206d3394507f6c5891b34ace5bff4a7a949cbacc5112287e74d8a8b7f",
           "size": 182709,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.6": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ghost-log@1.0.6.zip",
+          "sha256": "33e7cd25dcf9adaa82f5f0304072ed41d823ee4ba8ee075a6f443fe9173e62a6",
+          "size": 183081,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
