@@ -136,6 +136,17 @@ have Manage Messages. Messages are deleted one at a time through Discord's own a
 If another plugin uses double-tap, switch "Double-tap to select" off: long-press then selects instead. A message with
 no text shows its highlight the next time its row is redrawn (scroll it off and back).
 
+### Spectators (`dev.ketsuyumi.spectators`)
+
+See who is watching a stream, like on PC: your own stream and the streams you are watching, with avatars, on the
+plugin's page. While you stream there are short notices when someone starts or stops watching, and an Android
+notification with the count and names ("3 watching your stream"), so you can see it outside Discord too. Both can be
+switched off.
+
+The viewers come from Discord's `ApplicationStreamingStore` (`getViewerIds`); Discord only has them for streams you are
+streaming or watching. The native part only posts and removes the notification, on a quiet channel (no sound or
+vibration).
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.
