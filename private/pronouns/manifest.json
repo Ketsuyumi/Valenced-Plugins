@@ -4,7 +4,7 @@
 	"name": "Pronouns+",
 	"description": "People's pronouns as a small tag next to their name in chat, from Discord profiles and PronounDB. A private, faster fork of bleelblep's Pronouns. GPL-3.0.",
 	"author": "bleelblep",
-	"contributors": ["Satou (https://github.com/ketsuyumi \"GitHub\")"],
+	"contributors": ["Satou (https://github.com/inkmachinegirl \"GitHub\")"],
 	"icon": "UserCircleIcon",
 	"version": "1.0.0",
 	"dependencies": {

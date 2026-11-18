@@ -3,9 +3,9 @@
 	"id": "dev.ketsuyumi.hide-dms",
 	"name": "Hide DMs",
 	"description": "Hide chosen DMs and group DMs, or all of them, from your DM list without leaving them.",
-	"author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
+	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
 	"icon": "EyeSlashIcon",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

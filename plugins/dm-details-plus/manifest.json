@@ -3,9 +3,9 @@
 	"id": "dev.ketsuyumi.dm-details-plus",
 	"name": "DM Details+",
 	"description": "On a DM's details screen: hide the New Group button and the Files tab, and add Stickers and Emoji tabs.",
-	"author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
+	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
 	"icon": "StickerIcon",
-	"version": "1.2.3",
+	"version": "1.2.4",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

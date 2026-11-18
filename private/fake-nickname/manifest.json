@@ -5,7 +5,7 @@
 	"description": "Change anyone's nickname without being friends. A faster fork of coder.gg's Fake Nickname (name lookups no longer slow Discord down). GPL-3.0.",
 	"icon": "PencilIcon",
 	"author": "coder.gg <1099039269391171765> (https://il1ll.github.io \"Website\") (https://github.com/il1ll \"GitHub\")",
-	"contributors": ["Satou (https://github.com/ketsuyumi \"GitHub\")"],
+	"contributors": ["Satou (https://github.com/inkmachinegirl \"GitHub\")"],
 	"version": "1.1.0",
 	"dependencies": {
 		"valenced.api": {

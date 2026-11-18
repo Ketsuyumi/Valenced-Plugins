@@ -3,9 +3,9 @@
 	"id": "dev.ketsuyumi.block-by-id",
 	"name": "Block by ID",
 	"description": "Block any Discord user by pasting their user ID, even if you share no server or DM with them.",
-	"author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
+	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
 	"icon": "DenyIcon",
-	"version": "1.3.1",
+	"version": "1.3.2",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

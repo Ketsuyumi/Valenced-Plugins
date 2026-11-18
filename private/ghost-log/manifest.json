@@ -4,7 +4,7 @@
 	"name": "Ghost Log+",
 	"description": "Encrypted deleted-message log, edit history and saved media, plus an ignore list, keyword alerts and a better search. A faster fork of bleelblep's Ghost Log Next Gen (no freeze when opening a channel with many logged deletions).",
 	"author": "bleelblep",
-	"contributors": ["Satou (https://github.com/ketsuyumi \"GitHub\")"],
+	"contributors": ["Satou (https://github.com/inkmachinegirl \"GitHub\")"],
 	"icon": "TrashIcon",
 	"version": "1.0.6",
 	"dependencies": {

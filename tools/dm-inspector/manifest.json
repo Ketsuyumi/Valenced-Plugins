@@ -3,7 +3,7 @@
 	"id": "dev.ketsuyumi.dm-inspector",
 	"name": "DM Inspector (debug)",
 	"description": "Temporary debug tool: records which components draw the DM details screen. Uninstall when done.",
-	"author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
 	"icon": "WrenchIcon",
 	"version": "0.1.0",
 	"dependencies": {

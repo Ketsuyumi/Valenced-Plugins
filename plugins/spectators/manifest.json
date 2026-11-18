@@ -3,9 +3,9 @@
 	"id": "dev.ketsuyumi.spectators",
 	"name": "Spectators",
 	"description": "See who is watching a stream, yours or someone else's, like on PC. Optional notices when people start or stop watching, and a notification with the count while you stream, also outside the app.",
-	"author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
+	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
 	"icon": "EyeIcon",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"
