@@ -128,12 +128,13 @@ plugin leaves the grid on and scales the width it fills, the row's `constrainedW
 
 ### Multi Select (`dev.ketsuyumi.multi-select`)
 
-Select several messages and delete them at once, like on WhatsApp. Long-press a message and choose **Select messages**,
-double-tap more messages to add or remove them (each one is highlighted), then long-press any message for **Delete N**,
-**Select this message** or **Clear selection**. Your own messages can always be deleted; other people's only where you
+Select several messages and delete them at once, like on WhatsApp. Long-press a message and choose **Select messages**:
+a bar appears at the top of the screen with the count, **⋮** (Delete N, Clear selection) and **✕** to stop. While
+selecting, long-press more messages to add or remove them; each one is highlighted. "Double-tap to select" (off by
+default) lets double-tap add and remove too. Your own messages can always be deleted; other people's only where you
 have Manage Messages. Messages are deleted one at a time through Discord's own action, a third of a second apart.
 
-If another plugin uses double-tap, switch "Double-tap to select" off: long-press then selects instead. A message with
+The bar is drawn beside Discord's toast container (`AppToastContainer`), which floats over every screen. A message with
 no text shows its highlight the next time its row is redrawn (scroll it off and back).
 
 ### Spectators (`dev.ketsuyumi.spectators`)

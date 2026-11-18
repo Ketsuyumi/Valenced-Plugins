@@ -16,6 +16,7 @@ import {
 	useState,
 } from 'react'
 import { processColor, ScrollView } from 'react-native'
+import { barAvailable, installBar } from './bar'
 import { findModule } from './find'
 import { handlerStatus, installHandlers, targetOf } from './handlers'
 import { canDelete, canDeleteAtAll, deleteAll, watchActions } from './remove'
@@ -34,12 +35,15 @@ import type { PluginApi } from '@valenced/plugins/types'
 interface Settings {
 	/** Highlight colour of selected messages. */
 	color: string
-	/** Double-tap selects and deselects while selecting. */
-	doubleTap: boolean
+	/**
+	 * Double-tap selects and deselects while selecting. A new key in 1.1.0 (was `doubleTap`, on by
+	 * default) so it starts off for everyone.
+	 */
+	doubleTapSelect: boolean
 }
 type Api = PluginApi<{ jsonStorage: Settings }>
 
-const DEFAULTS: Settings = { color: '#5865F2', doubleTap: true }
+const DEFAULTS: Settings = { color: '#5865F2', doubleTapSelect: false }
 const COLORS: [string, string][] = [
 	['#5865F2', 'Blurple'],
 	['#23A55A', 'Green'],
@@ -61,7 +65,9 @@ function hint() {
 	const n = selection.ids.size
 	toast(
 		n
-			? `${n} selected · double-tap to add or remove · long-press for Delete`
+			? barAvailable()
+				? `${n} selected · long-press messages to add or remove them`
+				: `${n} selected · long-press for Delete`
 			: 'Selection cleared',
 	)
 }
@@ -222,23 +228,25 @@ function SettingsPage({ api }: { api: Api }) {
 				<TableRowGroup title="How to use">
 					<TableRow
 						label="1. Long-press a message"
-						subLabel="Choose Select messages"
+						subLabel="Choose Select messages. A bar shows at the top."
 					/>
 					<TableRow
-						label="2. Double-tap more messages"
-						subLabel="Each one is highlighted. Double-tap again to remove it."
+						label="2. Long-press more messages"
+						subLabel="Each one is highlighted. Long-press again to remove it."
 					/>
 					<TableRow
-						label="3. Long-press any message"
-						subLabel="Delete them, select that one, or clear the selection"
+						label="3. Tap ⋮ in the bar"
+						subLabel="Delete them or clear the selection. ✕ stops selecting."
 					/>
 				</TableRowGroup>
 				<TableRowGroup title="Options">
 					<TableSwitchRow
 						label="Double-tap to select"
-						subLabel="Turn off if another plugin uses double-tap; long-press then selects instead"
-						value={s.doubleTap}
-						onValueChange={(doubleTap: boolean) => set({ doubleTap })}
+						subLabel="Double-tap also adds or removes messages while selecting. Leave off if another plugin uses double-tap."
+						value={s.doubleTapSelect}
+						onValueChange={(doubleTapSelect: boolean) =>
+							set({ doubleTapSelect })
+						}
 					/>
 				</TableRowGroup>
 				<TableRadioGroup
@@ -285,6 +293,17 @@ export default plugin<{ jsonStorage: Settings }>({
 			if (selection.active) clear()
 		})
 		cleanup(watchChannelMessages(), watchActions())
+		cleanup(
+			installBar({
+				options: () => {
+					if (selection.channelId) openOptions(selection.channelId)
+				},
+				cancel: () => {
+					clear()
+					hint()
+				},
+			}),
+		)
 
 		// Highlight selected rows. The row descriptor Discord draws from carries
 		// `backgroundHighlight: { backgroundColor, gutterColor }` (ARGB numbers), the same field
@@ -324,7 +343,7 @@ export default plugin<{ jsonStorage: Settings }>({
 				handleDoubleTapMessage: (instance, original) =>
 					function (this: unknown, ...args: any[]) {
 						try {
-							if (enabled && selection.active && settings().doubleTap) {
+							if (enabled && selection.active && settings().doubleTapSelect) {
 								const { messageId, channel } = targetOf(instance, args[0])
 								if (messageId && channel?.id === selection.channelId) {
 									toggle(channel.id, messageId)
@@ -341,12 +360,12 @@ export default plugin<{ jsonStorage: Settings }>({
 							if (enabled && selection.active) {
 								const { messageId, channel } = targetOf(instance, args[0])
 								if (channel?.id === selection.channelId) {
-									if (!settings().doubleTap && messageId) {
+									// With the bar up, long-press adds or removes, like a chat app; the
+									// options are behind ⋮. Without it, long-press opens the options.
+									if (barAvailable() && messageId) {
 										toggle(channel.id, messageId)
 										hint()
-										return
-									}
-									openOptions(channel.id, messageId)
+									} else openOptions(channel.id, messageId)
 									return
 								}
 							}
