@@ -148,6 +148,19 @@ plugin's settings to see Favorite Game (1), Games in Rotation (5), Games I Like 
 Request shapes follow Discord Userdoccers' widgets page. Creating new custom app widgets is not supported (Discord ended
 that experiment).
 
+### Shop Browser (`dev.ketsuyumi.shop-browser`)
+
+The Discord Shop in a compact 3-column grid with filters. Open the plugin's settings to browse:
+
+- **Filters**: type (decorations, effects, nameplates, frames, bundles), owned or not, Orbs or paid, category, and a
+  search over item and category names. **Reset filters** clears them; pull down to reload.
+- **Sorting**: shop order, cheapest, priciest, or A–Z.
+- **Cards** show a small preview, the name, price (money and/or Orbs) and an **Owned** badge. Tap one for a bigger
+  preview, description, Nitro price and **Open in the Shop**.
+
+Data comes from the same endpoints the app uses (`/collectibles-categories/v2` and `/users/@me/collectibles-purchases`,
+as documented by Discord Userdoccers), through Discord's own request helper. Buying still happens in Discord's shop.
+
 ### Spectators (`dev.ketsuyumi.spectators`)
 
 See who is watching a stream, like on PC: your own stream and the streams you are watching, with avatars, on the
