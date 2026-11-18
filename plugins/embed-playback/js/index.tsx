@@ -8,13 +8,17 @@ import { withProps } from '@valenced/modules/finders/filters'
 import { instead } from '@valenced/patcher'
 import { Linking, ScrollView } from 'react-native'
 import { findModule } from './find'
-import { installPlayer, play, playerAvailable } from './player'
+import { closePlayer, installPlayer, play, playerAvailable } from './player'
+import { inlineState, startInline, stopInline } from './native'
+import { playerSource } from './youtube'
 import { findWebView } from './webview'
 import { describeSource, external, MODE_NAMES, MODES, youtubeInSource, youtubeOf } from './youtube'
 import type { PlayerMode } from './youtube'
 import type { OpenAs, PlayerSettings, Rect } from './player'
 
 interface Settings extends PlayerSettings {
+	/** When the in-message video scrolls away, keep playing it in the floating window. */
+	continueFloating: boolean
 	/** Old setting (1.0–1.2): open as a floating window. Read once to pick `openAs`. */
 	startSmall?: boolean
 	/** YouTube embeds open here instead of Discord's full-screen viewer. */
@@ -22,7 +26,15 @@ interface Settings extends PlayerSettings {
 	/** YouTube links in messages open here instead of the YouTube app. */
 	links: boolean
 }
-const DEFAULTS: Settings = { embeds: true, links: true, pipSize: 'medium', openAs: 'big', mode: 'discord' }
+const DEFAULTS: Settings = {
+	embeds: true,
+	links: true,
+	pipSize: 'medium',
+	openAs: 'big',
+	mode: 'discord',
+	borderless: false,
+	continueFloating: true,
+}
 let settings: () => Settings = () => DEFAULTS
 
 /**
@@ -108,10 +120,49 @@ function tryPlay(video: { videoId: string; start?: number } | undefined, via: st
 	const now = Date.now()
 	if (now - lastOpened < 800) return true
 	lastOpened = now
-	if (settings().openAs === 'thumbnail')
-		lastTap += rect ? ' · on the thumbnail' : " · thumbnail position not given, opened big"
+	const how = settings().openAs
+	if (how === 'inline' && rect) {
+		void playInline(video, rect)
+		return true
+	}
+	if (how === 'thumbnail' || how === 'inline')
+		lastTap += rect ? ' · on the thumbnail' : ' · thumbnail position not given, opened big'
 	play(video, rect)
 	return true
+}
+
+// ---------------------------------------------------------------------------------------------
+// Inside the message: the native player, falling back to the window on the thumbnail.
+
+let watching: ReturnType<typeof setInterval> | undefined
+let inlineVideo: string | undefined
+
+async function playInline(video: { videoId: string; start?: number }, rect: Rect) {
+	closePlayer()
+	const result = await startInline(video.videoId, playerSource(settings().mode, video.videoId, video.start), rect)
+	if (result !== 'ok') {
+		lastTap += ` · inside the message failed (${result}), opened on the thumbnail`
+		play(video, rect)
+		return
+	}
+	lastTap += ' · inside the message'
+	inlineVideo = video.videoId
+	watchInline()
+}
+
+/** While the in-message video plays, notice when it scrolls away, to carry on in the floating window. */
+function watchInline() {
+	if (watching) clearInterval(watching)
+	watching = setInterval(async () => {
+		const state = await inlineState()
+		if (state.active) return
+		clearInterval(watching)
+		watching = undefined
+		const id = inlineVideo
+		inlineVideo = undefined
+		if (id && state.stopped === 'scrolled' && settings().continueFloating)
+			play({ videoId: id, start: Math.floor(state.time ?? 0) || undefined }, undefined, 'small')
+	}, 700)
 }
 
 function SettingsPage({ api }: { api: any }) {
@@ -137,9 +188,28 @@ function SettingsPage({ api }: { api: any }) {
 				</TableRowGroup>
 				<TableRadioGroup title="Open as" defaultValue={s.openAs} value={s.openAs} onChange={(openAs: OpenAs) => set({ openAs })}>
 					<TableRadioRow label="Big" subLabel="Across the top of the screen." value="big" />
+					<TableRadioRow
+						label="Inside the message"
+						subLabel="Plays in the embed itself and scrolls with it (native). Falls back to On the thumbnail."
+						value="inline"
+					/>
 					<TableRadioRow label="On the thumbnail" subLabel="Where the embed's picture is, the same size." value="thumbnail" />
 					<TableRadioRow label="Small floating window" value="small" />
 				</TableRadioGroup>
+				<TableRowGroup>
+					<TableSwitchRow
+						label="Borderless"
+						subLabel="No bar or rounded corners: just the video, with small ⠿ ▁ ✕ buttons on it."
+						value={s.borderless}
+						onValueChange={(borderless: boolean) => set({ borderless })}
+					/>
+					<TableSwitchRow
+						label="Keep playing when scrolled away"
+						subLabel="When a video inside a message scrolls off screen, it carries on in the floating window from the same second."
+						value={s.continueFloating}
+						onValueChange={(continueFloating: boolean) => set({ continueFloating })}
+					/>
+				</TableRowGroup>
 				<TableRadioGroup title="Floating window size" defaultValue={s.pipSize} value={s.pipSize} onChange={(pipSize: Settings['pipSize']) => set({ pipSize })}>
 					<TableRadioRow label="Small" value="small" />
 					<TableRadioRow label="Medium" value="medium" />
@@ -207,6 +277,10 @@ export default plugin<{ jsonStorage: Settings }>({
 			if (!(jsonStorage.cache as any)?.openAs && s.startSmall) s.openAs = 'small'
 			return s
 		}
+		cleanup(() => {
+			if (watching) clearInterval(watching)
+			void stopInline()
+		})
 		cleanup(
 			installPlayer(
 				() => settings(),

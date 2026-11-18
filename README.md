@@ -185,8 +185,11 @@ as documented by Discord Userdoccers), through Discord's own request helper. Buy
 Play YouTube videos without leaving Discord, like Aliucord's old inline playback. Tapping a YouTube embed (or a YouTube
 link) opens a player over the chat instead of Discord's full-screen viewer or the YouTube app.
 
-- **Open as**: big (across the top), **on the thumbnail** (where the embed's picture is, the same size), or a small
-  floating window.
+- **Open as**: big (across the top), **inside the message** (native: plays in the embed itself and scrolls with the
+  message, clipped to the chat like the message is), **on the thumbnail** (a window where the embed's picture is), or a
+  small floating window. When an in-message video scrolls off screen it carries on in the floating window from the same
+  second (optional).
+- **Borderless**: no bar or rounded corners, just the video with small ⠿ (move), ▁/⤢ and ✕ buttons on it.
 - The player is a free window: **drag** it by its bar, **resize** it from the ◢ corner (16:9 kept), **▁** jumps to the
   small window and **⤢** to big. It keeps playing while you scroll and switch channels. **↗** opens the video in YouTube,
   **✕** closes it, and Back shrinks a big player. Timestamps (`t=1m5s`, `start=42`) are kept.

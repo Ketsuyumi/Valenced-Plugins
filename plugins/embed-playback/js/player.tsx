@@ -26,11 +26,13 @@ export interface Rect {
 	width: number
 	height: number
 }
-export type OpenAs = 'big' | 'thumbnail' | 'small'
+export type OpenAs = 'big' | 'thumbnail' | 'inline' | 'small'
 export interface PlayerSettings {
 	pipSize: 'small' | 'medium' | 'large'
 	openAs: OpenAs
 	mode: PlayerMode
+	/** No bar or rounded corners: just the video, with small buttons on it. */
+	borderless: boolean
 }
 
 interface Window {
@@ -45,7 +47,7 @@ const listeners = new Set<() => void>()
 const emit = () => {
 	for (const l of listeners) l()
 }
-let readSettings: () => PlayerSettings = () => ({ pipSize: 'medium', openAs: 'big', mode: 'discord' })
+let readSettings: () => PlayerSettings = () => ({ pipSize: 'medium', openAs: 'big', mode: 'discord', borderless: false })
 let saveMode: (mode: PlayerMode) => void = () => {}
 let mounted = false
 /** Where the overlay's top-left sits in the window, to place a thumbnail rectangle exactly. */
@@ -56,7 +58,9 @@ const BAR = 30
 const MIN_W = 160
 const BIG_TOP = 120
 const SIZES = { small: 0.42, medium: 0.56, large: 0.72 }
-const heightOf = (w: number) => Math.round((w * 9) / 16) + BAR
+/** The bar's height: none when borderless. */
+const bar = () => (readSettings().borderless ? 0 : BAR)
+const heightOf = (w: number) => Math.round((w * 9) / 16) + bar()
 
 function screen() {
 	const { width, height } = Dimensions.get('window')
@@ -87,14 +91,15 @@ export function smallWindow(): Window {
 export function thumbnailWindow(rect: Rect): Window {
 	return clamp({
 		x: rect.x - overlayOffset.x,
-		y: rect.y - overlayOffset.y - BAR,
+		y: rect.y - overlayOffset.y - bar(),
 		w: rect.width,
 	})
 }
 
-export function play(video: Video, rect?: Rect) {
-	const how = readSettings().openAs
-	const win = how === 'small' ? smallWindow() : how === 'thumbnail' && rect ? thumbnailWindow(rect) : bigWindow()
+export function play(video: Video, rect?: Rect, as?: OpenAs) {
+	const how = as ?? readSettings().openAs
+	const onThumb = (how === 'thumbnail' || how === 'inline') && rect
+	const win = how === 'small' ? smallWindow() : onThumb ? thumbnailWindow(rect) : bigWindow()
 	current = { ...video, ...win }
 	emit()
 }
@@ -148,7 +153,18 @@ function Player({ video }: { video: Video & Window }) {
 	const { Text } = Design as any
 	const WebView = findWebView()
 	const big = isBig()
-	const h = heightOf(video.w) - BAR
+	const borderless = readSettings().borderless
+	const h = heightOf(video.w) - bar()
+	const corner = (style: Record<string, unknown>) => ({
+		position: 'absolute' as const,
+		...style,
+		minWidth: 28,
+		height: 28,
+		borderRadius: 14,
+		alignItems: 'center' as const,
+		justifyContent: 'center' as const,
+		backgroundColor: 'rgba(0,0,0,0.45)',
+	})
 	return (
 		<View
 			style={{
@@ -156,13 +172,14 @@ function Player({ video }: { video: Video & Window }) {
 				left: video.x,
 				top: video.y,
 				width: video.w,
-				borderRadius: big ? 0 : 12,
+				borderRadius: big || borderless ? 0 : 12,
 				overflow: 'hidden',
 				backgroundColor: '#000',
 				elevation: 1000,
 				zIndex: 1000,
 			}}
 		>
+			{borderless ? null : (
 			<View {...dragger.panHandlers} style={{ height: BAR, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(20,20,24,0.92)' }}>
 				<Text variant="text-xs/semibold" style={{ color: '#bbbbbb', flex: 1, paddingLeft: 10 }} numberOfLines={1}>
 					⠿ YouTube
@@ -194,6 +211,7 @@ function Player({ video }: { video: Video & Window }) {
 				/>
 				<Button label="✕" hint="Close the player" onPress={closePlayer} />
 			</View>
+			)}
 			<View style={{ width: video.w, height: h }}>
 				{WebView ? (
 					<WebView
@@ -215,6 +233,29 @@ function Player({ video }: { video: Video & Window }) {
 						</Text>
 					</View>
 				)}
+				{borderless ? (
+					<>
+						<View {...dragger.panHandlers} accessibilityLabel="Move" style={corner({ left: 6, top: 6 })}>
+							<Text variant="text-sm/bold" style={{ color: '#ffffff' }}>
+								⠿
+							</Text>
+						</View>
+						<Pressable
+							accessibilityLabel={big ? 'Shrink to a floating window' : 'Make bigger'}
+							onPress={() => move(big ? smallWindow() : bigWindow())}
+							style={corner({ right: 40, top: 6 })}
+						>
+							<Text variant="text-sm/bold" style={{ color: '#ffffff' }}>
+								{big ? '▁' : '⤢'}
+							</Text>
+						</Pressable>
+						<Pressable accessibilityLabel="Close the player" onPress={closePlayer} style={corner({ right: 6, top: 6 })}>
+							<Text variant="text-sm/bold" style={{ color: '#ffffff' }}>
+								✕
+							</Text>
+						</Pressable>
+					</>
+				) : null}
 				<View
 					{...resizer.panHandlers}
 					accessibilityLabel="Resize"

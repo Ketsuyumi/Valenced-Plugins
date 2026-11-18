@@ -81,7 +81,18 @@ function embedUrl(host: string, videoId: string, start = 0): string {
 function page(src: string): string {
 	return `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin">
 <style>html,body{margin:0;padding:0;background:#000;height:100%;overflow:hidden}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style>
-</head><body><iframe src="${src}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></body></html>`
+</head><body><iframe id="yt" src="${src}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+<script>
+// Keeps the video's current time in window.__ytTime (YouTube's iframe API sends it to the page that
+// listens), so the native player can hand the video to the floating window at the same second.
+window.__ytTime = 0;
+var f = document.getElementById('yt');
+function listen() { try { f.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 1 }), '*'); } catch (e) {} }
+f.addEventListener('load', function () { listen(); setTimeout(listen, 1000); setTimeout(listen, 3000); });
+window.addEventListener('message', function (e) {
+	try { var d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; if (d && d.info && typeof d.info.currentTime === 'number') window.__ytTime = d.info.currentTime; } catch (x) {}
+});
+</script></body></html>`
 }
 
 /** The WebView `source` for [mode]. */
