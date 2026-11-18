@@ -224,7 +224,7 @@
       "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "ForumIcon",
       "channels": {
-        "latest": "1.0.1"
+        "latest": "1.1.0"
       },
       "versions": {
         "1.0.0": {
@@ -244,6 +244,19 @@
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.forum-grid@1.0.1.zip",
           "sha256": "0f599364c4d363bba405ee7c21cd809069a83752760029a840b74c7ff2fa24bb",
           "size": 9188,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.1.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.forum-grid@1.1.0.zip",
+          "sha256": "3309caf9d529e0f0cef848c64ab86af8152bf6bca9e7e6e3a8bcb49abd8c4f38",
+          "size": 9301,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -665,7 +678,7 @@
       "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "ShopIcon",
       "channels": {
-        "latest": "1.1.0"
+        "latest": "1.2.0"
       },
       "versions": {
         "1.0.0": {
@@ -698,6 +711,19 @@
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.shop-browser@1.1.0.zip",
           "sha256": "630b947d64893472a5d105f96eb917486e521d68948d769c7c14148343f11605",
           "size": 4973,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.2.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.shop-browser@1.2.0.zip",
+          "sha256": "72accd495e1e247edb59018a9d42d65efe66f36d296b2d7ee6356ec1be7f3520",
+          "size": 5097,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
