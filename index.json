@@ -248,7 +248,7 @@
       "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "PlayIcon",
       "channels": {
-        "latest": "1.1.0"
+        "latest": "1.2.0"
       },
       "versions": {
         "1.0.0": {
@@ -300,6 +300,22 @@
             },
             "discord": {
               "version": "*"
+            }
+          }
+        },
+        "1.2.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.embed-playback@1.2.0.zip",
+          "sha256": "c58814528e276911484eb88eb1bf3dff1429e0b46f59315d3938b20b889715c5",
+          "size": 5951,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            },
+            "palmdevs.block-youtube-ads": {
+              "optional": true
             }
           }
         }
