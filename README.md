@@ -273,6 +273,8 @@ an error. Text stays near-white on plum (about 13:1 contrast). Works on every ba
   the top of the chat stays clear.
 - **Ame-chan Purple** (+ Background): soft purple and slate, from the sketch art; the background drops its
   white frame.
+- **Ame-chan Red** (+ Background): deep wine, crimson buttons and rose links; the background pins the red art to the
+  bottom of the screen on the same red.
 - **Ame-chan Glitch** (+ Background): deep magenta, hot pink and the glitch's cyan for links; the background fades the
   art into grainy magenta.
 

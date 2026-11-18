@@ -433,6 +433,145 @@ const glitchColors = lazyColors(glitchTone, {
 	light: { palette: glitchDay, extra: glitchStates },
 })
 
+
+// ---------------------------------------------------------------------------------------------
+// Red: the red-background art. Deep wine surfaces, the art's crimson for buttons and rose links.
+
+const crimson = '#c8233c'
+const rose = '#ff9aa8'
+
+const redTone: Tone = {
+	greys: [
+		['#000000', '#0d0506'],
+		['#2c2d32', '#1c0b0e'],
+		['#323339', '#241014'],
+		['#393a41', '#2f161b'],
+		['#41434a', '#391c22'],
+		['#595a63', '#5e3a40'],
+		['#81828a', '#8e6a6f'],
+		['#97979f', '#a8868a'],
+		['#abacb2', '#bea0a3'],
+		['#c5c6ca', '#d6bec0'],
+		['#efeff1', '#f6eaeb'],
+		['#f3f3f4', '#f9eff0'],
+		['#fbfbfb', '#fdf8f8'],
+		['#ffffff', '#ffffff'],
+	],
+	hues: {
+		red: '#ff6b7d',
+		orange: '#f39a76',
+		yellow: '#f0d080',
+		green: '#7fd8b0',
+		teal: '#86cfcf',
+		blue: '#8aa6f0',
+		blurple: '#a98ae0',
+		purple: '#c47ae0',
+		pink: rose,
+	},
+}
+
+const redNight: Palette = {
+	...night,
+	rail: '#1c0b0e',
+	floor: '#241014',
+	panel: '#200d11',
+	page: '#2b141a',
+	card: '#341a20',
+	popup: '#3c1f26',
+	input: '#2f161b',
+	control: '#47262e',
+	pressed: '#552d36',
+	strong: '#f9eff0',
+	text: '#efe1e2',
+	subtle: '#d3b5b8',
+	muted: '#ad8d91',
+	faint: '#755a5e',
+	divider: '#ff9aa81a',
+	border: '#ff9aa82e',
+	borderStrong: '#ff9aa852',
+	accent: crimson,
+	accentPress: '#b01f35',
+	onAccent: '#ffffff',
+	accentSoft: '#c8233c33',
+	accentText: rose,
+	brand: '#a81d33',
+	rowIcon: rose,
+	selection: '#c8233c2e',
+	link: rose,
+	mentionText: '#ffd0d6',
+	mentionPill: '#ff9aa833',
+	mentionBg: '#ff9aa814',
+	keyword: '#c8233c40',
+	code: '#140708',
+	codeText: rose,
+	spoiler: '#47262e',
+	spoilerRevealed: '#341a20',
+	positive: '#7fd8b0',
+	warning: '#f0d080',
+	danger: '#ff6b7d',
+	dangerFill: '#b81e36',
+	scrim: '#0d0506cc',
+}
+
+const redDay: Palette = {
+	...day,
+	rail: '#f3dfe1',
+	floor: '#fdf8f8',
+	panel: '#f9ecee',
+	page: '#f9ecee',
+	input: '#f5e4e6',
+	control: '#ecd5d8',
+	pressed: '#e0c1c5',
+	heading: '#220c10',
+	strong: '#2a1015',
+	text: '#432a2e',
+	subtle: '#674a4e',
+	muted: '#86686c',
+	faint: '#b2989b',
+	divider: '#2a101514',
+	border: '#2a101521',
+	borderStrong: '#2a101540',
+	accent: crimson,
+	accentPress: '#b01f35',
+	onAccent: '#ffffff',
+	accentSoft: '#c8233c26',
+	accentText: '#a81d33',
+	brand: '#a81d33',
+	rowIcon: '#a81d33',
+	selection: '#c8233c24',
+	link: '#a81d33',
+	mentionText: '#8e1a2c',
+	mentionPill: '#c8233c33',
+	mentionBg: '#c8233c1f',
+	keyword: '#c8233c40',
+	code: '#f7eaec',
+	codeText: '#a81d33',
+	spoiler: '#d6bec0',
+	spoilerRevealed: '#ecd5d8',
+	positive: '#1f7a55',
+	warning: '#7a6418',
+	danger: '#b5304a',
+	dangerFill: '#b81e36',
+}
+
+const redStates = {
+	...states,
+	STATUS_ONLINE: '#7fd8b0',
+	ICON_STATUS_ONLINE: '#7fd8b0',
+	TEXT_STATUS_ONLINE: '#7fd8b0',
+	STATUS_SPEAKING: '#7fd8b0',
+	ICON_VOICE_SPEAKING: '#7fd8b0',
+	ICON_STATUS_DND: '#ff6b7d',
+	TEXT_STATUS_DND: '#ff6b7d',
+	BADGE_NOTIFICATION_BACKGROUND: crimson,
+}
+const redColors = lazyColors(redTone, {
+	dark: { palette: redNight, extra: redStates },
+	darker: { palette: redNight, extra: redStates },
+	midnight: { palette: redNight, extra: redStates },
+	light: { palette: redDay, extra: redStates },
+})
+
 export default plugin({
 	preInit({ themes }) {
 		themes.registerGroup('ame', {
@@ -493,6 +632,22 @@ export default plugin({
 			getColors: glitchColors,
 			background: {
 				path: 'assets/ame-glitch.jpg',
+				opacity: 1,
+				blur: 0,
+				dimming: 0.78,
+			},
+		})
+		themes.registerTheme('ame', 'ame-red', {
+			name: 'Ame-chan Red',
+			description: 'Deep wine, crimson and rose.',
+			getColors: redColors,
+		})
+		themes.registerTheme('ame', 'ame-red-background', {
+			name: 'Ame-chan Red (Background)',
+			description: 'The red art at the bottom of the screen, on the same red.',
+			getColors: redColors,
+			background: {
+				path: 'assets/ame-red.jpg',
 				opacity: 1,
 				blur: 0,
 				dimming: 0.78,
