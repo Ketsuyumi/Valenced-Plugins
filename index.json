@@ -415,7 +415,7 @@
       "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "CheckmarkLargeIcon",
       "channels": {
-        "latest": "1.1.0"
+        "latest": "1.2.0"
       },
       "versions": {
         "1.0.0": {
@@ -461,6 +461,19 @@
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.multi-select@1.1.0.zip",
           "sha256": "834929e4dd803eab728f71bb89debfa7bf08f57b0adf68adf333ff25703a7352",
           "size": 5307,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.2.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.multi-select@1.2.0.zip",
+          "sha256": "e1add047032e3787999fdb6e807c7d1bbb0f4572e253f2bea2b09de2d9c544a9",
+          "size": 5340,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
