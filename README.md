@@ -180,6 +180,19 @@ Posts come from `GET /channels/{forum}/threads/search` (with paging as you scrol
 Channel List (GPL-3.0). The top bar button looks for the forum header's button files by likely names, so it may not show
 on every Discord version; Settings → Status says where it attached.
 
+### Friends Export (`dev.ketsuyumi.friends-export`)
+
+Export your friends list, like Equicord's export on desktop. Each person gets their display name, @username, your
+nickname for them, the date you became friends and their ID.
+
+- **`/friendslist`**: options `format` (text, csv, json), `include` (friends, or everything: blocked users and incoming
+  and outgoing requests too) and `to` (show the list in the chat, copy it, or save a file). Only you see the reply.
+- **Plugin settings**: counts of friends, blocked and requests, the same choices, and **Copy** / **Save to a file**.
+
+Files are saved to Downloads (or Discord's documents folder if Downloads can't be written) as
+`discord-friends-<date>.txt|csv|json`. The slash command uses bleelblep's command helper (GPL-3.0), which registers it
+next to Discord's own built-in commands.
+
 ### Spectators (`dev.ketsuyumi.spectators`)
 
 See who is watching a stream, like on PC: your own stream and the streams you are watching, with avatars, on the
