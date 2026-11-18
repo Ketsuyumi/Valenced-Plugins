@@ -80,21 +80,6 @@ Hides the banner image at the top of a server's channel list, so every server us
 `GuildStore` so servers are handed out without their `banner` field (using the record's own `set`, so nothing else
 about the server changes). Turn the plugin off to bring banners back straight away.
 
-### Skip Confirmations (`dev.ketsuyumi.skip-confirmations`)
-
-Skip the confirmation dialogs you choose: deleting messages, embeds or attachments, leaving group DMs, ignoring
-users and any other confirmation Discord shows as an alert. Every confirmation you see is added to a list in the
-plugin's settings with its title and confirm button; turn **Skip** on for the ones you want, and next time the plugin
-presses that button for you instead of showing the dialog. Nothing is skipped until you turn it on, and if a skip
-fails the dialog is shown as usual.
-
-It also covers dialogs that have no confirm button to press: leaving a server, removing a friend or cancelling a
-friend request, and the Block and Ignore action sheets. For those, skipping does the action through Discord's API
-(an error toast shows if it fails).
-
-It hooks only Discord's `openAlert` and `openLazy` (and only reacts to confirmation sheets there), so it does nothing
-until a dialog is about to open, and its HTTP helper is found once at start rather than while a dialog opens.
-
 ### Quick Access (`dev.ketsuyumi.quick-reload`)
 
 Formerly Quick Reload (the ID is unchanged, so existing installs update in place). Shortcut buttons next to the bell
