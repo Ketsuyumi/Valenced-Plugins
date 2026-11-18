@@ -168,7 +168,17 @@ as Discord's own dark theme. Works on every base (Ash, Dark, Onyx and a pastel L
 - **Aubrey (Background)**: the same colours over OMORI artwork, kept small and sharp in the middle of the screen and dimmed so text stays readable. The
   Background screen (settings icon on the Colors page) changes opacity, blur and dimming, or swaps in your own image.
 
-Every Discord colour is recoloured with the theme engine from dxckie's themes (GPL-3.0), so nothing is left default grey.
+### Ame-chan (`dev.ketsuyumi.theme.ame`)
+
+A cute, simple NEEDY STREAMER OVERLOAD theme inspired by Ame-chan: soft plum surfaces, cherry-red buttons and toggles
+from her vest, and gold links and mentions from her heart charm and hairpin. Online stays green so it never looks like
+an error. Text stays near-white on plum (about 13:1 contrast). Works on every base, including a light version.
+
+- **Ame-chan**: just the colours.
+- **Ame-chan (Background)**: the same colours with Ame-chan in the bottom-right corner, sharp and at full resolution,
+  fading into the purple above so the top of the chat stays clear.
+
+Both themes recolour every Discord colour with the theme engine from dxckie's themes (GPL-3.0), so nothing is left default grey.
 
 ## Building
 
