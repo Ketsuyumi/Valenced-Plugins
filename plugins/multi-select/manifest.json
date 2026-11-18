@@ -5,7 +5,7 @@
 	"description": "Select several messages and delete them at once, like on WhatsApp. Long-press a message and choose Select messages, long-press more to add them, then use the bar at the top to delete.",
 	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
 	"icon": "CheckmarkLargeIcon",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

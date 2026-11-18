@@ -3,7 +3,6 @@ import {
 	AlertActionCreators,
 	ToastActionCreators,
 } from '@valenced/discord/actions'
-import { Dispatcher } from '@valenced/discord/common/flux'
 import { Design } from '@valenced/discord/design'
 import { getModules } from '@valenced/modules/finders'
 import { withName } from '@valenced/modules/finders/filters'
@@ -21,6 +20,7 @@ import { findModule } from './find'
 import { handlerStatus, installHandlers, targetOf } from './handlers'
 import { canDelete, canDeleteAtAll, deleteAll, watchActions } from './remove'
 import {
+	channelCount,
 	clear,
 	forget,
 	isSelected,
@@ -31,6 +31,7 @@ import {
 	watchChannelMessages,
 } from './selection'
 import type { PluginApi } from '@valenced/plugins/types'
+import type { Picked } from './selection'
 
 interface Settings {
 	/** Highlight colour of selected messages. */
@@ -62,34 +63,44 @@ function toast(text: string) {
 }
 
 function hint() {
-	const n = selection.ids.size
+	const n = selection.items.size
+	const channels = channelCount()
+	const where = channels > 1 ? ` in ${channels} channels` : ''
 	toast(
 		n
 			? barAvailable()
-				? `${n} selected · long-press messages to add or remove them`
-				: `${n} selected · long-press for Delete`
+				? `${n} selected${where} · long-press messages to add or remove them`
+				: `${n} selected${where} · long-press for Delete`
 			: 'Selection cleared',
 	)
 }
 
 // ---------------------------------------------------------------------------------------------
-// The options while selecting: long-press any message.
+// The options: ⋮ in the bar (or long-press, when the bar can't be shown).
 
-function openOptions(channelId: string, messageId?: string) {
+/** The message an option is about, when opened from a long-press. */
+interface Here {
+	channelId: string
+	messageId: string
+	authorId?: string
+}
+
+function openOptions(here?: Here) {
 	const { AlertModal, AlertActionButton } = Design as any
 	const key = `multi-select-${Date.now()}`
 	const close = () => (AlertActionCreators as any).dismissAlert(key)
-	const ids = [...selection.ids]
-	const deletable = ids.filter(id => canDelete(channelId, id))
-	const blocked = ids.length - deletable.length
-	const here = messageId ? isSelected(channelId, messageId) : false
+	const items = [...selection.items.values()]
+	const deletable = items.filter(canDelete)
+	const blocked = items.length - deletable.length
+	const channels = channelCount()
+	const selectedHere = here ? isSelected(here.channelId, here.messageId) : false
 	;(AlertActionCreators as any).openAlert(
 		key,
 		<AlertModal
-			title={`${ids.length} message${ids.length === 1 ? '' : 's'} selected`}
+			title={`${items.length} message${items.length === 1 ? '' : 's'} selected${channels > 1 ? ` in ${channels} channels` : ''}`}
 			content={
 				blocked
-					? `${deletable.length} can be deleted. ${blocked} ${blocked === 1 ? "isn't yours" : "aren't yours"} and you can't delete other people's messages here.`
+					? `${deletable.length} can be deleted. ${blocked} ${blocked === 1 ? "isn't yours" : "aren't yours"}, in a place where you can't delete other people's messages.`
 					: 'Deleting removes them for everyone. This cannot be undone.'
 			}
 			actions={
@@ -100,17 +111,19 @@ function openOptions(channelId: string, messageId?: string) {
 							variant="destructive"
 							onPress={() => {
 								close()
-								void runDelete(channelId, deletable)
+								void runDelete(deletable)
 							}}
 						/>
 					) : null}
-					{messageId ? (
+					{here ? (
 						<AlertActionButton
-							text={here ? 'Deselect this message' : 'Select this message'}
+							text={
+								selectedHere ? 'Deselect this message' : 'Select this message'
+							}
 							variant="secondary"
 							onPress={() => {
 								close()
-								toggle(channelId, messageId)
+								toggle(here.channelId, here.messageId, here.authorId)
 								hint()
 							}}
 						/>
@@ -135,13 +148,13 @@ function openOptions(channelId: string, messageId?: string) {
 	)
 }
 
-async function runDelete(channelId: string, ids: string[]) {
+async function runDelete(items: Picked[]) {
 	if (!canDeleteAtAll()) {
 		toast("Couldn't find Discord's delete action")
 		return
 	}
-	toast(`Deleting ${ids.length}…`)
-	const { deleted, failed } = await deleteAll(channelId, ids, () => {})
+	toast(`Deleting ${items.length}…`)
+	const { deleted, failed } = await deleteAll(items)
 	forget(deleted)
 	if (!failed.length) clear()
 	toast(
@@ -197,7 +210,7 @@ function withSelectRow(rendered: any) {
 					;(ActionSheetActionCreators as any).hideActionSheet?.()
 				} catch {}
 				if (selected) toggle(channelId, message.id)
-				else start(channelId, message.id)
+				else start(channelId, message.id, message.author?.id)
 				hint()
 			},
 		}),
@@ -264,7 +277,9 @@ function SettingsPage({ api }: { api: Api }) {
 					<TableRow
 						label="Selected now"
 						subLabel={
-							selection.active ? `${selection.ids.size} message(s)` : 'Nothing'
+							selection.active
+								? `${selection.items.size} message(s) in ${channelCount()} channel(s)`
+								: 'Nothing'
 						}
 					/>
 					{selection.active ? (
@@ -296,7 +311,7 @@ export default plugin<{ jsonStorage: Settings }>({
 		cleanup(
 			installBar({
 				options: () => {
-					if (selection.channelId) openOptions(selection.channelId)
+					openOptions()
 				},
 				cancel: () => {
 					clear()
@@ -344,9 +359,12 @@ export default plugin<{ jsonStorage: Settings }>({
 					function (this: unknown, ...args: any[]) {
 						try {
 							if (enabled && selection.active && settings().doubleTapSelect) {
-								const { messageId, channel } = targetOf(instance, args[0])
-								if (messageId && channel?.id === selection.channelId) {
-									toggle(channel.id, messageId)
+								const { messageId, message, channel } = targetOf(
+									instance,
+									args[0],
+								)
+								if (messageId && channel?.id) {
+									toggle(channel.id, messageId, message?.author?.id)
 									hint()
 									return
 								}
@@ -358,14 +376,20 @@ export default plugin<{ jsonStorage: Settings }>({
 					function (this: unknown, ...args: any[]) {
 						try {
 							if (enabled && selection.active) {
-								const { messageId, channel } = targetOf(instance, args[0])
-								if (channel?.id === selection.channelId) {
+								const { messageId, message, channel } = targetOf(
+									instance,
+									args[0],
+								)
+								// Any channel: a selection can span several (1.2.0).
+								if (channel?.id && messageId) {
+									const authorId = message?.author?.id
 									// With the bar up, long-press adds or removes, like a chat app; the
 									// options are behind ⋮. Without it, long-press opens the options.
-									if (barAvailable() && messageId) {
-										toggle(channel.id, messageId)
+									if (barAvailable()) {
+										toggle(channel.id, messageId, authorId)
 										hint()
-									} else openOptions(channel.id, messageId)
+									} else
+										openOptions({ channelId: channel.id, messageId, authorId })
 									return
 								}
 							}
@@ -413,18 +437,6 @@ export default plugin<{ jsonStorage: Settings }>({
 				},
 			),
 		)
-
-		// Leaving the channel ends the selection.
-		const onChannel = (event: any) => {
-			if (
-				selection.active &&
-				event?.channelId &&
-				event.channelId !== selection.channelId
-			)
-				clear()
-		}
-		;(Dispatcher as any).subscribe('CHANNEL_SELECT', onChannel)
-		cleanup(() => (Dispatcher as any).unsubscribe('CHANNEL_SELECT', onChannel))
 	},
 	SettingsComponent: SettingsPage,
 })

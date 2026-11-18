@@ -3,7 +3,7 @@ import { after } from '@valenced/patcher'
 import { useEffect, useState } from 'react'
 import { Pressable, View } from 'react-native'
 import { findModule } from './find'
-import { onSelectionChange, selection } from './selection'
+import { channelCount, onSelectionChange, selection } from './selection'
 
 /**
  * The bar shown at the top of the screen while selecting: the count, a ⋮ button for the options
@@ -34,7 +34,8 @@ function SelectionBar() {
 		}
 	}, [])
 	if (!selection.active || !actions) return null
-	const n = selection.ids.size
+	const n = selection.items.size
+	const channels = channelCount()
 	const button = {
 		minWidth: 40,
 		height: 40,
@@ -74,7 +75,7 @@ function SelectionBar() {
 					color="text-default"
 					style={{ marginRight: 8 }}
 				>
-					{n} selected
+					{n} selected{channels > 1 ? ` · ${channels} channels` : ''}
 				</Text>
 				<Pressable
 					accessibilityRole="button"

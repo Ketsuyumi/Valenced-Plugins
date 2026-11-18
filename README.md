@@ -134,6 +134,10 @@ selecting, long-press more messages to add or remove them; each one is highlight
 default) lets double-tap add and remove too. Your own messages can always be deleted; other people's only where you
 have Manage Messages. Messages are deleted one at a time through Discord's own action, a third of a second apart.
 
+A selection can span channels: switch to another channel or DM and keep long-pressing; the bar shows the total and how
+many channels it covers, and Delete removes them all. Each message's author is kept when it is selected, so it can still
+be checked after you leave that channel.
+
 The bar is drawn beside Discord's toast container (`AppToastContainer`), which floats over every screen. A message with
 no text shows its highlight the next time its row is redrawn (scroll it off and back).
 

@@ -2,12 +2,24 @@ import { Stores } from '@valenced/discord/flux'
 import { getModules } from '@valenced/modules/finders'
 import { withProps } from '@valenced/modules/finders/filters'
 
-/** What is selected: one channel at a time, like a chat app. */
+/** One selected message. The author is kept so permissions can be checked after leaving the channel. */
+export interface Picked {
+	channelId: string
+	messageId: string
+	authorId?: string
+}
+
+/**
+ * What is selected, across any number of channels (1.2.0: switching channels keeps it). Keyed by
+ * "channel:message".
+ */
 export const selection = {
 	active: false,
-	channelId: undefined as string | undefined,
-	ids: new Set<string>(),
+	items: new Map<string, Picked>(),
 }
+
+const keyOf = (channelId: unknown, messageId: unknown) =>
+	`${channelId}:${messageId}`
 
 const listeners = new Set<() => void>()
 export function onSelectionChange(listener: () => void): () => void {
@@ -20,52 +32,57 @@ const changed = () => {
 
 export const isSelected = (channelId: unknown, messageId: unknown) =>
 	selection.active &&
-	selection.channelId === channelId &&
 	typeof messageId === 'string' &&
-	selection.ids.has(messageId)
+	selection.items.has(keyOf(channelId, messageId))
 
-/** Starts selecting in [channelId] with [messageId] selected. */
-export function start(channelId: string, messageId: string) {
-	if (selection.active && selection.channelId !== channelId) clear()
+/** How many channels the selection spans. */
+export const channelCount = () =>
+	new Set([...selection.items.values()].map(item => item.channelId)).size
+
+/** Starts selecting (or adds to it) with this message. */
+export function start(channelId: string, messageId: string, authorId?: string) {
 	selection.active = true
-	selection.channelId = channelId
-	selection.ids.add(messageId)
+	selection.items.set(keyOf(channelId, messageId), {
+		channelId,
+		messageId,
+		authorId,
+	})
 	redraw(channelId, messageId)
 	changed()
 }
 
 /** Adds or removes one message. Returns whether it is now selected. */
-export function toggle(channelId: string, messageId: string): boolean {
-	if (!selection.active || selection.channelId !== channelId) {
-		start(channelId, messageId)
+export function toggle(
+	channelId: string,
+	messageId: string,
+	authorId?: string,
+): boolean {
+	const key = keyOf(channelId, messageId)
+	if (!selection.active || !selection.items.has(key)) {
+		start(channelId, messageId, authorId)
 		return true
 	}
-	const now = !selection.ids.has(messageId)
-	if (now) selection.ids.add(messageId)
-	else selection.ids.delete(messageId)
+	selection.items.delete(key)
 	redraw(channelId, messageId)
+	if (!selection.items.size) selection.active = false
 	changed()
-	return now
+	return false
 }
 
-/** Ends selecting and takes the highlight off every row. */
+/** Ends selecting and takes the highlight off every row still loaded. */
 export function clear() {
-	const { channelId, ids } = selection
-	const was = [...ids]
+	const was = [...selection.items.values()]
 	selection.active = false
-	selection.channelId = undefined
-	selection.ids = new Set()
-	if (channelId) for (const id of was) redraw(channelId, id)
+	selection.items = new Map()
+	for (const item of was) redraw(item.channelId, item.messageId)
 	changed()
 }
 
-/** Forgets ids (deleted messages) without redrawing them. */
-export function forget(ids: Iterable<string>) {
-	for (const id of ids) selection.ids.delete(id)
-	if (!selection.ids.size) {
-		selection.active = false
-		selection.channelId = undefined
-	}
+/** Forgets messages (deleted ones) without redrawing them. */
+export function forget(items: Iterable<Picked>) {
+	for (const item of items)
+		selection.items.delete(keyOf(item.channelId, item.messageId))
+	if (!selection.items.size) selection.active = false
 	changed()
 }
 
