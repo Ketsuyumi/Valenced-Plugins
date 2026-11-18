@@ -3,6 +3,7 @@ import { after } from '@valenced/patcher'
 import { useEffect, useState } from 'react'
 import { Pressable, View } from 'react-native'
 import { findModule } from './find'
+import { tapSeen } from './handlers'
 import { channelCount, onSelectionChange, selection } from './selection'
 
 /**
@@ -75,7 +76,11 @@ function SelectionBar() {
 					color="text-default"
 					style={{ marginRight: 8 }}
 				>
-					{n} selected{channels > 1 ? ` · ${channels} channels` : ''}
+					{n
+						? `${n} selected${channels > 1 ? ` · ${channels} channels` : ''}`
+						: tapSeen
+							? 'Tap messages to select'
+							: 'Tap or long-press messages'}
 				</Text>
 				<Pressable
 					accessibilityRole="button"

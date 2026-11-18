@@ -22,6 +22,11 @@ export type Wrapper = (
 
 const wrappers = new Map<string, Wrapper>()
 export let handlerStatus = 'Waiting for the chat to open'
+/** Whether Discord has passed a plain message tap to the plugin yet. */
+export let tapSeen = false
+export const noteTap = () => {
+	tapSeen = true
+}
 
 function wrapInstance(instance: any) {
 	if (!instance || typeof instance !== 'object') return

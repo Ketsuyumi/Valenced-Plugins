@@ -39,6 +39,22 @@ export const isSelected = (channelId: unknown, messageId: unknown) =>
 export const channelCount = () =>
 	new Set([...selection.items.values()].map(item => item.channelId)).size
 
+/**
+ * Whether selecting stays on when the last message is deselected. On while the bar (with its ✕) is
+ * shown, so a selection started from the header button doesn't end before the first pick.
+ */
+let keepWhenEmpty: () => boolean = () => false
+export function setKeepWhenEmpty(fn: () => boolean) {
+	keepWhenEmpty = fn
+}
+
+/** Turns selecting on with nothing picked yet (the header button). */
+export function activate() {
+	if (selection.active) return
+	selection.active = true
+	changed()
+}
+
 /** Starts selecting (or adds to it) with this message. */
 export function start(channelId: string, messageId: string, authorId?: string) {
 	selection.active = true
@@ -64,7 +80,7 @@ export function toggle(
 	}
 	selection.items.delete(key)
 	redraw(channelId, messageId)
-	if (!selection.items.size) selection.active = false
+	if (!selection.items.size && !keepWhenEmpty()) selection.active = false
 	changed()
 	return false
 }

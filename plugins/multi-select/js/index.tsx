@@ -17,15 +17,24 @@ import {
 import { processColor, ScrollView } from 'react-native'
 import { barAvailable, installBar } from './bar'
 import { findModule } from './find'
-import { handlerStatus, installHandlers, targetOf } from './handlers'
+import {
+	handlerStatus,
+	installHandlers,
+	noteTap,
+	tapSeen,
+	targetOf,
+} from './handlers'
+import { headerStatus, installHeader } from './header'
 import { canDelete, canDeleteAtAll, deleteAll, watchActions } from './remove'
 import {
+	activate,
 	channelCount,
 	clear,
 	forget,
 	isSelected,
 	onSelectionChange,
 	selection,
+	setKeepWhenEmpty,
 	start,
 	toggle,
 	watchChannelMessages,
@@ -41,10 +50,19 @@ interface Settings {
 	 * default) so it starts off for everyone.
 	 */
 	doubleTapSelect: boolean
+	/** A plain tap selects and deselects while selecting (1.3.0). */
+	tapSelect: boolean
+	/** A select button in the chat's top bar (1.3.0). */
+	headerButton: boolean
 }
 type Api = PluginApi<{ jsonStorage: Settings }>
 
-const DEFAULTS: Settings = { color: '#5865F2', doubleTapSelect: false }
+const DEFAULTS: Settings = {
+	color: '#5865F2',
+	doubleTapSelect: false,
+	tapSelect: true,
+	headerButton: true,
+}
 const COLORS: [string, string][] = [
 	['#5865F2', 'Blurple'],
 	['#23A55A', 'Green'],
@@ -66,12 +84,18 @@ function hint() {
 	const n = selection.items.size
 	const channels = channelCount()
 	const where = channels > 1 ? ` in ${channels} channels` : ''
+	const how =
+		tapSeen && settings().tapSelect
+			? 'tap messages to add or remove them'
+			: 'long-press messages to add or remove them'
 	toast(
 		n
 			? barAvailable()
-				? `${n} selected${where} · long-press messages to add or remove them`
+				? `${n} selected${where} · ${how}`
 				: `${n} selected${where} · long-press for Delete`
-			: 'Selection cleared',
+			: selection.active
+				? `Selecting · ${how}`
+				: 'Selection cleared',
 	)
 }
 
@@ -240,12 +264,12 @@ function SettingsPage({ api }: { api: Api }) {
 			<Stack spacing={24}>
 				<TableRowGroup title="How to use">
 					<TableRow
-						label="1. Long-press a message"
-						subLabel="Choose Select messages. A bar shows at the top."
+						label="1. Start selecting"
+						subLabel="Tap the ✓ button in the chat's top bar, or long-press a message and choose Select messages. A bar shows at the top."
 					/>
 					<TableRow
-						label="2. Long-press more messages"
-						subLabel="Each one is highlighted. Long-press again to remove it."
+						label="2. Tap messages"
+						subLabel="Each one is highlighted. Tap again to remove it. Long-press works too."
 					/>
 					<TableRow
 						label="3. Tap ⋮ in the bar"
@@ -253,6 +277,18 @@ function SettingsPage({ api }: { api: Api }) {
 					/>
 				</TableRowGroup>
 				<TableRowGroup title="Options">
+					<TableSwitchRow
+						label="Select button in the top bar"
+						subLabel="A ✓ button next to search in chats that starts (or stops) selecting."
+						value={s.headerButton}
+						onValueChange={(headerButton: boolean) => set({ headerButton })}
+					/>
+					<TableSwitchRow
+						label="Tap to select"
+						subLabel="While selecting, a single tap adds or removes a message instead of opening it."
+						value={s.tapSelect}
+						onValueChange={(tapSelect: boolean) => set({ tapSelect })}
+					/>
 					<TableSwitchRow
 						label="Double-tap to select"
 						subLabel="Double-tap also adds or removes messages while selecting. Leave off if another plugin uses double-tap."
@@ -274,6 +310,15 @@ function SettingsPage({ api }: { api: Api }) {
 				</TableRadioGroup>
 				<TableRowGroup title="Status">
 					<TableRow label="Chat gestures" subLabel={handlerStatus} />
+					<TableRow
+						label="Taps"
+						subLabel={
+							tapSeen
+								? 'Working'
+								: "No tap seen yet. Start selecting and tap a message; if it still says this, Discord doesn't pass taps here, so use long-press."
+						}
+					/>
+					<TableRow label="Top bar button" subLabel={headerStatus()} />
 					<TableRow
 						label="Selected now"
 						subLabel={
@@ -308,6 +353,19 @@ export default plugin<{ jsonStorage: Settings }>({
 			if (selection.active) clear()
 		})
 		cleanup(watchChannelMessages(), watchActions())
+		setKeepWhenEmpty(barAvailable)
+		cleanup(() => setKeepWhenEmpty(() => false))
+		cleanup(
+			installHeader({
+				enabled: () => enabled && settings().headerButton,
+				active: () => selection.active,
+				onPress: () => {
+					if (selection.active) clear()
+					else activate()
+					hint()
+				},
+			}),
+		)
 		cleanup(
 			installBar({
 				options: () => {
@@ -355,6 +413,26 @@ export default plugin<{ jsonStorage: Settings }>({
 		// Gestures while selecting.
 		cleanup(
 			installHandlers({
+				// Discord routes plain taps on a message through here (it acts only on a few special
+				// messages and ignores the rest), so while selecting a tap can toggle instead.
+				handleTapMessage: (instance, original) =>
+					function (this: unknown, ...args: any[]) {
+						try {
+							noteTap()
+							if (enabled && selection.active && settings().tapSelect) {
+								const { messageId, message, channel } = targetOf(
+									instance,
+									args[0],
+								)
+								if (messageId && channel?.id) {
+									toggle(channel.id, messageId, message?.author?.id)
+									hint()
+									return
+								}
+							}
+						} catch {}
+						return original.apply(this, args)
+					},
 				handleDoubleTapMessage: (instance, original) =>
 					function (this: unknown, ...args: any[]) {
 						try {
