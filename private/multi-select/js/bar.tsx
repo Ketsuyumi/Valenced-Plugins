@@ -73,8 +73,7 @@ function SelectionBar() {
 			>
 				<Text
 					variant="text-md/semibold"
-					color="text-default"
-					style={{ marginRight: 8 }}
+					style={{ color: '#ffffff', marginRight: 8 }}
 				>
 					{n
 						? `${n} selected${channels > 1 ? ` · ${channels} channels` : ''}`
@@ -88,7 +87,7 @@ function SelectionBar() {
 					onPress={() => actions?.options()}
 					style={button}
 				>
-					<Text variant="heading-lg/bold" color="text-default">
+					<Text variant="heading-lg/bold" style={{ color: '#ffffff' }}>
 						⋮
 					</Text>
 				</Pressable>

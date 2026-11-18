@@ -5,7 +5,7 @@
 	"description": "See forum posts as a grid of cards with images, and filter them by tags, unread, followed, images, your posts, date and reactions, with more ways to sort.",
 	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
 	"icon": "ForumIcon",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

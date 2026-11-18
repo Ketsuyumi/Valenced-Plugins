@@ -1,5 +1,7 @@
 import { AlertActionCreators } from '@valenced/discord/actions'
+import { Tokens } from '@valenced/discord/common/tokens'
 import { Design } from '@valenced/discord/design'
+import { Stores } from '@valenced/discord/flux'
 import { useEffect, useMemo, useState } from 'react'
 import {
 	ActivityIndicator,
@@ -27,6 +29,24 @@ const ACCENT = '#5865F2'
 
 let cached: Shop | undefined
 
+/** The theme's main text colour. Some colour names (like `text-default`) don't exist on every Discord version, and Text then falls back to black. */
+function textColor(): string {
+	try {
+		const T = (Tokens as any).default
+		const theme = (Stores as any).ThemeStore?.theme
+		for (const name of ['TEXT_DEFAULT', 'TEXT_NORMAL', 'HEADER_PRIMARY', 'TEXT_PRIMARY']) {
+			const token = T?.colors?.[name]
+			if (!token) continue
+			const value = T.internal.resolveSemanticColor(theme, token)
+			if (typeof value === 'string' && value) return value
+		}
+		return theme === 'light' ? '#060607' : '#f2f3f5'
+	} catch {
+		return '#f2f3f5'
+	}
+}
+
+
 function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
 	const { Text } = Design as any
 	return (
@@ -42,7 +62,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 				backgroundColor: on ? ACCENT : 'rgba(127,127,127,0.18)',
 			}}
 		>
-			<Text variant="text-sm/semibold" style={{ color: on ? '#ffffff' : undefined }} color={on ? undefined : 'text-default'}>
+			<Text variant="text-sm/semibold" style={{ color: on ? '#ffffff' : textColor() }}>
 				{label}
 			</Text>
 		</Pressable>
@@ -92,8 +112,8 @@ function openDetail(p: Product, owned: boolean) {
 					<Text variant="text-sm/medium" color="text-muted">
 						{[TYPES[p.type as keyof typeof TYPES] ?? 'Item', p.category].filter(Boolean).join(' · ')}
 					</Text>
-					{p.summary ? <Text variant="text-md/normal">{p.summary}</Text> : null}
-					<Text variant="text-md/semibold">
+					{p.summary ? <Text variant="text-md/normal" style={{ color: textColor() }}>{p.summary}</Text> : null}
+					<Text variant="text-md/semibold" style={{ color: textColor() }}>
 						{priceLine(p)}
 						{p.nitro ? `  (Nitro: ${formatPrice(p.nitro)})` : ''}
 					</Text>
@@ -169,7 +189,7 @@ function Card({ p, size, owned }: { p: Product; size: number; owned: boolean }) 
 					</View>
 				) : null}
 			</View>
-			<Text variant="text-xs/semibold" numberOfLines={1} style={{ marginTop: 4 }}>
+			<Text variant="text-xs/semibold" numberOfLines={1} style={{ marginTop: 4, color: textColor() }}>
 				{p.name}
 			</Text>
 			<Text variant="text-xxs/medium" color="text-muted" numberOfLines={1}>

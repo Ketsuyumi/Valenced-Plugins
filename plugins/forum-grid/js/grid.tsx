@@ -72,6 +72,24 @@ function color(name: string, fallback: string): string {
 
 const ACCENT = '#5865F2'
 
+/** The theme's main text colour. Some colour names (like `text-default`) don't exist on every Discord version, and Text then falls back to black. */
+function textColor(): string {
+	try {
+		const T = (Tokens as any).default
+		const theme = (Stores as any).ThemeStore?.theme
+		for (const name of ['TEXT_DEFAULT', 'TEXT_NORMAL', 'HEADER_PRIMARY', 'TEXT_PRIMARY']) {
+			const token = T?.colors?.[name]
+			if (!token) continue
+			const value = T.internal.resolveSemanticColor(theme, token)
+			if (typeof value === 'string' && value) return value
+		}
+		return theme === 'light' ? '#060607' : '#f2f3f5'
+	} catch {
+		return '#f2f3f5'
+	}
+}
+
+
 function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
 	const { Text } = Design as any
 	return (
@@ -87,7 +105,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 				backgroundColor: on ? ACCENT : 'rgba(127,127,127,0.18)',
 			}}
 		>
-			<Text variant="text-xs/semibold" style={on ? { color: '#ffffff' } : undefined} color={on ? undefined : 'text-default'}>
+			<Text variant="text-xs/semibold" style={{ color: on ? '#ffffff' : textColor() }}>
 				{label}
 			</Text>
 		</Pressable>
@@ -139,8 +157,8 @@ function Card({ post, size, tags, onPress }: { post: Post; size: number; tags: T
 			)}
 			<View style={{ padding: 7, gap: 2 }}>
 				<View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-					{unread ? <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: color('TEXT_DEFAULT', '#fff') }} /> : null}
-					<Text variant={unread ? 'text-sm/bold' : 'text-sm/semibold'} numberOfLines={2} style={{ flex: 1 }}>
+					{unread ? <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: textColor() }} /> : null}
+					<Text variant={unread ? 'text-sm/bold' : 'text-sm/semibold'} numberOfLines={2} style={{ flex: 1, color: textColor() }}>
 						{post.pinned ? '📌 ' : ''}
 						{post.name}
 					</Text>
@@ -314,9 +332,9 @@ function Grid({ id, name }: { id: string; name: string }) {
 		<View style={{ flex: 1 }}>
 			<View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 8, gap: 4 }}>
 				<Pressable onPress={hideGrid} accessibilityLabel="Close grid" style={{ padding: 8 }}>
-					<Text variant="heading-md/bold">✕</Text>
+					<Text variant="heading-md/bold" style={{ color: textColor() }}>✕</Text>
 				</Pressable>
-				<Text variant="heading-md/bold" numberOfLines={1} style={{ flex: 1 }}>
+				<Text variant="heading-md/bold" numberOfLines={1} style={{ flex: 1, color: textColor() }}>
 					# {name}
 				</Text>
 				<Pressable onPress={() => setS({ columns: cols === 2 ? 3 : 2 })} accessibilityLabel="Change columns" style={{ padding: 8 }}>
