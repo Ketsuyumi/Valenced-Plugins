@@ -6,7 +6,7 @@ import { Linking, ScrollView } from 'react-native'
 import { findModule } from './find'
 import { installPlayer, play, playerAvailable } from './player'
 import { findWebView } from './webview'
-import { external, youtubeInSource, youtubeOf } from './youtube'
+import { describeSource, external, youtubeInSource, youtubeOf } from './youtube'
 import type { PlayerSettings } from './player'
 
 interface Settings extends PlayerSettings {
@@ -21,6 +21,9 @@ let settings: () => Settings = () => DEFAULTS
 let lastOpened = 0
 /** What happened to the last YouTube tap, for Settings → Status. */
 let lastTap = 'No YouTube video tapped yet'
+/** Which hooks attached, and what the viewer was last given. */
+const hooked = { opener: false, header: false, links: false }
+let lastSource = 'Nothing opened in the viewer yet'
 
 /** Plays [video] if the player can; false lets Discord do what it would have done. */
 function tryPlay(video: { videoId: string; start?: number } | undefined, via: string): boolean {
@@ -80,6 +83,11 @@ function SettingsPage({ api }: { api: any }) {
 					<TableRow label="Player" subLabel={playerAvailable() ? 'Ready' : 'Not attached yet (open any chat once)'} />
 					<TableRow label="Web view" subLabel={findWebView() ? 'Found' : "Not found: videos open Discord's usual way"} />
 					<TableRow label="Last YouTube tap" subLabel={lastTap} />
+					<TableRow
+						label="Hooks"
+						subLabel={`Viewer opener: ${hooked.opener ? 'yes' : 'no'} · Viewer header: ${hooked.header ? 'yes' : 'no'} · Links: ${hooked.links ? 'yes' : 'no'}`}
+					/>
+					<TableRow label="Last thing the viewer showed" subLabel={lastSource} />
 				</TableRowGroup>
 				<Text variant="text-sm/medium" color="text-muted">
 					▁ shrinks the player into a floating window you can drag anywhere; it keeps playing while you
@@ -102,6 +110,7 @@ export default plugin<{ jsonStorage: Settings }>({
 			findModule('modules/media_viewer/native/components/openMediaModal.tsx', ['openMediaModal'], (mod: any) => {
 				const host = typeof mod?.openMediaModal === 'function' ? mod : typeof mod?.default?.openMediaModal === 'function' ? mod.default : null
 				if (!host) return
+				hooked.opener = true
 				cleanup(
 					instead(host, 'openMediaModal', function (this: unknown, args: any[], orig: (...a: any[]) => any) {
 						try {
@@ -109,6 +118,7 @@ export default plugin<{ jsonStorage: Settings }>({
 								const options = args[0] ?? {}
 								const sources: any[] = options.initialSources ?? options.sources ?? []
 								const index = Number(options.initialIndex ?? options.index ?? 0) || 0
+								lastSource = `opener: ${describeSource(sources[index] ?? sources[0] ?? options)}`
 								if (tryPlay(youtubeInSource(sources[index] ?? sources[0]), 'the viewer opener')) return
 							}
 						} catch {}
@@ -123,6 +133,7 @@ export default plugin<{ jsonStorage: Settings }>({
 		let handled = ''
 		const onHeader = (props: any) => {
 			try {
+				if (props?.source) lastSource = `header: ${describeSource(props.source)}`
 				if (!settings().embeds) return
 				const video = youtubeInSource(props?.source)
 				if (!video) return
@@ -152,6 +163,7 @@ export default plugin<{ jsonStorage: Settings }>({
 									? { o: target, k: 'type' }
 									: null
 						if (!host) continue
+						hooked.header = true
 						cleanup(
 							instead(host.o, host.k, function (this: unknown, args: any[], orig: (...a: any[]) => any) {
 								onHeader(args[0])
@@ -168,6 +180,7 @@ export default plugin<{ jsonStorage: Settings }>({
 		cleanup(
 			getModules((withProps as any)('handleClick'), (mod: any) => {
 				if (typeof mod?.handleClick !== 'function') return
+				hooked.links = true
 				cleanup(
 					instead(mod, 'handleClick', function (this: unknown, args: any[], orig: (...a: any[]) => any) {
 						if (settings().links && tryPlay(youtubeOf(args[0]?.href), 'the link handler')) return

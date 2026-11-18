@@ -14,14 +14,44 @@ export function youtubeOf(url: unknown): { videoId: string; start?: number } | u
 	return { videoId, start }
 }
 
-/** The YouTube URL in a media viewer source, trying every field Discord may use. */
-export function youtubeInSource(source: any) {
+/** A YouTube thumbnail (i.ytimg.com / img.youtube.com), which carries the video id too. */
+function thumbnailOf(url: string): { videoId: string } | undefined {
+	const match = url.match(/(?:i\d?\.ytimg\.com|img\.youtube\.com)\/(?:vi|vi_webp)\/([A-Za-z0-9_-]{6,20})\//)
+	return match ? { videoId: match[1] } : undefined
+}
+
+/**
+ * The YouTube video in a media viewer source. Every string in it is looked at (a few levels deep):
+ * the video's own URL first, then a thumbnail, since some builds only hand the viewer the
+ * thumbnail and keep the video URL elsewhere.
+ */
+export function youtubeInSource(source: any): { videoId: string; start?: number } | undefined {
 	if (!source || typeof source !== 'object') return undefined
-	for (const key of ['uri', 'url', 'sourceURI', 'originalURL', 'proxyURL', 'videoURI', 'embedURL']) {
-		const hit = youtubeOf(source[key])
+	const strings: string[] = []
+	const walk = (value: any, depth: number) => {
+		if (typeof value === 'string') strings.push(value)
+		else if (value && typeof value === 'object' && depth < 4)
+			for (const v of Array.isArray(value) ? value : Object.values(value)) walk(v, depth + 1)
+	}
+	walk(source, 0)
+	for (const s of strings) {
+		const hit = youtubeOf(s)
+		if (hit) return hit
+	}
+	for (const s of strings) {
+		const hit = thumbnailOf(s)
 		if (hit) return hit
 	}
 	return undefined
+}
+
+/** The keys of a source and its first string values, for Settings → Status. */
+export function describeSource(source: any): string {
+	if (!source || typeof source !== 'object') return String(source)
+	return Object.entries(source)
+		.slice(0, 12)
+		.map(([k, v]) => (typeof v === 'string' ? `${k}=${v.slice(0, 60)}` : `${k}:${Array.isArray(v) ? 'list' : typeof v}`))
+		.join(', ')
 }
 
 /**
