@@ -180,6 +180,21 @@ The Discord Shop in a compact 3 × 3, 4 × 4 or 5 × 5 grid (5 × 5 hides the pr
 Data comes from the same endpoints the app uses (`/collectibles-categories/v2` and `/users/@me/collectibles-purchases`,
 as documented by Discord Userdoccers), through Discord's own request helper. Buying still happens in Discord's shop.
 
+### Embed Playback (`dev.ketsuyumi.embed-playback`)
+
+Play YouTube videos without leaving Discord, like Aliucord's old inline playback. Tapping a YouTube embed (or a YouTube
+link) opens a player docked under the chat header instead of Discord's full-screen viewer or the YouTube app.
+
+- **▁** shrinks it to a floating picture-in-picture window you can drag anywhere. It keeps playing while you scroll and
+  switch channels. **⤢** makes it big again, **↗** opens the video in YouTube, **✕** closes it. Back shrinks the big
+  player.
+- Settings: embeds and links each on or off, start as a floating window, and small, medium or large window size.
+  Timestamps (`t=1m5s`, `start=42`) are kept.
+
+The player is drawn beside Discord's toast container, which floats over every screen, using Discord's own WebView
+(found the way dxckie's Spotify Preview finds it, GPL-3.0). Discord draws chat rows natively, so the video plays over the
+chat rather than inside the embed itself. If the web view can't be found, videos open Discord's usual way.
+
 ### Forum Grid (`dev.ketsuyumi.forum-grid`)
 
 See a forum's posts as a grid of cards: the first image (or a text preview), title, tags, replies, reactions, how long
