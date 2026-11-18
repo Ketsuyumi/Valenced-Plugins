@@ -168,11 +168,22 @@ export default plugin({
 			getColors: colors,
 		})
 		themes.registerTheme('ame', 'ame-background', {
-			name: 'Ame-chan (Background)',
+			name: 'Ame-chan (Background, top)',
 			description: 'The same colours with Ame-chan in the top corner, dimmed so text stays readable.',
 			getColors: colors,
 			background: {
 				path: 'assets/ame.jpg',
+				opacity: 1,
+				blur: 0,
+				dimming: 0.78,
+			},
+		})
+		themes.registerTheme('ame', 'ame-background-bottom', {
+			name: 'Ame-chan (Background, bottom)',
+			description: 'Ame-chan in the bottom corner instead, her hair fading into the purple so the top of the chat stays clear.',
+			getColors: colors,
+			background: {
+				path: 'assets/ame-bottom.jpg',
 				opacity: 1,
 				blur: 0,
 				dimming: 0.78,

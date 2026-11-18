@@ -177,6 +177,8 @@ an error. Text stays near-white on plum (about 13:1 contrast). Works on every ba
 - **Ame-chan**: just the colours.
 - **Ame-chan (Background)**: the same colours with Ame-chan in the top-right corner, framed by the screen edge like the
   original art and sharp at full resolution. Only the bottom of her skirt blends into the purple.
+- **Ame-chan (Background, bottom)**: Ame-chan in the bottom-right corner instead, her hair fading into the purple so
+  the top of the chat stays clear.
 
 Both themes recolour every Discord colour with the theme engine from dxckie's themes (GPL-3.0), so nothing is left default grey.
 
