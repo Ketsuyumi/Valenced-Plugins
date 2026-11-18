@@ -6,10 +6,10 @@
     "dev.ketsuyumi.block-by-id": {
       "name": "Block by ID",
       "description": "Block any Discord user by pasting their user ID, even if you share no server or DM with them.",
-      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
       "icon": "DenyIcon",
       "channels": {
-        "latest": "1.3.0"
+        "latest": "1.3.1"
       },
       "versions": {
         "1.1.0": {
@@ -63,16 +63,29 @@
               "version": "*"
             }
           }
+        },
+        "1.3.1": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.block-by-id@1.3.1.zip",
+          "sha256": "bd03e9bda4b6add06aa21f7855bde9b098ab61c0556046c9ecce97f702e10add",
+          "size": 5263,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
         }
       }
     },
     "dev.ketsuyumi.dm-details-plus": {
       "name": "DM Details+",
       "description": "On a DM's details screen: hide the New Group button and the Files tab, and add Stickers and Emoji tabs.",
-      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
       "icon": "StickerIcon",
       "channels": {
-        "latest": "1.2.2"
+        "latest": "1.2.3"
       },
       "versions": {
         "1.0.0": {
@@ -139,16 +152,29 @@
               "version": "*"
             }
           }
+        },
+        "1.2.3": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.2.3.zip",
+          "sha256": "50420b54bbaf8fe09e731e5cbf6947cfc6ec907b86ebb00a4340a80a1c1a2056",
+          "size": 6071,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
         }
       }
     },
     "dev.ketsuyumi.hide-dms": {
       "name": "Hide DMs",
       "description": "Hide chosen DMs and group DMs, or all of them, from your DM list without leaving them.",
-      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
       "icon": "EyeSlashIcon",
       "channels": {
-        "latest": "1.0.2"
+        "latest": "1.0.3"
       },
       "versions": {
         "1.0.0": {
@@ -189,16 +215,29 @@
               "version": "*"
             }
           }
+        },
+        "1.0.3": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-dms@1.0.3.zip",
+          "sha256": "e91e3e092267ccde5baed0af47441be2c82614784e6633270f2a341daece3442",
+          "size": 2753,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
         }
       }
     },
     "dev.ketsuyumi.hide-server-banners": {
       "name": "Hide Server Banners",
       "description": "Hides server banners at the top of the channel list, so every server uses the compact header.",
-      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
       "icon": "ImageIcon",
       "channels": {
-        "latest": "1.1.0"
+        "latest": "1.1.1"
       },
       "versions": {
         "1.0.0": {
@@ -226,16 +265,29 @@
               "version": "*"
             }
           }
+        },
+        "1.1.1": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-server-banners@1.1.1.zip",
+          "sha256": "18f8254fa5d0602ed82ef566619ede7108a3df052abc3099af6355304d32a0ac",
+          "size": 1347,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
         }
       }
     },
     "dev.ketsuyumi.ignore-apps": {
       "name": "Ignore Apps",
       "description": "Hide messages from apps and bots that Discord doesn't let you block or ignore, like MEE6.",
-      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
       "icon": "EyeSlashIcon",
       "channels": {
-        "latest": "1.0.2"
+        "latest": "1.0.3"
       },
       "versions": {
         "1.0.0": {
@@ -276,21 +328,47 @@
               "version": "*"
             }
           }
+        },
+        "1.0.3": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ignore-apps@1.0.3.zip",
+          "sha256": "5be9380d794e5afb03c30d3af728dc06dabcb9855f633503d6554167d1faa7cc",
+          "size": 2369,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
         }
       }
     },
     "dev.ketsuyumi.multi-select": {
       "name": "Multi Select",
       "description": "Select several messages and delete them at once, like on WhatsApp. Long-press a message and choose Select messages, double-tap to add more, long-press for Delete.",
-      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
       "icon": "CheckmarkLargeIcon",
       "channels": {
-        "latest": "1.0.0"
+        "latest": "1.0.1"
       },
       "versions": {
         "1.0.0": {
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.multi-select@1.0.0.zip",
           "sha256": "45544e8a64035c37b9d5e98ab107968ea055147fad2f22a4b960e4e93cb78308",
+          "size": 4718,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.1": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.multi-select@1.0.1.zip",
+          "sha256": "4c161f8666110f48092270976e456322beb9430440e2d8ea4f123f0a8e549333",
           "size": 4718,
           "dependencies": {
             "valenced.api": {
@@ -306,10 +384,10 @@
     "dev.ketsuyumi.no-blackout": {
       "name": "No Blackout",
       "description": "Stops the screen going black during calls when the proximity sensor is covered (for example by a finger near the top of the screen). Android only.",
-      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
       "icon": "MobilePhoneIcon",
       "channels": {
-        "latest": "1.0.0"
+        "latest": "1.0.1"
       },
       "versions": {
         "1.0.0": {
@@ -324,16 +402,29 @@
               "version": "*"
             }
           }
+        },
+        "1.0.1": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.no-blackout@1.0.1.zip",
+          "sha256": "d957d66fdf5ca67922bd06fded26918bb208356e7dbd6322b94226a0bedc94fd",
+          "size": 3463,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
         }
       }
     },
     "dev.ketsuyumi.quick-reload": {
       "name": "Quick Access",
       "description": "Shortcut buttons next to the bell on the bar with your name: reload Discord, open Friends, Plugins or Performance Monitor. Each has its own switch. Also a \"Reload Discord\" row in Discord's settings. Formerly Quick Reload.",
-      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
       "icon": "RefreshIcon",
       "channels": {
-        "latest": "1.4.0"
+        "latest": "1.4.1"
       },
       "versions": {
         "1.0.0": {
@@ -413,16 +504,29 @@
               "version": "*"
             }
           }
+        },
+        "1.4.1": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.4.1.zip",
+          "sha256": "8e221f8881a40cea6dfa3de62c6067b2d87a545251e4133e402e20060f7914b9",
+          "size": 3590,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
         }
       }
     },
     "dev.ketsuyumi.smaller-media": {
       "name": "Smaller Media",
       "description": "Makes images, GIFs and videos in chat 30 to 50% smaller, from you and everyone else. Only the preview shrinks: tapping still opens them full size and videos and GIFs still play.",
-      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
       "icon": "ImageIcon",
       "channels": {
-        "latest": "1.2.0"
+        "latest": "1.2.1"
       },
       "versions": {
         "1.0.0": {
@@ -502,22 +606,48 @@
               "version": "*"
             }
           }
+        },
+        "1.2.1": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.smaller-media@1.2.1.zip",
+          "sha256": "3cb35ea61fd0c249baa0104637c88dcc8011e0acc003af54c043103b9d8683f4",
+          "size": 4240,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
         }
       }
     },
     "dev.ketsuyumi.spectators": {
       "name": "Spectators",
       "description": "See who is watching a stream, yours or someone else's, like on PC. Optional notices when people start or stop watching, and a notification with the count while you stream, also outside the app.",
-      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
       "icon": "EyeIcon",
       "channels": {
-        "latest": "1.0.0"
+        "latest": "1.0.1"
       },
       "versions": {
         "1.0.0": {
           "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.spectators@1.0.0.zip",
           "sha256": "3ceb200c0398eab8dbd1b30087a9f1f3565d9dae11c349c50ef1ead5061b949e",
           "size": 8006,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.1": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.spectators@1.0.1.zip",
+          "sha256": "b77caf8092f48ab33a2400bb5716658db1b8b5daea03e4b1957714372f000f1c",
+          "size": 8007,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
