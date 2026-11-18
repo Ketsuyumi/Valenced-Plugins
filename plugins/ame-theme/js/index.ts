@@ -572,6 +572,142 @@ const redColors = lazyColors(redTone, {
 	light: { palette: redDay, extra: redStates },
 })
 
+
+// ---------------------------------------------------------------------------------------------
+// Blue, Noir and Pixel: built from a tone, an accent and a few surface colours each.
+
+/** Greys from darkest to lightest, as theme colours for Discord's 14 grey stops. */
+function greysOf(stops: string[]): [string, string][] {
+	const discord = ['#000000', '#2c2d32', '#323339', '#393a41', '#41434a', '#595a63', '#81828a', '#97979f', '#abacb2', '#c5c6ca', '#efeff1', '#f3f3f4', '#fbfbfb', '#ffffff']
+	return discord.map((d, i) => [d, stops[i]] as [string, string])
+}
+
+interface Look2 {
+	greys: string[]
+	hues: Tone['hues']
+	surfaces: Pick<Palette, 'rail' | 'floor' | 'panel' | 'page' | 'card' | 'popup' | 'input' | 'control' | 'pressed'>
+	text: Pick<Palette, 'strong' | 'text' | 'subtle' | 'muted' | 'faint'>
+	accent: string
+	accentPress: string
+	onAccent: string
+	accentText: string
+	brand: string
+	link: string
+	mention: string
+	keyword: string
+	unread: string
+	day: { accent: string; accentText: string; link: string; mention: string; tint: string }
+}
+
+function colorsOf(l: Look2) {
+	const hexA = (hex: string, a: string) => hex.slice(0, 7) + a
+	const n: Palette = {
+		...night,
+		...l.surfaces,
+		...l.text,
+		divider: hexA(l.link, '1a'),
+		border: hexA(l.link, '2e'),
+		borderStrong: hexA(l.link, '52'),
+		accent: l.accent,
+		accentPress: l.accentPress,
+		onAccent: l.onAccent,
+		accentSoft: hexA(l.accent, '33'),
+		accentText: l.accentText,
+		brand: l.brand,
+		rowIcon: l.accentText,
+		selection: hexA(l.accent, '2e'),
+		link: l.link,
+		mentionText: l.mention,
+		mentionPill: hexA(l.link, '33'),
+		mentionBg: hexA(l.link, '14'),
+		keyword: hexA(l.keyword, '40'),
+		code: l.surfaces.rail,
+		codeText: l.link,
+		spoiler: l.surfaces.control,
+		spoilerRevealed: l.surfaces.card,
+		dangerFill: l.unread,
+		scrim: hexA(l.surfaces.rail, 'cc'),
+	}
+	const d: Palette = {
+		...day,
+		rail: l.day.tint,
+		accent: l.day.accent,
+		accentPress: l.day.accent,
+		onAccent: '#ffffff',
+		accentSoft: hexA(l.day.accent, '26'),
+		accentText: l.day.accentText,
+		brand: l.brand,
+		rowIcon: l.day.accentText,
+		selection: hexA(l.day.accent, '24'),
+		link: l.day.link,
+		mentionText: l.day.mention,
+		mentionPill: hexA(l.day.accent, '33'),
+		mentionBg: hexA(l.day.accent, '1f'),
+		keyword: hexA(l.keyword, '40'),
+		codeText: l.day.link,
+		dangerFill: l.unread,
+	}
+	const st = { ...states, BADGE_NOTIFICATION_BACKGROUND: l.unread }
+	const tone: Tone = { greys: greysOf(l.greys), hues: l.hues }
+	return lazyColors(tone, {
+		dark: { palette: n, extra: st },
+		darker: { palette: n, extra: st },
+		midnight: { palette: n, extra: st },
+		light: { palette: d, extra: st },
+	})
+}
+
+const blueColors = colorsOf({
+	greys: ['#000000', '#0a0d12', '#0e1218', '#151a22', '#1b212b', '#36404f', '#66727f', '#808b99', '#99a4b2', '#b8c1cd', '#e8edf3', '#f0f3f7', '#f9fafc', '#ffffff'],
+	hues: { red: '#ff6b7d', orange: '#f39a76', yellow: '#f0d080', green: '#7fd8b0', teal: '#86cfdc', blue: '#7fa9e0', blurple: '#8ea0ec', purple: '#b08ae0', pink: '#e89ab8' },
+	surfaces: { rail: '#0a0d12', floor: '#0e1218', panel: '#0c1015', page: '#131820', card: '#191f29', popup: '#1f2632', input: '#141920', control: '#25303e', pressed: '#2f3c4d' },
+	text: { strong: '#f0f3f7', text: '#dfe5ec', subtle: '#b6c0cc', muted: '#8d98a6', faint: '#5c6676' },
+	accent: '#6f9fd0',
+	accentPress: '#5f8fc0',
+	onAccent: '#08111c',
+	accentText: '#a9c8ec',
+	brand: '#3f6f9a',
+	link: '#8fb8e6',
+	mention: '#cfe2f7',
+	keyword: '#b5374f',
+	unread: '#c2405a',
+	day: { accent: '#3f6f9a', accentText: '#2f5a82', link: '#2a5a8a', mention: '#24507c', tint: '#e2e8f0' },
+})
+
+const noirColors = colorsOf({
+	greys: ['#000000', '#0b0b0c', '#121213', '#1a1a1c', '#222224', '#3e3e42', '#6e6e74', '#88888e', '#a2a2a8', '#c0c0c5', '#ececee', '#f3f3f4', '#fbfbfb', '#ffffff'],
+	hues: { red: '#ff5a5f', orange: '#f39a76', yellow: '#f0d080', green: '#7fd8b0', teal: '#86cfcf', blue: '#8aa6f0', blurple: '#a98ae0', purple: '#c47ae0', pink: '#ff8fa8' },
+	surfaces: { rail: '#0b0b0c', floor: '#121213', panel: '#0f0f10', page: '#171718', card: '#1e1e20', popup: '#252527', input: '#19191a', control: '#2c2c2f', pressed: '#37373b' },
+	text: { strong: '#f3f3f4', text: '#e4e4e6', subtle: '#bdbdc2', muted: '#94949a', faint: '#606066' },
+	accent: '#d81e28',
+	accentPress: '#bf1a23',
+	onAccent: '#ffffff',
+	accentText: '#ff7a7f',
+	brand: '#a3161e',
+	link: '#ff8085',
+	mention: '#ffd0d2',
+	keyword: '#d81e28',
+	unread: '#d81e28',
+	day: { accent: '#b8161f', accentText: '#a3161e', link: '#a3161e', mention: '#8e131a', tint: '#ecebeb' },
+})
+
+const pixelColors = colorsOf({
+	greys: ['#000000', '#100e11', '#18161a', '#211e23', '#2a262c', '#463f48', '#76697a', '#8f8293', '#a99cac', '#c7bcc9', '#f1eaf2', '#f6f0f6', '#fcf9fc', '#ffffff'],
+	hues: { red: '#ff6b85', orange: '#f39a76', yellow: '#f0d080', green: '#7fd8b0', teal: '#86cfcf', blue: '#8aa6f0', blurple: '#a98ae0', purple: '#c47ae0', pink: '#f08fb0' },
+	surfaces: { rail: '#100e11', floor: '#18161a', panel: '#141215', page: '#1e1b20', card: '#262229', popup: '#2d2930', input: '#1c191e', control: '#352f38', pressed: '#423a46' },
+	text: { strong: '#f6f0f6', text: '#eae0ea', subtle: '#c6b6c8', muted: '#9e8ea1', faint: '#695c6c' },
+	accent: '#c43c63',
+	accentPress: '#ad3457',
+	onAccent: '#ffffff',
+	accentText: '#f39ab5',
+	brand: '#a12b4d',
+	link: '#f5a3bc',
+	mention: '#ffd6e2',
+	keyword: '#c43c63',
+	unread: '#c43c63',
+	day: { accent: '#a12b4d', accentText: '#8f2544', link: '#8f2544', mention: '#7c1f3b', tint: '#eee4ec' },
+})
+
 export default plugin({
 	preInit({ themes }) {
 		themes.registerGroup('ame', {
@@ -648,6 +784,54 @@ export default plugin({
 			getColors: redColors,
 			background: {
 				path: 'assets/ame-red.jpg',
+				opacity: 1,
+				blur: 0,
+				dimming: 0.78,
+			},
+		})
+		themes.registerTheme('ame', 'ame-blue', {
+			name: 'Ame-chan Blue',
+			description: 'Near-black with her blue hair for accents and a touch of red.',
+			getColors: blueColors,
+		})
+		themes.registerTheme('ame', 'ame-blue-background', {
+			name: 'Ame-chan Blue (Background)',
+			description: 'The blue-haired art at the bottom of the screen, on black.',
+			getColors: blueColors,
+			background: {
+				path: 'assets/ame-blue.jpg',
+				opacity: 1,
+				blur: 0,
+				dimming: 0.78,
+			},
+		})
+		themes.registerTheme('ame', 'ame-noir', {
+			name: 'Ame-chan Noir',
+			description: 'Charcoal and black with bright swirl red.',
+			getColors: noirColors,
+		})
+		themes.registerTheme('ame', 'ame-noir-background', {
+			name: 'Ame-chan Noir (Background)',
+			description: 'The red-swirl art at the top of the screen, fading into black.',
+			getColors: noirColors,
+			background: {
+				path: 'assets/ame-noir.jpg',
+				opacity: 1,
+				blur: 0,
+				dimming: 0.78,
+			},
+		})
+		themes.registerTheme('ame', 'ame-pixel', {
+			name: 'Ame-chan Pixel',
+			description: 'Charcoal with raspberry pink, from the pixel-window art.',
+			getColors: pixelColors,
+		})
+		themes.registerTheme('ame', 'ame-pixel-background', {
+			name: 'Ame-chan Pixel (Background)',
+			description: 'The pixel-window art in the middle of the screen, on its charcoal.',
+			getColors: pixelColors,
+			background: {
+				path: 'assets/ame-pixel.jpg',
 				opacity: 1,
 				blur: 0,
 				dimming: 0.78,

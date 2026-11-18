@@ -275,6 +275,10 @@ an error. Text stays near-white on plum (about 13:1 contrast). Works on every ba
   white frame.
 - **Ame-chan Red** (+ Background): deep wine, crimson buttons and rose links; the background pins the red art to the
   bottom of the screen on the same red.
+- **Ame-chan Blue** (+ Background): near-black with her blue hair for accents and a touch of red; the art sits at the
+  bottom of the screen on black.
+- **Ame-chan Noir** (+ Background): charcoal and black with bright swirl red; the art sits at the top and fades into black.
+- **Ame-chan Pixel** (+ Background): charcoal with raspberry pink, from the pixel-window art, centred on its own charcoal.
 - **Ame-chan Glitch** (+ Background): deep magenta, hot pink and the glitch's cyan for links; the background fades the
   art into grainy magenta.
 
