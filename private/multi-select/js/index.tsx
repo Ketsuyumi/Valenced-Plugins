@@ -27,7 +27,14 @@ import {
 import { chatbarStatus, installChatbar } from './chatbar'
 import { headerStatus, installHeader } from './header'
 import type { Side } from './chatbar'
-import { canDelete, canDeleteAtAll, deleteAll, watchActions } from './remove'
+import {
+	canDelete,
+	canDeleteAtAll,
+	deleteAll,
+	deleting,
+	stopDeleting,
+	watchActions,
+} from './remove'
 import {
 	activate,
 	channelCount,
@@ -114,6 +121,13 @@ interface Here {
 	authorId?: string
 }
 
+/** Rough time for [n] deletes at 3 to 5 seconds apart (4 on average). */
+function howLong(n: number): string {
+	if (n < 2) return ''
+	const minutes = Math.ceil(((n - 1) * 4) / 60)
+	return ` Takes about ${minutes > 1 ? `${minutes} minutes` : 'a minute or less'} (3 to 5 seconds each).`
+}
+
 function openOptions(here?: Here) {
 	const { AlertModal, AlertActionButton } = Design as any
 	const key = `multi-select-${Date.now()}`
@@ -130,7 +144,7 @@ function openOptions(here?: Here) {
 			content={
 				blocked
 					? `${deletable.length} can be deleted. ${blocked} ${blocked === 1 ? "isn't yours" : "aren't yours"}, in a place where you can't delete other people's messages.`
-					: 'Deleting removes them for everyone. This cannot be undone.'
+					: `Deleting removes them for everyone. This cannot be undone.${howLong(deletable.length)}`
 			}
 			actions={
 				<>
@@ -182,14 +196,25 @@ async function runDelete(items: Picked[]) {
 		toast("Couldn't find Discord's delete action")
 		return
 	}
-	toast(`Deleting ${items.length}…`)
-	const { deleted, failed } = await deleteAll(items)
+	if (deleting) {
+		toast('Already deleting · tap ✕ to stop')
+		return
+	}
+	const { deleted, failed, skipped } = await deleteAll(items, (n, total) =>
+		toast(
+			total > 1
+				? `Deleting ${n} of ${total}… · ✕ stops`
+				: 'Deleting…',
+		),
+	)
 	forget(deleted)
-	if (!failed.length) clear()
+	if (!failed.length && !skipped.length) clear()
 	toast(
-		failed.length
-			? `Deleted ${deleted.length}, ${failed.length} failed (still selected)`
-			: `Deleted ${deleted.length} message${deleted.length === 1 ? '' : 's'}`,
+		skipped.length
+			? `Stopped · deleted ${deleted.length}, ${skipped.length} left selected`
+			: failed.length
+				? `Deleted ${deleted.length}, ${failed.length} failed (still selected)`
+				: `Deleted ${deleted.length} message${deleted.length === 1 ? '' : 's'}`,
 	)
 }
 
@@ -350,8 +375,8 @@ function SettingsPage({ api }: { api: Api }) {
 				<Text variant="text-sm/medium" color="text-muted">
 					You can always delete your own messages. Other people's can only be
 					deleted in servers where you have Manage Messages. Messages are
-					deleted one at a time, a third of a second apart, to stay within
-					Discord's limits.
+					deleted one at a time, 3 to 5 seconds apart (like Discrub), to
+					stay well within Discord's limits. Tap ✕ to stop part-way.
 				</Text>
 			</Stack>
 		</ScrollView>
@@ -395,6 +420,12 @@ export default plugin<{ jsonStorage: Settings }>({
 					openOptions()
 				},
 				cancel: () => {
+					// While deleting, ✕ stops the delete and keeps what's left selected.
+					if (deleting) {
+						stopDeleting()
+						toast('Stopping after this one…')
+						return
+					}
 					clear()
 					hint()
 				},

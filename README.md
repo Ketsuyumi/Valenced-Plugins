@@ -126,22 +126,6 @@ Uploads are drawn in Discord's image grid, which fills the message's width whate
 the grid is the only way uploads are drawn (switching it off makes them disappear). So for a message with uploads the
 plugin leaves the grid on and scales the width it fills, the row's `constrainedWidth`.
 
-### Multi Select (`dev.ketsuyumi.multi-select`)
-
-Select several messages and delete them at once, like on WhatsApp. Tap the **✓** toggle in the chat bar (left or right
-of the input, or hidden) or in a chat's top bar, or long-press a message and choose **Select messages**: a bar appears at the top of the screen with the count, **⋮**
-(Delete N, Clear selection) and **✕** to stop. While selecting, tap messages to add or remove them (long-press works
-too); each one is highlighted. The top-bar button and tap-to-select can each be turned off in settings. "Double-tap to select" (off by
-default) lets double-tap add and remove too. Your own messages can always be deleted; other people's only where you
-have Manage Messages. Messages are deleted one at a time through Discord's own action, a third of a second apart.
-
-A selection can span channels: switch to another channel or DM and keep long-pressing; the bar shows the total and how
-many channels it covers, and Delete removes them all. Each message's author is kept when it is selected, so it can still
-be checked after you leave that channel.
-
-The bar is drawn beside Discord's toast container (`AppToastContainer`), which floats over every screen. A message with
-no text shows its highlight the next time its row is redrawn (scroll it off and back).
-
 ### Spectators (`dev.ketsuyumi.spectators`)
 
 See who is watching a stream, like on PC: your own stream and the streams you are watching, with avatars, on the

@@ -44,23 +44,49 @@ export function canDelete(item: Picked): boolean {
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
+/** Gap between deletes: a random 3 to 5 seconds, the pacing Discrub uses, so it never looks scripted. */
+export const MIN_GAP = 3000
+export const MAX_GAP = 5000
+const gap = () => MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP)
+
+let stopRequested = false
+export let deleting = false
+/** Stops a running delete after the message being deleted now. */
+export function stopDeleting() {
+	if (deleting) stopRequested = true
+}
+
 /**
  * Deletes [items] one after another, in any channels, through Discord's own action (so each chat
- * updates the usual way). A short gap between them keeps well clear of Discord's rate limit.
+ * updates the usual way), waiting 3 to 5 seconds between them. Items not reached because of
+ * [stopDeleting] are returned in `skipped`.
  */
 export async function deleteAll(
 	items: Picked[],
-): Promise<{ deleted: Picked[]; failed: Picked[] }> {
+	onProgress?: (done: number, total: number) => void,
+): Promise<{ deleted: Picked[]; failed: Picked[]; skipped: Picked[] }> {
 	const deleted: Picked[] = []
 	const failed: Picked[] = []
-	for (const item of items) {
-		try {
-			await actions.deleteMessage(item.channelId, item.messageId)
-			deleted.push(item)
-		} catch {
-			failed.push(item)
+	deleting = true
+	stopRequested = false
+	let index = 0
+	try {
+		for (; index < items.length; index++) {
+			if (stopRequested) break
+			if (index > 0) await wait(gap())
+			if (stopRequested) break
+			const item = items[index]
+			onProgress?.(index + 1, items.length)
+			try {
+				await actions.deleteMessage(item.channelId, item.messageId)
+				deleted.push(item)
+			} catch {
+				failed.push(item)
+			}
 		}
-		await wait(350)
+	} finally {
+		deleting = false
+		stopRequested = false
 	}
-	return { deleted, failed }
+	return { deleted, failed, skipped: items.slice(index) }
 }
