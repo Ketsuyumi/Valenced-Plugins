@@ -190,6 +190,10 @@ link) opens a player docked under the chat header instead of Discord's full-scre
   player.
 - Settings: embeds and links each on or off, start as a floating window, and small, medium or large window size.
   Timestamps (`t=1m5s`, `start=42`) are kept.
+- **Ads**: works with Palm's **Block YouTube Ads** (Community Plugins), which adds AdGuard's script to every YouTube frame
+  in the app, this player's included. It's an optional dependency; settings say whether it's installed.
+- If YouTube says "This video is unavailable" or shows an error code, **↻** in the player tries the next way of loading it
+  (Discord-style embed, privacy-enhanced embed, direct embed page) and remembers the one that works.
 
 The player is drawn beside Discord's toast container, which floats over every screen, using Discord's own WebView
 (found the way dxckie's Spotify Preview finds it, GPL-3.0). Discord draws chat rows natively, so the video plays over the
