@@ -92,6 +92,30 @@
         }
       }
     },
+    "dev.ketsuyumi.default-typing": {
+      "name": "Default Typing Indicator",
+      "description": "Shows everyone's typing indicator as Discord's plain dots, without custom animated emoji wiggling around.",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+      "icon": "ChatIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.default-typing@1.0.0.zip",
+          "sha256": "96e8ba18e23cebb9f8e7e43e199b8e5affb6bc843495ed5dd08b0b5656b81a7c",
+          "size": 1539,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.dm-details-plus": {
       "name": "DM Details+",
       "description": "On a DM's details screen: hide the New Group button and the Files tab, and add Stickers and Emoji tabs.",
