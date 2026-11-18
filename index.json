@@ -411,11 +411,11 @@
     },
     "dev.ketsuyumi.multi-select": {
       "name": "Multi Select",
-      "description": "Select several messages and delete them at once, like on WhatsApp. Long-press a message and choose Select messages, double-tap to add more, long-press for Delete.",
+      "description": "Select several messages and delete them at once, like on WhatsApp. Long-press a message and choose Select messages, long-press more to add them, then use the bar at the top to delete.",
       "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "CheckmarkLargeIcon",
       "channels": {
-        "latest": "1.0.2"
+        "latest": "1.1.0"
       },
       "versions": {
         "1.0.0": {
@@ -448,6 +448,19 @@
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.multi-select@1.0.2.zip",
           "sha256": "868a2e096589bb93c43c8cc788ac4fcc79927ef01f2a470d37cfb57bab6e36bb",
           "size": 4725,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.1.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.multi-select@1.1.0.zip",
+          "sha256": "834929e4dd803eab728f71bb89debfa7bf08f57b0adf68adf333ff25703a7352",
+          "size": 5307,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
