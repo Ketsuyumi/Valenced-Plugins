@@ -5,6 +5,23 @@ Plugins for [Valenced](https://valenced.app), built on the official
 
 ## Plugins
 
+### Better DMs (`dev.ketsuyumi.better-dms`)
+
+Make DMs easier to tell apart. Long-press a DM and choose **DM options** (or pick it in the plugin's settings) to give it a
+colour, label, emoji, pin, **careful** mode or a private nickname. Every feature has its own switch in settings.
+
+- **DM list**: tabs above your DMs (All, or DMs and a separate **Groups** tab, plus Unread, Friends, Pinned and one tab
+  per label); pinned DMs stay on top.
+- **On each row** (on the message preview line): colour tag, label, emoji, 👥 member count for group DMs, unread bubble
+  with the mention count in your colour, how long ago it was active (fading DMs unused for a chosen time), mutual
+  servers, not-a-friend and 🤖 bot markers, and your note. Optionally on a second line.
+- **In a DM**: a "To: name" banner above the message box in its colour, "Send to …?" before each message in careful
+  chats (if you don't send, the text is copied back), and private nicknames shown wherever Discord shows friend
+  nicknames.
+
+Pins and tabs filter the same list Hide DMs does; the row hints hook `ChannelRowPreview` like Chat Lock; the long-press
+row follows Yumistra's Better Channel List (GPL-3.0).
+
 ### Block by ID (`dev.ketsuyumi.block-by-id`)
 
 Block any Discord user by their user ID, even when you share no server or DM with them.
