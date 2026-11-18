@@ -268,6 +268,30 @@
         }
       }
     },
+    "dev.ketsuyumi.friends-export": {
+      "name": "Friends Export",
+      "description": "Export your friends list (and optionally blocked users and requests) as text, CSV or JSON: copy it, save it to a file, or use /friendslist.",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+      "icon": "FriendsIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.friends-export@1.0.0.zip",
+          "sha256": "a3f1b8a6f8cec6813c2dc4b2bc48de20b1252b87264b04882fb55150bf4ba162",
+          "size": 4953,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.hide-dms": {
       "name": "Hide DMs",
       "description": "Hide chosen DMs and group DMs, or all of them, from your DM list without leaving them.",
