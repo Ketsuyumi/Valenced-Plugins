@@ -3,6 +3,30 @@
   "name": "Valenced Plugins by Satou",
   "description": "Plugins for Valenced.",
   "plugins": {
+    "dev.ketsuyumi.better-dms": {
+      "name": "Better DMs",
+      "description": "Make DMs easier to tell apart: colours, labels, emoji, pins, tabs (with a Groups tab), unread, last-active and mutual-server hints, a name banner, a send check for careful chats, private nicknames and more. Every part can be turned off.",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+      "icon": "ChatIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.better-dms@1.0.0.zip",
+          "sha256": "2c4851465412a48e4edaa14009c922c8286aa32d7e4d69f38f63477905479673",
+          "size": 8904,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.block-by-id": {
       "name": "Block by ID",
       "description": "Block any Discord user by pasting their user ID, even if you share no server or DM with them.",
