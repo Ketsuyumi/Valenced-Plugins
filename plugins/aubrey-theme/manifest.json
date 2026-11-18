@@ -4,7 +4,7 @@
 	"name": "Aubrey",
 	"description": "A cute, readable OMORI theme inspired by Aubrey: soft plum surfaces, bow-pink accents and mint links. Comes with an optional background.",
 	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

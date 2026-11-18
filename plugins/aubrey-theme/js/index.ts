@@ -172,12 +172,12 @@ export default plugin({
 		})
 		themes.registerTheme('aubrey', 'aubrey-background', {
 			name: 'Aubrey (Background)',
-			description: 'The same colours over OMORI artwork, softly blurred and dimmed so text stays readable.',
+			description: 'The same colours over OMORI artwork, dimmed so text stays readable.',
 			getColors: colors,
 			background: {
 				path: 'assets/aubrey.jpg',
 				opacity: 1,
-				blur: 2,
+				blur: 0,
 				dimming: 0.78,
 			},
 		})

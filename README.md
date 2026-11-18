@@ -165,7 +165,7 @@ and mint links and mentions from her dress. Text stays near-white on plum (about
 as Discord's own dark theme. Works on every base (Ash, Dark, Onyx and a pastel Light).
 
 - **Aubrey**: just the colours.
-- **Aubrey (Background)**: the same colours over OMORI artwork, blurred a little and dimmed so text stays readable. The
+- **Aubrey (Background)**: the same colours over OMORI artwork, kept small and sharp in the middle of the screen and dimmed so text stays readable. The
   Background screen (settings icon on the Colors page) changes opacity, blur and dimming, or swaps in your own image.
 
 Every Discord colour is recoloured with the theme engine from dxckie's themes (GPL-3.0), so nothing is left default grey.
