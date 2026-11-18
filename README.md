@@ -175,8 +175,8 @@ from her vest, and gold links and mentions from her heart charm and hairpin. Onl
 an error. Text stays near-white on plum (about 13:1 contrast). Works on every base, including a light version.
 
 - **Ame-chan**: just the colours.
-- **Ame-chan (Background)**: the same colours with Ame-chan in the bottom-right corner, sharp and at full resolution,
-  fading into the purple above so the top of the chat stays clear.
+- **Ame-chan (Background)**: the same colours with Ame-chan in the top-right corner, framed by the screen edge like the
+  original art and sharp at full resolution. Only the bottom of her skirt blends into the purple.
 
 Both themes recolour every Discord colour with the theme engine from dxckie's themes (GPL-3.0), so nothing is left default grey.
 

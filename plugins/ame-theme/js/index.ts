@@ -169,7 +169,7 @@ export default plugin({
 		})
 		themes.registerTheme('ame', 'ame-background', {
 			name: 'Ame-chan (Background)',
-			description: 'The same colours with Ame-chan in the corner, dimmed so text stays readable.',
+			description: 'The same colours with Ame-chan in the top corner, dimmed so text stays readable.',
 			getColors: colors,
 			background: {
 				path: 'assets/ame.jpg',
