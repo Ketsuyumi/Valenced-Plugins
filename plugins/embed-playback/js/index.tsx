@@ -19,9 +19,21 @@ const DEFAULTS: Settings = { embeds: true, links: true, pipSize: 'medium', start
 let settings: () => Settings = () => DEFAULTS
 
 let lastOpened = 0
+/** What happened to the last YouTube tap, for Settings → Status. */
+let lastTap = 'No YouTube video tapped yet'
+
 /** Plays [video] if the player can; false lets Discord do what it would have done. */
-function tryPlay(video: { videoId: string; start?: number } | undefined): boolean {
-	if (!video || !playerAvailable() || !findWebView()) return false
+function tryPlay(video: { videoId: string; start?: number } | undefined, via: string): boolean {
+	if (!video) return false
+	if (!playerAvailable()) {
+		lastTap = `Caught by ${via}, but the player isn't attached (open a chat once)`
+		return false
+	}
+	if (!findWebView()) {
+		lastTap = `Caught by ${via}, but Discord's web view wasn't found`
+		return false
+	}
+	lastTap = `Played via ${via}`
 	// One tap can reach more than one hook; open once.
 	const now = Date.now()
 	if (now - lastOpened < 800) return true
@@ -67,6 +79,7 @@ function SettingsPage({ api }: { api: any }) {
 				<TableRowGroup title="Status">
 					<TableRow label="Player" subLabel={playerAvailable() ? 'Ready' : 'Not attached yet (open any chat once)'} />
 					<TableRow label="Web view" subLabel={findWebView() ? 'Found' : "Not found: videos open Discord's usual way"} />
+					<TableRow label="Last YouTube tap" subLabel={lastTap} />
 				</TableRowGroup>
 				<Text variant="text-sm/medium" color="text-muted">
 					▁ shrinks the player into a floating window you can drag anywhere; it keeps playing while you
@@ -96,7 +109,7 @@ export default plugin<{ jsonStorage: Settings }>({
 								const options = args[0] ?? {}
 								const sources: any[] = options.initialSources ?? options.sources ?? []
 								const index = Number(options.initialIndex ?? options.index ?? 0) || 0
-								if (tryPlay(youtubeInSource(sources[index] ?? sources[0]))) return
+								if (tryPlay(youtubeInSource(sources[index] ?? sources[0]), 'the viewer opener')) return
 							}
 						} catch {}
 						return orig.apply(this, args)
@@ -105,13 +118,59 @@ export default plugin<{ jsonStorage: Settings }>({
 			}),
 		)
 
+		// The viewer itself: however Discord opened it, its header gets the current source and
+		// onClose (Pocket Browser's notes, 350.4+). A YouTube source closes the viewer and plays here.
+		let handled = ''
+		const onHeader = (props: any) => {
+			try {
+				if (!settings().embeds) return
+				const video = youtubeInSource(props?.source)
+				if (!video) return
+				const key = `${video.videoId}:${video.start ?? 0}`
+				if (handled === key) return
+				handled = key
+				setTimeout(() => (handled = ''), 1500)
+				if (Date.now() - lastOpened < 1500) {
+					// Already playing from an earlier hook; just close the viewer.
+					props?.onClose?.()
+					return
+				}
+				if (tryPlay(video, "the viewer's header")) setTimeout(() => props?.onClose?.(), 0)
+			} catch {}
+		}
+		cleanup(
+			findModule(
+				'modules/media_viewer/native/components/overlay/MediaModalOverlayHeader.tsx',
+				['MediaModalOverlayHeader'],
+				(mod: any) => {
+					for (const key of ['MediaModalOverlayHeader', 'default']) {
+						const target = mod?.[key]
+						const host =
+							typeof target === 'function'
+								? { o: mod, k: key }
+								: typeof target?.type === 'function'
+									? { o: target, k: 'type' }
+									: null
+						if (!host) continue
+						cleanup(
+							instead(host.o, host.k, function (this: unknown, args: any[], orig: (...a: any[]) => any) {
+								onHeader(args[0])
+								return orig.apply(this, args)
+							}),
+						)
+						break
+					}
+				},
+			),
+		)
+
 		// Links in messages, and anything else that would leave the app for YouTube.
 		cleanup(
 			getModules((withProps as any)('handleClick'), (mod: any) => {
 				if (typeof mod?.handleClick !== 'function') return
 				cleanup(
 					instead(mod, 'handleClick', function (this: unknown, args: any[], orig: (...a: any[]) => any) {
-						if (settings().links && tryPlay(youtubeOf(args[0]?.href))) return
+						if (settings().links && tryPlay(youtubeOf(args[0]?.href), 'the link handler')) return
 						return orig.apply(this, args)
 					}),
 				)
@@ -121,7 +180,7 @@ export default plugin<{ jsonStorage: Settings }>({
 					external.skip = false
 					return orig.apply(Linking, args)
 				}
-				if ((settings().links || settings().embeds) && tryPlay(youtubeOf(args[0]))) return Promise.resolve(true)
+				if ((settings().links || settings().embeds) && tryPlay(youtubeOf(args[0]), 'the open-link hook')) return Promise.resolve(true)
 				return orig.apply(Linking, args)
 			}),
 		)
