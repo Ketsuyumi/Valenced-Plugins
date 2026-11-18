@@ -120,10 +120,35 @@ export function toProduct(raw: any, category: any, order: number): Product {
 	}
 }
 
+export interface Category {
+	id: string
+	name: string
+	/** Detected as a brand collab (copyright notice or collab wording). */
+	collab: boolean
+}
+
 export interface Shop {
 	products: Product[]
-	categories: { id: string; name: string }[]
+	categories: Category[]
 	owned: Set<string>
+}
+
+/**
+ * Discord doesn't flag collabs, but licensed categories nearly always carry a copyright notice
+ * (©, ™, ®) or collab wording in their descriptions. Users can correct any category by hand.
+ */
+const COLLAB = /[©®™Ⓒ]|\(c\)\s*\d{4}|\bcollab(oration)?\b|\blicensed\b|\bin partnership\b|\bofficially licensed\b/i
+
+export function isCollabCategory(category: any): boolean {
+	const texts = [
+		category?.name,
+		category?.summary,
+		category?.mobile_summary,
+		category?.featured_block_body,
+		category?.wide_banner_body,
+		...(category?.products ?? []).flatMap((p: any) => [p?.summary, ...(p?.variants ?? []).map((v: any) => v?.summary)]),
+	]
+	return texts.some(t => typeof t === 'string' && COLLAB.test(t))
 }
 
 export async function loadShop(): Promise<Shop> {
@@ -155,7 +180,7 @@ export async function loadShop(): Promise<Shop> {
 		products,
 		categories: categories
 			.filter(c => c?.sku_id && (c.products?.length ?? 0) > 0)
-			.map(c => ({ id: String(c.sku_id), name: String(c.name ?? '') })),
+			.map(c => ({ id: String(c.sku_id), name: String(c.name ?? ''), collab: isCollabCategory(c) })),
 		owned,
 	}
 }
@@ -179,6 +204,7 @@ export interface Filters {
 	owned: 'all' | 'owned' | 'not-owned'
 	pay: 'all' | 'orbs' | 'money'
 	category: string
+	collab: 'all' | 'non-collab' | 'collab'
 	sort: 'shop' | 'cheap' | 'pricey' | 'name'
 }
 
@@ -188,6 +214,7 @@ export const DEFAULT_FILTERS: Filters = {
 	owned: 'all',
 	pay: 'all',
 	category: 'all',
+	collab: 'all',
 	sort: 'shop',
 }
 
@@ -195,8 +222,16 @@ export const DEFAULT_FILTERS: Filters = {
 const cost = (p: Product) =>
 	p.money ? p.money.amount / 10 ** p.money.exponent : p.orbs != null ? 1e6 + p.orbs : Infinity
 
-export function applyFilters(shop: Shop, f: Filters): Product[] {
+/** Category IDs counted as collabs: detected ones, plus user marks (true) minus user unmarks (false). */
+export function collabIds(shop: Shop, marks: Record<string, boolean> = {}): Set<string> {
+	const ids = new Set<string>()
+	for (const c of shop.categories) if (marks[c.id] ?? c.collab) ids.add(c.id)
+	return ids
+}
+
+export function applyFilters(shop: Shop, f: Filters, marks: Record<string, boolean> = {}): Product[] {
 	const q = f.query.trim().toLowerCase()
+	const collabs = f.collab === 'all' ? undefined : collabIds(shop, marks)
 	const list = shop.products.filter(p => {
 		if (f.type !== 'all' && p.type !== Number(f.type)) return false
 		if (f.owned === 'owned' && !shop.owned.has(p.sku)) return false
@@ -204,12 +239,20 @@ export function applyFilters(shop: Shop, f: Filters): Product[] {
 		if (f.pay === 'orbs' && p.orbs == null) return false
 		if (f.pay === 'money' && !p.money) return false
 		if (f.category !== 'all' && p.categoryId !== f.category) return false
+		if (collabs && collabs.has(p.categoryId) !== (f.collab === 'collab')) return false
 		if (q && !`${p.name} ${p.category}`.toLowerCase().includes(q)) return false
 		return true
 	})
 	const sorted = [...list]
-	if (f.sort === 'cheap') sorted.sort((a, b) => cost(a) - cost(b))
-	else if (f.sort === 'pricey') sorted.sort((a, b) => cost(b) - cost(a))
+	// Items with no price go last either way.
+	const byCost = (dir: 1 | -1) => (a: Product, b: Product) => {
+		const x = cost(a)
+		const y = cost(b)
+		if (x === Infinity || y === Infinity) return (x === Infinity ? 1 : 0) - (y === Infinity ? 1 : 0)
+		return (x - y) * dir
+	}
+	if (f.sort === 'cheap') sorted.sort(byCost(1))
+	else if (f.sort === 'pricey') sorted.sort(byCost(-1))
 	else if (f.sort === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name))
 	else sorted.sort((a, b) => a.order - b.order)
 	return sorted

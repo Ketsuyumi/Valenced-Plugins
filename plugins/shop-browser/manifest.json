@@ -5,7 +5,7 @@
 	"description": "Browse the Discord Shop in a compact 3-column grid with filters: type, owned, Orbs or paid, category, search and sorting.",
 	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
 	"icon": "ShopIcon",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

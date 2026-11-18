@@ -154,7 +154,9 @@ The Discord Shop in a compact 3-column grid with filters. Open the plugin's sett
 
 - **Filters**: type (decorations, effects, nameplates, frames, bundles), owned or not, Orbs or paid, category, and a
   search over item and category names. **Reset filters** clears them; pull down to reload.
-- **Sorting**: shop order, cheapest, priciest, or A–Z.
+- **Collabs**: show everything, only non-collab items, or only collabs. Collab categories (🤝) are detected from the
+  copyright notices (©, ™, ®) or collab wording licensed sets carry; long-press a category chip to mark or unmark it.
+- **Sorting**: shop order, cheapest, priciest, or A–Z (items with no price go last).
 - **Cards** show a small preview, the name, price (money and/or Orbs) and an **Owned** badge. Tap one for a bigger
   preview, description, Nitro price and **Open in the Shop**.
 

@@ -13,8 +13,10 @@ import {
 	useWindowDimensions,
 	View,
 } from 'react-native'
+import { ToastActionCreators } from '@valenced/discord/actions'
 import {
 	applyFilters,
+	collabIds,
 	DEFAULT_FILTERS,
 	errorText,
 	formatPrice,
@@ -47,11 +49,22 @@ function textColor(): string {
 }
 
 
-function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+function Chip({
+	label,
+	on,
+	onPress,
+	onLongPress,
+}: {
+	label: string
+	on: boolean
+	onPress: () => void
+	onLongPress?: () => void
+}) {
 	const { Text } = Design as any
 	return (
 		<Pressable
 			onPress={onPress}
+			onLongPress={onLongPress}
 			accessibilityRole="button"
 			accessibilityState={{ selected: on }}
 			style={{
@@ -199,7 +212,24 @@ function Card({ p, size, owned }: { p: Product; size: number; owned: boolean }) 
 	)
 }
 
-function ShopPage() {
+interface Settings {
+	/** Categories the user marked as collab (true) or not (false), overriding detection. */
+	collabMarks: Record<string, boolean>
+}
+type Storage = {
+	use(): Partial<Settings> | undefined
+	set(value: Settings, save?: boolean): void
+}
+
+function toast(text: string) {
+	try {
+		ToastActionCreators.open('shop-browser', { text } as never)
+	} catch {}
+}
+
+function ShopPage({ api }: { api: { jsonStorage: Storage } }) {
+	const stored = api.jsonStorage.use()
+	const marks = stored?.collabMarks ?? {}
 	const { Text, TextInput, Button } = Design as any
 	const [shop, setShop] = useState<Shop | undefined>(cached)
 	const [error, setError] = useState<string>()
@@ -220,7 +250,13 @@ function ShopPage() {
 		if (!cached) load()
 	}, [])
 
-	const items = useMemo(() => (shop ? applyFilters(shop, f) : []), [shop, f])
+	const items = useMemo(() => (shop ? applyFilters(shop, f, marks) : []), [shop, f, marks])
+	const collabs = useMemo(() => (shop ? collabIds(shop, marks) : new Set<string>()), [shop, marks])
+	const toggleCollab = (id: string, name: string) => {
+		const now = !collabs.has(id)
+		api.jsonStorage.set({ collabMarks: { ...marks, [id]: now } }, true)
+		toast(now ? `${name} marked as a collab` : `${name} marked as not a collab`)
+	}
 	const set = (patch: Partial<Filters>) => setF(prev => ({ ...prev, ...patch }))
 
 	if (error)
@@ -290,10 +326,29 @@ function ShopPage() {
 				onChange={sort => set({ sort })}
 			/>
 			<ChipRow
-				options={[['all', 'All categories'], ...shop.categories.map(c => [c.id, c.name] as [string, string])]}
-				value={f.category}
-				onChange={category => set({ category })}
+				options={[
+					['all', 'Collab or not'],
+					['non-collab', 'Non-collab'],
+					['collab', 'Collabs only'],
+				]}
+				value={f.collab}
+				onChange={collab => set({ collab })}
 			/>
+			<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: PAD }}>
+				<Chip label="All categories" on={f.category === 'all'} onPress={() => set({ category: 'all' })} />
+				{shop.categories.map(c => (
+					<Chip
+						key={c.id}
+						label={`${collabs.has(c.id) ? '🤝 ' : ''}${c.name}`}
+						on={f.category === c.id}
+						onPress={() => set({ category: c.id })}
+						onLongPress={() => toggleCollab(c.id, c.name)}
+					/>
+				))}
+			</ScrollView>
+			<Text variant="text-xxs/medium" color="text-muted" style={{ paddingHorizontal: PAD }}>
+				🤝 = collab. Long-press a category to mark or unmark it.
+			</Text>
 			<View style={{ paddingHorizontal: PAD, flexDirection: 'row', justifyContent: 'space-between' }}>
 				<Text variant="text-xs/medium" color="text-muted">
 					{items.length} of {shop.products.length} items
@@ -331,7 +386,8 @@ function ShopPage() {
 	)
 }
 
-export default plugin({
+export default plugin<{ jsonStorage: Settings }>({
+	jsonStorage: { load: true, default: { collabMarks: {} } },
 	start() {},
-	SettingsComponent: ShopPage,
+	SettingsComponent: ShopPage as never,
 })
