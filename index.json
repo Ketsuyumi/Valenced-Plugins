@@ -483,6 +483,30 @@
         }
       }
     },
+    "dev.ketsuyumi.profile-widgets": {
+      "name": "Profile Widgets",
+      "description": "Edit your profile's game widgets on mobile: add, remove and reorder games in Favorite Game, Games in Rotation, Games I Like and Want to Play, with comments and tags.",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+      "icon": "GameControllerIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.profile-widgets@1.0.0.zip",
+          "sha256": "bf4b361832aed83eae44f466045953f0e2d82aae43831d4fd4c6b59c6db6d5dd",
+          "size": 4919,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.quick-reload": {
       "name": "Quick Access",
       "description": "Shortcut buttons next to the bell on the bar with your name: reload Discord, open Friends, Plugins or Performance Monitor. Each has its own switch. Also a \"Reload Discord\" row in Discord's settings. Formerly Quick Reload.",
