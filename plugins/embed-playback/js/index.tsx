@@ -1,4 +1,6 @@
 import { Design } from '@valenced/discord/design'
+import { existsSync } from '@valenced/modules/native/fs'
+import { pluginDistDirFor } from '@valenced/plugins/constants'
 import { getModules } from '@valenced/modules/finders'
 import { withProps } from '@valenced/modules/finders/filters'
 import { instead } from '@valenced/patcher'
@@ -18,6 +20,20 @@ interface Settings extends PlayerSettings {
 }
 const DEFAULTS: Settings = { embeds: true, links: true, pipSize: 'medium', startSmall: false, mode: 'discord' }
 let settings: () => Settings = () => DEFAULTS
+
+/**
+ * Palm's Block YouTube Ads (community repo) hooks every Android WebView as it loads and adds
+ * AdGuard's script to YouTube frames, so it covers this player too. It's an optional dependency:
+ * loaded first when installed, nothing breaks when it isn't.
+ */
+const ADBLOCK_ID = 'palmdevs.block-youtube-ads'
+function adblockInstalled(): boolean {
+	try {
+		return existsSync(`${pluginDistDirFor(ADBLOCK_ID)}/manifest.json`)
+	} catch {
+		return false
+	}
+}
 
 let lastOpened = 0
 /** What happened to the last YouTube tap, for Settings → Status. */
@@ -94,6 +110,16 @@ function SettingsPage({ api }: { api: any }) {
 					If YouTube says "This video is unavailable" or shows an error code, tap ↻ in the player to try
 					the next way. The one you end on is remembered.
 				</Text>
+				<TableRowGroup title="Ads">
+					<TableRow
+						label="Block YouTube Ads"
+						subLabel={
+							adblockInstalled()
+								? "Installed. Keep it enabled: it blocks ads in this player's videos too."
+								: 'Not installed. Get it from Plugins → Community Plugins (by Palm) to block ads in these videos.'
+						}
+					/>
+				</TableRowGroup>
 				<TableRowGroup title="Status">
 					<TableRow label="Player" subLabel={playerAvailable() ? 'Ready' : 'Not attached yet (open any chat once)'} />
 					<TableRow label="Web view" subLabel={findWebView() ? 'Found' : "Not found: videos open Discord's usual way"} />
