@@ -161,6 +161,23 @@ The Discord Shop in a compact 3-column grid with filters. Open the plugin's sett
 Data comes from the same endpoints the app uses (`/collectibles-categories/v2` and `/users/@me/collectibles-purchases`,
 as documented by Discord Userdoccers), through Discord's own request helper. Buying still happens in Discord's shop.
 
+### Forum Grid (`dev.ketsuyumi.forum-grid`)
+
+See a forum's posts as a grid of cards: the first image (or a text preview), title, tags, replies, reactions, how long
+ago, an unread dot and 📌 for pinned posts. Tap a card to open the post.
+
+- **Open it from** (each one a toggle): the forum's long-press menu (**Open as grid**), a grid button in the forum's top
+  bar, or **Replace the forum view** so the grid opens by itself (✕ or back shows Discord's list).
+- **Filters**: search, forum tags, unread, followed, has image, my posts, date (today / week / month) and minimum
+  reactions. **Sort** by latest activity, newest, oldest, most replies or most reactions. Pinned posts first, in place
+  or hidden. 2 or 3 columns.
+- **Mark read** marks every loaded unread post read in one request.
+
+Posts come from `GET /channels/{forum}/threads/search` (with paging as you scroll), read states from
+`POST /read-states/ack-bulk`, both as documented by Discord Userdoccers. The long-press row follows Yumistra's Better
+Channel List (GPL-3.0). The top bar button looks for the forum header's button files by likely names, so it may not show
+on every Discord version; Settings → Status says where it attached.
+
 ### Spectators (`dev.ketsuyumi.spectators`)
 
 See who is watching a stream, like on PC: your own stream and the streams you are watching, with avatars, on the
