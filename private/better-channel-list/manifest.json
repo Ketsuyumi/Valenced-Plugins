@@ -4,7 +4,7 @@
 	"name": "Better Channel List+",
 	"description": "Shows the last message under each channel and gives channels emoji icons. A faster fork of Yumistra's Better Channel List, with message age, unread-only previews and a muted-channel switch. GPL-3.0.",
 	"author": "Yumistra",
-	"contributors": ["ketsuyumi (https://github.com/ketsuyumi \"GitHub\")"],
+	"contributors": ["Satou (https://github.com/ketsuyumi \"GitHub\")"],
 	"icon": "ChatIcon",
 	"version": "1.0.3",
 	"dependencies": {

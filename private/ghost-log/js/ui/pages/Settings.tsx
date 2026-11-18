@@ -254,7 +254,7 @@ export default function Settings() {
 							variant="text-xxs/normal"
 							style={{ textAlign: 'center' }}
 						>
-							Ghost Log+ fork by ketsuyumi
+							Ghost Log+ fork by Satou
 						</Text>
 					</View>
 				</Stack>

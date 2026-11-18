@@ -3,7 +3,7 @@
  * (https://github.com/Yumistra/Freestyle-Valenced, plugins/better-channel-list, commit fe58442),
  * licensed under the GNU General Public License v3.0. This fork is also GPL-3.0.
  *
- * Changes in this fork (ketsuyumi):
+ * Changes in this fork (Satou):
  * - Previews are built once per message and cached per channel (see `previews`); the original
  *   rebuilt each one three times per pass over the list, inside the row-height hook among others.
  * - Module lookups are remembered (lookup.ts) and settings are merged once per change (store.ts).

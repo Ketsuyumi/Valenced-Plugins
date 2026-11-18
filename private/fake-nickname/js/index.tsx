@@ -3,7 +3,7 @@
  * (https://github.com/il1ll/ValencedPlugins, plugins/fakenickname, commit 9f11232),
  * licensed under the GNU General Public License v3.0. This fork is also GPL-3.0.
  *
- * Changes in this fork (ketsuyumi):
+ * Changes in this fork (Satou):
  * - Saved nicknames are turned into a Map once when they change; the name hooks do a single
  *   lookup instead of reading storage and trimming on every call.
  * - The hooks are plain functions created once (no closure per call), and getMember only

@@ -3,9 +3,9 @@
 	"id": "dev.ketsuyumi.hide-server-banners",
 	"name": "Hide Server Banners",
 	"description": "Hides server banners at the top of the channel list, so every server uses the compact header.",
-	"author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+	"author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
 	"icon": "ImageIcon",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

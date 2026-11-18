@@ -4,7 +4,7 @@
  * licensed under the GNU General Public License v3.0. This fork is also GPL-3.0. The helpers in
  * ./shared are copied from the same repository's shared/ folder.
  *
- * Changes in this fork (ketsuyumi):
+ * Changes in this fork (Satou):
  * - lib/resolve.ts: answers are kept per person and server with the raw values they came from,
  *   and reused while those are unchanged; the "extra pronouns" setting is parsed once per change.
  * - patches/chat.ts: one lookup and one colour per chat row (the original did each twice).

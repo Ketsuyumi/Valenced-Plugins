@@ -3,7 +3,7 @@
  * (https://github.com/k1ng0p/Valenced-Plugins-by-k1ng0p, plugins/instant-actions, commit cf948ce),
  * licensed under the GNU General Public License v3.0. This fork is also GPL-3.0.
  *
- * Changes in this fork (ketsuyumi):
+ * Changes in this fork (Satou):
  * - Translations are no longer looked up by scanning every module while a dialog opens: the
  *   translation modules are found once, and every string the rules compare against is resolved
  *   in a warm-up shortly after start. Template patterns are compiled once.

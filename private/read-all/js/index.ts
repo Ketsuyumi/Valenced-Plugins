@@ -3,7 +3,7 @@
  * (https://github.com/aeongdesu/slimplugins, plugins/read-all, commit f57bdfe),
  * licensed under the GNU General Public License v3.0. This fork is also GPL-3.0.
  *
- * Changes in this fork (ketsuyumi):
+ * Changes in this fork (Satou):
  * - The original hooked jsx/jsxs for every element Discord creates (~240k calls in a few
  *   minutes) to find the Messages icon. This fork patches GuildsBarAnimatedItemWrapper itself,
  *   so the check only runs when that component renders.

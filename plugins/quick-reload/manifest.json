@@ -3,9 +3,9 @@
 	"id": "dev.ketsuyumi.quick-reload",
 	"name": "Quick Access",
 	"description": "Shortcut buttons next to the bell on the bar with your name: reload Discord, open Friends, Plugins or Performance Monitor. Each has its own switch. Also a \"Reload Discord\" row in Discord's settings. Formerly Quick Reload.",
-	"author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+	"author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
 	"icon": "RefreshIcon",
-	"version": "1.4.0",
+	"version": "1.4.1",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

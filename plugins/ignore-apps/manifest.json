@@ -3,9 +3,9 @@
 	"id": "dev.ketsuyumi.ignore-apps",
 	"name": "Ignore Apps",
 	"description": "Hide messages from apps and bots that Discord doesn't let you block or ignore, like MEE6.",
-	"author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+	"author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
 	"icon": "EyeSlashIcon",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

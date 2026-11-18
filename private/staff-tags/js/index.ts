@@ -4,7 +4,7 @@
  * licensed under the GNU General Public License v3.0. This fork is also GPL-3.0.
  * The helpers in ./shared are copied from the same repository's shared/ folder.
  *
- * Changes in this fork (ketsuyumi):
+ * Changes in this fork (Satou):
  * - Resolved tags are cached per server, channel and person, so chat no longer recomputes a
  *   member's permissions for every message row. An entry is redone when that member's roles
  *   change; everything is cleared on role, guild and channel-permission events and on settings

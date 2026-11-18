@@ -182,7 +182,7 @@ export default function Settings({ api }: Props) {
 							Made by bleelblep, Fiery and シグマ siguma
 						</Text>
 						<Text color="text-muted" variant="text-xxs/normal">
-							Staff Tags+ fork by ketsuyumi · GPL-3.0
+							Staff Tags+ fork by Satou · GPL-3.0
 						</Text>
 					</View>
 				</Stack>

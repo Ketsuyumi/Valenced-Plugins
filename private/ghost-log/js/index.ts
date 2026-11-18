@@ -5,7 +5,7 @@
  * The helpers in ./shared are copied from the same repository's shared/ folder. The native half
  * (src/main/kotlin) is unchanged.
  *
- * Changes in this fork (ketsuyumi):
+ * Changes in this fork (Satou):
  * - lib/restore.ts: MessageRecords are only built for logged deletions inside the loaded message
  *   window, instead of for every logged deletion in the channel (the 300 ms freeze on opening a
  *   channel with many of them).
