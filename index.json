@@ -218,6 +218,30 @@
         }
       }
     },
+    "dev.ketsuyumi.forum-grid": {
+      "name": "Forum Grid",
+      "description": "See forum posts as a grid of cards with images, and filter them by tags, unread, followed, images, your posts, date and reactions, with more ways to sort.",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+      "icon": "ForumIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.forum-grid@1.0.0.zip",
+          "sha256": "2108bf3eb0775596fbfb5270c4649b4d1a96d15ae4af588f8b2d268be5c79354",
+          "size": 9081,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.hide-dms": {
       "name": "Hide DMs",
       "description": "Hide chosen DMs and group DMs, or all of them, from your DM list without leaving them.",
