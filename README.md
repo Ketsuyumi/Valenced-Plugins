@@ -150,7 +150,7 @@ that experiment).
 
 ### Shop Browser (`dev.ketsuyumi.shop-browser`)
 
-The Discord Shop in a compact 3-column grid with filters. Open the plugin's settings to browse:
+The Discord Shop in a compact 3 × 3, 4 × 4 or 5 × 5 grid (5 × 5 hides the price line) with filters. Open the plugin's settings to browse:
 
 - **Filters**: type (decorations, effects, nameplates, frames, bundles), owned or not, Orbs or paid, category, and a
   search over item and category names. **Reset filters** clears them; pull down to reload.
@@ -172,7 +172,7 @@ ago, an unread dot and 📌 for pinned posts. Tap a card to open the post.
   bar, or **Replace the forum view** so the grid opens by itself (✕ or back shows Discord's list).
 - **Filters**: search, forum tags, unread, followed, has image, my posts, date (today / week / month) and minimum
   reactions. **Sort** by latest activity, newest, oldest, most replies or most reactions. Pinned posts first, in place
-  or hidden. 2 or 3 columns.
+  or hidden. 2 × 2, 3 × 3, 4 × 4 or 5 × 5 (4 and 5 show just the image and title); the top bar button cycles them.
 - **Mark read** marks every loaded unread post read in one request.
 
 Posts come from `GET /channels/{forum}/threads/search` (with paging as you scroll), read states from

@@ -154,7 +154,7 @@ function openDetail(p: Product, owned: boolean) {
 	)
 }
 
-function Card({ p, size, owned }: { p: Product; size: number; owned: boolean }) {
+function Card({ p, size, owned, compact }: { p: Product; size: number; owned: boolean; compact?: boolean }) {
 	const { Text } = Design as any
 	return (
 		<Pressable
@@ -197,17 +197,19 @@ function Card({ p, size, owned }: { p: Product; size: number; owned: boolean }) 
 						}}
 					>
 						<Text variant="text-xxs/bold" style={{ color: '#ffffff' }}>
-							Owned
+							{compact ? '✓' : 'Owned'}
 						</Text>
 					</View>
 				) : null}
 			</View>
-			<Text variant="text-xs/semibold" numberOfLines={1} style={{ marginTop: 4, color: textColor() }}>
+			<Text variant={compact ? 'text-xxs/semibold' : 'text-xs/semibold'} numberOfLines={1} style={{ marginTop: 4, color: textColor() }}>
 				{p.name}
 			</Text>
-			<Text variant="text-xxs/medium" color="text-muted" numberOfLines={1}>
-				{priceLine(p)}
-			</Text>
+			{compact ? null : (
+				<Text variant="text-xxs/medium" color="text-muted" numberOfLines={1}>
+					{priceLine(p)}
+				</Text>
+			)}
 		</Pressable>
 	)
 }
@@ -215,6 +217,8 @@ function Card({ p, size, owned }: { p: Product; size: number; owned: boolean }) 
 interface Settings {
 	/** Categories the user marked as collab (true) or not (false), overriding detection. */
 	collabMarks: Record<string, boolean>
+	/** Grid columns: 3, 4 or 5. */
+	columns?: 3 | 4 | 5
 }
 type Storage = {
 	use(): Partial<Settings> | undefined
@@ -235,7 +239,8 @@ function ShopPage({ api }: { api: { jsonStorage: Storage } }) {
 	const [error, setError] = useState<string>()
 	const [f, setF] = useState<Filters>(DEFAULT_FILTERS)
 	const { width } = useWindowDimensions()
-	const size = Math.floor((width - PAD * 2 - GAP * 2) / 3)
+	const cols = stored?.columns ?? 3
+	const size = Math.floor((width - PAD * 2 - GAP * (cols - 1)) / cols)
 
 	const load = () => {
 		setError(undefined)
@@ -254,7 +259,7 @@ function ShopPage({ api }: { api: { jsonStorage: Storage } }) {
 	const collabs = useMemo(() => (shop ? collabIds(shop, marks) : new Set<string>()), [shop, marks])
 	const toggleCollab = (id: string, name: string) => {
 		const now = !collabs.has(id)
-		api.jsonStorage.set({ collabMarks: { ...marks, [id]: now } }, true)
+		api.jsonStorage.set({ ...stored, collabMarks: { ...marks, [id]: now } }, true)
 		toast(now ? `${name} marked as a collab` : `${name} marked as not a collab`)
 	}
 	const set = (patch: Partial<Filters>) => setF(prev => ({ ...prev, ...patch }))
@@ -317,6 +322,15 @@ function ShopPage({ api }: { api: { jsonStorage: Storage } }) {
 			/>
 			<ChipRow
 				options={[
+					['3', '3 × 3'],
+					['4', '4 × 4'],
+					['5', '5 × 5'],
+				]}
+				value={String(cols)}
+				onChange={v => api.jsonStorage.set({ collabMarks: marks, ...stored, columns: Number(v) as 3 | 4 | 5 }, true)}
+			/>
+			<ChipRow
+				options={[
 					['shop', 'Shop order'],
 					['cheap', 'Cheapest'],
 					['pricey', 'Priciest'],
@@ -367,7 +381,8 @@ function ShopPage({ api }: { api: { jsonStorage: Storage } }) {
 			style={{ flex: 1 }}
 			data={items}
 			keyExtractor={p => p.sku}
-			numColumns={3}
+			key={`cols-${cols}`}
+			numColumns={cols}
 			ListHeaderComponent={header}
 			columnWrapperStyle={{ gap: GAP, paddingHorizontal: PAD }}
 			contentContainerStyle={{ paddingBottom: 32 }}
@@ -381,13 +396,13 @@ function ShopPage({ api }: { api: { jsonStorage: Storage } }) {
 					No items match these filters.
 				</Text>
 			}
-			renderItem={({ item }) => <Card p={item} size={size} owned={shop.owned.has(item.sku)} />}
+			renderItem={({ item }) => <Card p={item} size={size} owned={shop.owned.has(item.sku)} compact={cols >= 5} />}
 		/>
 	)
 }
 
 export default plugin<{ jsonStorage: Settings }>({
-	jsonStorage: { load: true, default: { collabMarks: {} } },
+	jsonStorage: { load: true, default: { collabMarks: {}, columns: 3 } },
 	start() {},
 	SettingsComponent: ShopPage as never,
 })

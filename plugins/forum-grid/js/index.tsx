@@ -3,6 +3,7 @@ import { Design } from '@valenced/discord/design'
 import { Stores } from '@valenced/discord/flux'
 import { ScrollView } from 'react-native'
 import { gridAvailable, hideGrid, installGrid, showGrid } from './grid'
+import type { Columns } from './grid'
 import { headerStatus, installHeader } from './header'
 import { installSheet, isForum } from './sheet'
 import type { PinnedMode } from './data'
@@ -15,7 +16,7 @@ interface Settings {
 	topBar: boolean
 	/** Open the grid by itself whenever you enter a forum. */
 	replace: boolean
-	columns: 2 | 3
+	columns: Columns
 	pinned: PinnedMode
 }
 type Api = PluginApi<{ jsonStorage: Settings }>
@@ -77,10 +78,12 @@ function SettingsPage({ api }: { api: Api }) {
 					title="Columns"
 					defaultValue={String(s.columns)}
 					value={String(s.columns)}
-					onChange={(v: string) => set({ columns: v === '3' ? 3 : 2 })}
+					onChange={(v: string) => set({ columns: Number(v) as Columns })}
 				>
-					<TableRadioRow label="2 columns" value="2" />
-					<TableRadioRow label="3 columns" value="3" />
+					<TableRadioRow label="2 × 2" value="2" />
+					<TableRadioRow label="3 × 3" value="3" />
+					<TableRadioRow label="4 × 4 (image and title only)" value="4" />
+					<TableRadioRow label="5 × 5 (image and title only)" value="5" />
 				</TableRadioGroup>
 				<TableRadioGroup
 					title="Pinned posts"

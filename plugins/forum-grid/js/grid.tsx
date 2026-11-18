@@ -29,9 +29,11 @@ import { findModule } from './find'
 import type { Filters, PinnedMode, Post, Tag } from './data'
 
 export interface GridSettings {
-	columns: 2 | 3
+	columns: Columns
 	pinned: PinnedMode
 }
+export type Columns = 2 | 3 | 4 | 5
+const NEXT: Record<Columns, Columns> = { 2: 3, 3: 4, 4: 5, 5: 2 }
 let readSettings: () => GridSettings = () => ({ columns: 2, pinned: 'first' })
 let writeSettings: (patch: Partial<GridSettings>) => void = () => {}
 
@@ -77,7 +79,12 @@ function textColor(): string {
 	try {
 		const T = (Tokens as any).default
 		const theme = (Stores as any).ThemeStore?.theme
-		for (const name of ['TEXT_DEFAULT', 'TEXT_NORMAL', 'HEADER_PRIMARY', 'TEXT_PRIMARY']) {
+		for (const name of [
+			'TEXT_DEFAULT',
+			'TEXT_NORMAL',
+			'HEADER_PRIMARY',
+			'TEXT_PRIMARY',
+		]) {
 			const token = T?.colors?.[name]
 			if (!token) continue
 			const value = T.internal.resolveSemanticColor(theme, token)
@@ -89,8 +96,15 @@ function textColor(): string {
 	}
 }
 
-
-function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+function Chip({
+	label,
+	on,
+	onPress,
+}: {
+	label: string
+	on: boolean
+	onPress: () => void
+}) {
 	const { Text } = Design as any
 	return (
 		<Pressable
@@ -105,7 +119,10 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 				backgroundColor: on ? ACCENT : 'rgba(127,127,127,0.18)',
 			}}
 		>
-			<Text variant="text-xs/semibold" style={{ color: on ? '#ffffff' : textColor() }}>
+			<Text
+				variant="text-xs/semibold"
+				style={{ color: on ? '#ffffff' : textColor() }}
+			>
 				{label}
 			</Text>
 		</Pressable>
@@ -113,7 +130,11 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 }
 
 const Row = ({ children }: { children: any }) => (
-	<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12 }}>
+	<ScrollView
+		horizontal
+		showsHorizontalScrollIndicator={false}
+		contentContainerStyle={{ paddingHorizontal: 12 }}
+	>
 		{children}
 	</ScrollView>
 )
@@ -126,14 +147,27 @@ const ago = (ms: number) => {
 	return `${Math.round(m / 43200)}mo`
 }
 
-function Card({ post, size, tags, onPress }: { post: Post; size: number; tags: Tag[]; onPress: () => void }) {
+function Card({
+	post,
+	size,
+	tags,
+	onPress,
+	compact,
+}: {
+	post: Post
+	size: number
+	tags: Tag[]
+	onPress: () => void
+	/** 4 and 5 columns: image and title only. */
+	compact?: boolean
+}) {
 	const { Text } = Design as any
 	const names = post.tags
 		.map(id => tags.find(t => t.id === id))
 		.filter(Boolean)
 		.map(t => `${t!.emoji ? `${t!.emoji} ` : ''}${t!.name}`)
 	const unread = isUnread(post)
-	const imgH = Math.round(size * 0.75)
+	const imgH = Math.round(size * (compact ? 1 : 0.75))
 	return (
 		<Pressable
 			onPress={onPress}
@@ -143,37 +177,78 @@ function Card({ post, size, tags, onPress }: { post: Post; size: number; tags: T
 				marginBottom: 10,
 				borderRadius: 12,
 				overflow: 'hidden',
-				backgroundColor: color('CARD_BACKGROUND_DEFAULT', 'rgba(127,127,127,0.12)'),
+				backgroundColor: color(
+					'CARD_BACKGROUND_DEFAULT',
+					'rgba(127,127,127,0.12)',
+				),
 			}}
 		>
 			{post.image ? (
-				<Image source={{ uri: post.image }} resizeMode="cover" style={{ width: size, height: imgH }} />
+				<Image
+					source={{ uri: post.image }}
+					resizeMode="cover"
+					style={{ width: size, height: imgH }}
+				/>
 			) : (
-				<View style={{ width: size, height: imgH, padding: 8, backgroundColor: 'rgba(127,127,127,0.10)' }}>
-					<Text variant="text-xs/normal" color="text-muted" numberOfLines={6}>
+				<View
+					style={{
+						width: size,
+						height: imgH,
+						padding: compact ? 4 : 8,
+						backgroundColor: 'rgba(127,127,127,0.10)',
+					}}
+				>
+					<Text
+						variant={compact ? 'text-xxs/normal' : 'text-xs/normal'}
+						color="text-muted"
+						numberOfLines={compact ? 4 : 6}
+					>
 						{post.preview || ' '}
 					</Text>
 				</View>
 			)}
-			<View style={{ padding: 7, gap: 2 }}>
+			<View style={{ padding: compact ? 4 : 7, gap: 2 }}>
 				<View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-					{unread ? <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: textColor() }} /> : null}
-					<Text variant={unread ? 'text-sm/bold' : 'text-sm/semibold'} numberOfLines={2} style={{ flex: 1, color: textColor() }}>
+					{unread ? (
+						<View
+							style={{
+								width: 7,
+								height: 7,
+								borderRadius: 4,
+								backgroundColor: textColor(),
+							}}
+						/>
+					) : null}
+					<Text
+						variant={
+							compact
+								? unread
+									? 'text-xxs/bold'
+									: 'text-xxs/semibold'
+								: unread
+									? 'text-sm/bold'
+									: 'text-sm/semibold'
+						}
+						numberOfLines={2}
+						style={{ flex: 1, color: textColor() }}
+					>
 						{post.pinned ? '📌 ' : ''}
 						{post.name}
 					</Text>
 				</View>
-				{names.length ? (
+				{!compact && names.length ? (
 					<Text variant="text-xxs/medium" color="text-muted" numberOfLines={1}>
 						{names.join(' · ')}
 					</Text>
 				) : null}
-				<Text variant="text-xxs/medium" color="text-muted" numberOfLines={1}>
-					💬 {post.replies}
-					{post.reactions ? `  ❤ ${post.reactions}` : ''}
-					{`  · ${ago(post.lastActive)}`}
-					{post.followed ? '  · following' : ''}
-				</Text>
+				{compact ? null : (
+					<Text variant="text-xxs/medium" color="text-muted" numberOfLines={1}>
+						💬 {post.replies}
+						{post.reactions ? `  ❤ ${post.reactions}` : ''}
+						{`  · ${ago(post.lastActive)}`}
+						{post.followed ? '  · following' : ''}
+					</Text>
+				)}
 			</View>
 		</Pressable>
 	)
@@ -194,7 +269,8 @@ function Grid({ id, name }: { id: string; name: string }) {
 	const gen = useRef(0)
 
 	const cols = settings.columns
-	const size = Math.floor((width - 24 - 8 * (cols - 1)) / cols)
+	const gap = cols >= 4 ? 6 : 8
+	const size = Math.floor((width - 24 - gap * (cols - 1)) / cols)
 	const server = serverSort(f)
 	const serverKey = `${server.sort}|${server.order}|${f.query.trim()}|${f.tags.join(',')}`
 
@@ -238,23 +314,44 @@ function Grid({ id, name }: { id: string; name: string }) {
 		return () => store?.removeChangeListener?.(on)
 	}, [])
 
-	const shown = useMemo(() => applyFilters(posts, f, settings.pinned), [posts, f, settings.pinned])
+	const shown = useMemo(
+		() => applyFilters(posts, f, settings.pinned),
+		[posts, f, settings.pinned],
+	)
 	const set = (patch: Partial<Filters>) => setF(prev => ({ ...prev, ...patch }))
 	const setS = (patch: Partial<GridSettings>) => {
 		writeSettings(patch)
 		setSettings(prev => ({ ...prev, ...patch }))
 	}
 	const active =
-		f.tags.length + Number(f.unread) + Number(f.followed) + Number(f.images) + Number(f.mine) +
-		Number(f.since !== 'any') + Number(f.minReactions > 0)
+		f.tags.length +
+		Number(f.unread) +
+		Number(f.followed) +
+		Number(f.images) +
+		Number(f.mine) +
+		Number(f.since !== 'any') +
+		Number(f.minReactions > 0)
 
 	const header = (
 		<View style={{ gap: 8, paddingBottom: 8 }}>
 			<View style={{ paddingHorizontal: 12 }}>
-				<TextInput placeholder="Search posts" value={f.query} onChange={(query: string) => set({ query })} isClearable />
+				<TextInput
+					placeholder="Search posts"
+					value={f.query}
+					onChange={(query: string) => set({ query })}
+					isClearable
+				/>
 			</View>
 			<Row>
-				<Chip label={showFilters ? 'Hide filters' : `Filters${active ? ` (${active})` : ''}`} on={showFilters || active > 0} onPress={() => setShowFilters(s => !s)} />
+				<Chip
+					label={
+						showFilters
+							? 'Hide filters'
+							: `Filters${active ? ` (${active})` : ''}`
+					}
+					on={showFilters || active > 0}
+					onPress={() => setShowFilters(s => !s)}
+				/>
 				{(
 					[
 						['active', 'Latest activity'],
@@ -264,7 +361,12 @@ function Grid({ id, name }: { id: string; name: string }) {
 						['reactions', 'Most reactions'],
 					] as [Filters['sort'], string][]
 				).map(([v, label]) => (
-					<Chip key={v} label={label} on={f.sort === v} onPress={() => set({ sort: v })} />
+					<Chip
+						key={v}
+						label={label}
+						on={f.sort === v}
+						onPress={() => set({ sort: v })}
+					/>
 				))}
 			</Row>
 			{showFilters ? (
@@ -277,17 +379,37 @@ function Grid({ id, name }: { id: string; name: string }) {
 									label={`${t.emoji ? `${t.emoji} ` : ''}${t.name}`}
 									on={f.tags.includes(t.id)}
 									onPress={() =>
-										set({ tags: f.tags.includes(t.id) ? f.tags.filter(x => x !== t.id) : [...f.tags, t.id] })
+										set({
+											tags: f.tags.includes(t.id)
+												? f.tags.filter(x => x !== t.id)
+												: [...f.tags, t.id],
+										})
 									}
 								/>
 							))}
 						</Row>
 					) : null}
 					<Row>
-						<Chip label="Unread" on={f.unread} onPress={() => set({ unread: !f.unread })} />
-						<Chip label="Followed" on={f.followed} onPress={() => set({ followed: !f.followed })} />
-						<Chip label="Has image" on={f.images} onPress={() => set({ images: !f.images })} />
-						<Chip label="My posts" on={f.mine} onPress={() => set({ mine: !f.mine })} />
+						<Chip
+							label="Unread"
+							on={f.unread}
+							onPress={() => set({ unread: !f.unread })}
+						/>
+						<Chip
+							label="Followed"
+							on={f.followed}
+							onPress={() => set({ followed: !f.followed })}
+						/>
+						<Chip
+							label="Has image"
+							on={f.images}
+							onPress={() => set({ images: !f.images })}
+						/>
+						<Chip
+							label="My posts"
+							on={f.mine}
+							onPress={() => set({ mine: !f.mine })}
+						/>
 					</Row>
 					<Row>
 						{(
@@ -298,12 +420,22 @@ function Grid({ id, name }: { id: string; name: string }) {
 								['month', 'This month'],
 							] as [Filters['since'], string][]
 						).map(([v, label]) => (
-							<Chip key={v} label={label} on={f.since === v} onPress={() => set({ since: v })} />
+							<Chip
+								key={v}
+								label={label}
+								on={f.since === v}
+								onPress={() => set({ since: v })}
+							/>
 						))}
 					</Row>
 					<Row>
 						{[0, 1, 5, 10, 25, 50].map(n => (
-							<Chip key={n} label={n ? `${n}+ reactions` : 'Any reactions'} on={f.minReactions === n} onPress={() => set({ minReactions: n })} />
+							<Chip
+								key={n}
+								label={n ? `${n}+ reactions` : 'Any reactions'}
+								on={f.minReactions === n}
+								onPress={() => set({ minReactions: n })}
+							/>
 						))}
 					</Row>
 					<Row>
@@ -314,32 +446,68 @@ function Grid({ id, name }: { id: string; name: string }) {
 								['hidden', 'Hide pinned'],
 							] as [PinnedMode, string][]
 						).map(([v, label]) => (
-							<Chip key={v} label={label} on={settings.pinned === v} onPress={() => setS({ pinned: v })} />
+							<Chip
+								key={v}
+								label={label}
+								on={settings.pinned === v}
+								onPress={() => setS({ pinned: v })}
+							/>
 						))}
 					</Row>
 					<Row>
-						<Chip label="Reset filters" on={false} onPress={() => setF({ ...DEFAULT_FILTERS, sort: f.sort })} />
+						<Chip
+							label="Reset filters"
+							on={false}
+							onPress={() => setF({ ...DEFAULT_FILTERS, sort: f.sort })}
+						/>
 					</Row>
 				</>
 			) : null}
-			<Text variant="text-xxs/medium" color="text-muted" style={{ paddingHorizontal: 12 }}>
-				{shown.length} shown · {posts.length} loaded{hasMore ? ' · scroll for more' : ''}
+			<Text
+				variant="text-xxs/medium"
+				color="text-muted"
+				style={{ paddingHorizontal: 12 }}
+			>
+				{shown.length} shown · {posts.length} loaded
+				{hasMore ? ' · scroll for more' : ''}
 			</Text>
 		</View>
 	)
 
 	return (
 		<View style={{ flex: 1 }}>
-			<View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 8, gap: 4 }}>
-				<Pressable onPress={hideGrid} accessibilityLabel="Close grid" style={{ padding: 8 }}>
-					<Text variant="heading-md/bold" style={{ color: textColor() }}>✕</Text>
+			<View
+				style={{
+					flexDirection: 'row',
+					alignItems: 'center',
+					paddingHorizontal: 8,
+					paddingVertical: 8,
+					gap: 4,
+				}}
+			>
+				<Pressable
+					onPress={hideGrid}
+					accessibilityLabel="Close grid"
+					style={{ padding: 8 }}
+				>
+					<Text variant="heading-md/bold" style={{ color: textColor() }}>
+						✕
+					</Text>
 				</Pressable>
-				<Text variant="heading-md/bold" numberOfLines={1} style={{ flex: 1, color: textColor() }}>
+				<Text
+					variant="heading-md/bold"
+					numberOfLines={1}
+					style={{ flex: 1, color: textColor() }}
+				>
 					# {name}
 				</Text>
-				<Pressable onPress={() => setS({ columns: cols === 2 ? 3 : 2 })} accessibilityLabel="Change columns" style={{ padding: 8 }}>
+				<Pressable
+					onPress={() => setS({ columns: NEXT[cols] ?? 2 })}
+					accessibilityLabel="Change columns"
+					style={{ padding: 8 }}
+				>
 					<Text variant="text-sm/bold" color="text-link">
-						{cols === 2 ? '3 cols' : '2 cols'}
+						{cols}×{cols}
 					</Text>
 				</Pressable>
 				<Pressable
@@ -368,7 +536,7 @@ function Grid({ id, name }: { id: string; name: string }) {
 				keyExtractor={p => p.id}
 				numColumns={cols}
 				ListHeaderComponent={header}
-				columnWrapperStyle={{ gap: 8, paddingHorizontal: 12 }}
+				columnWrapperStyle={{ gap, paddingHorizontal: 12 }}
 				contentContainerStyle={{ paddingBottom: 40 }}
 				keyboardShouldPersistTaps="handled"
 				onEndReachedThreshold={0.6}
@@ -383,7 +551,10 @@ function Grid({ id, name }: { id: string; name: string }) {
 					loading ? (
 						<ActivityIndicator style={{ margin: 16 }} />
 					) : error ? (
-						<Pressable onPress={() => void load(posts.length === 0)} style={{ padding: 16 }}>
+						<Pressable
+							onPress={() => void load(posts.length === 0)}
+							style={{ padding: 16 }}
+						>
 							<Text variant="text-sm/medium" color="text-feedback-critical">
 								{error} · tap to retry
 							</Text>
@@ -392,8 +563,14 @@ function Grid({ id, name }: { id: string; name: string }) {
 				}
 				ListEmptyComponent={
 					!loading && !error ? (
-						<Text variant="text-sm/medium" color="text-muted" style={{ padding: 16 }}>
-							{posts.length ? 'No posts match these filters.' : 'No posts found.'}
+						<Text
+							variant="text-sm/medium"
+							color="text-muted"
+							style={{ padding: 16 }}
+						>
+							{posts.length
+								? 'No posts match these filters.'
+								: 'No posts found.'}
 						</Text>
 					) : null
 				}
@@ -401,6 +578,7 @@ function Grid({ id, name }: { id: string; name: string }) {
 					<Card
 						post={item}
 						size={size}
+						compact={cols >= 4}
 						tags={tags}
 						onPress={() => {
 							hideGrid()
@@ -459,17 +637,21 @@ export function installGrid(settings: {
 	readSettings = settings.read
 	writeSettings = settings.write
 	const unpatches: Array<() => void> = []
-	const unfind = findModule('modules/toast/native/AppToastContainer.tsx', ['AppToastContainer'], (mod: any) => {
-		if (typeof mod?.default !== 'function') return
-		unpatches.push(
-			after(mod, 'default', ((rendered: any) => (
-				<>
-					{rendered}
-					<Overlay />
-				</>
-			)) as never),
-		)
-	})
+	const unfind = findModule(
+		'modules/toast/native/AppToastContainer.tsx',
+		['AppToastContainer'],
+		(mod: any) => {
+			if (typeof mod?.default !== 'function') return
+			unpatches.push(
+				after(mod, 'default', ((rendered: any) => (
+					<>
+						{rendered}
+						<Overlay />
+					</>
+				)) as never),
+			)
+		},
+	)
 	return () => {
 		unfind()
 		for (const u of unpatches.splice(0))
