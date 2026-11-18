@@ -271,7 +271,7 @@ an error. Text stays near-white on plum (about 13:1 contrast). Works on every ba
   original art and sharp at full resolution. Only the bottom of her skirt blends into the purple.
 - **Ame-chan (Background, bottom)**: Ame-chan in the bottom-right corner instead, her hair fading into the purple so
   the top of the chat stays clear.
-- **Ame-chan Monochrome** (+ Background): slate greys with soft periwinkle, from the sketch art; the background drops its
+- **Ame-chan Purple** (+ Background): soft purple and slate, from the sketch art; the background drops its
   white frame.
 - **Ame-chan Glitch** (+ Background): deep magenta, hot pink and the glitch's cyan for links; the background fades the
   art into grainy magenta.

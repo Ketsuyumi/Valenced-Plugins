@@ -467,12 +467,12 @@ export default plugin({
 			},
 		})
 		themes.registerTheme('ame', 'ame-mono', {
-			name: 'Ame-chan Monochrome',
-			description: 'Slate greys with soft periwinkle, from the sketch art.',
+			name: 'Ame-chan Purple',
+			description: 'Soft purple and slate, from the sketch art.',
 			getColors: monoColors,
 		})
 		themes.registerTheme('ame', 'ame-mono-background', {
-			name: 'Ame-chan Monochrome (Background)',
+			name: 'Ame-chan Purple (Background)',
 			description: 'The sketch art without its white frame, at the bottom of the screen.',
 			getColors: monoColors,
 			background: {
