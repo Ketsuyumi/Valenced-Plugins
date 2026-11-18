@@ -47,7 +47,7 @@ export function findModule(
 				),
 			)
 		} catch {}
-	if (!done)
+	if (!done && props.length)
 		try {
 			unsubs.push(
 				getModules((withProps as any)(...props), (mod: any) => run(mod)),

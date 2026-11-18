@@ -24,7 +24,9 @@ import {
 	tapSeen,
 	targetOf,
 } from './handlers'
+import { chatbarStatus, installChatbar } from './chatbar'
 import { headerStatus, installHeader } from './header'
+import type { Side } from './chatbar'
 import { canDelete, canDeleteAtAll, deleteAll, watchActions } from './remove'
 import {
 	activate,
@@ -54,6 +56,8 @@ interface Settings {
 	tapSelect: boolean
 	/** A select button in the chat's top bar (1.3.0). */
 	headerButton: boolean
+	/** A select toggle in the chat input bar (1.4.0). */
+	chatButton: Side
 }
 type Api = PluginApi<{ jsonStorage: Settings }>
 
@@ -62,6 +66,7 @@ const DEFAULTS: Settings = {
 	doubleTapSelect: false,
 	tapSelect: true,
 	headerButton: true,
+	chatButton: 'left',
 }
 const COLORS: [string, string][] = [
 	['#5865F2', 'Blurple'],
@@ -265,7 +270,7 @@ function SettingsPage({ api }: { api: Api }) {
 				<TableRowGroup title="How to use">
 					<TableRow
 						label="1. Start selecting"
-						subLabel="Tap the ✓ button in the chat's top bar, or long-press a message and choose Select messages. A bar shows at the top."
+						subLabel="Tap the ✓ button in the chat bar or the top bar, or long-press a message and choose Select messages. A bar shows at the top."
 					/>
 					<TableRow
 						label="2. Tap messages"
@@ -299,6 +304,16 @@ function SettingsPage({ api }: { api: Api }) {
 					/>
 				</TableRowGroup>
 				<TableRadioGroup
+					title="Chat bar button"
+					defaultValue={s.chatButton}
+					value={s.chatButton}
+					onChange={(chatButton: Side) => set({ chatButton })}
+				>
+					<TableRadioRow label="Left (after +)" value="left" />
+					<TableRadioRow label="Right (before emoji)" value="right" />
+					<TableRadioRow label="Hidden" value="off" />
+				</TableRadioGroup>
+				<TableRadioGroup
 					title="Highlight colour"
 					defaultValue={s.color}
 					value={s.color}
@@ -319,6 +334,7 @@ function SettingsPage({ api }: { api: Api }) {
 						}
 					/>
 					<TableRow label="Top bar button" subLabel={headerStatus()} />
+					<TableRow label="Chat bar button" subLabel={chatbarStatus()} />
 					<TableRow
 						label="Selected now"
 						subLabel={
@@ -355,15 +371,22 @@ export default plugin<{ jsonStorage: Settings }>({
 		cleanup(watchChannelMessages(), watchActions())
 		setKeepWhenEmpty(barAvailable)
 		cleanup(() => setKeepWhenEmpty(() => false))
+		const toggleSelecting = () => {
+			if (selection.active) clear()
+			else activate()
+			hint()
+		}
+		cleanup(
+			installChatbar({
+				side: () => (enabled ? settings().chatButton : 'off'),
+				onPress: toggleSelecting,
+			}),
+		)
 		cleanup(
 			installHeader({
 				enabled: () => enabled && settings().headerButton,
 				active: () => selection.active,
-				onPress: () => {
-					if (selection.active) clear()
-					else activate()
-					hint()
-				},
+				onPress: toggleSelecting,
 			}),
 		)
 		cleanup(

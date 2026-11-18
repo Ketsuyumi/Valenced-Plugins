@@ -2,10 +2,10 @@
 	"format": 1,
 	"id": "dev.ketsuyumi.multi-select",
 	"name": "Multi Select",
-	"description": "Select several messages and delete them at once, like on WhatsApp. Tap the ✓ button in a chat's top bar (or long-press a message and choose Select messages), tap messages to add them, then use the bar at the top to delete.",
+	"description": "Select several messages and delete them at once, like on WhatsApp. Tap the ✓ toggle in the chat bar or top bar (or long-press a message and choose Select messages), tap messages to add them, then use the bar at the top to delete.",
 	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
 	"icon": "CheckmarkLargeIcon",
-	"version": "1.3.0",
+	"version": "1.4.0",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"
