@@ -5,7 +5,7 @@ import { Image, ScrollView, View } from 'react-native'
 import { installBanner, installGuard, installNicknames } from './chat'
 import { DmEditor, openEditor } from './editor'
 import { bump, patchLists, refreshLists } from './list'
-import { installPreview } from './preview'
+import { installPreview, previewStatus } from './preview'
 import { installSheet } from './sheet'
 import {
 	bindSettings,
@@ -44,7 +44,7 @@ const FEATURES: [string, [keyof Features, string, string?][]][] = [
 			['emoji', 'Emoji badges'],
 			['groupLook', 'Group DM look', '👥 with the member count.'],
 			['unread', 'Unread emphasis', 'A bubble with the mention count, or a dot.'],
-			['lastActive', 'Last active', 'How long ago, and fades DMs you haven’t used in a while.'],
+			['lastActive', 'Last active', 'Fades DMs you haven’t used in a while (the time shows on the second line).'],
 			['mutuals', 'Mutual servers', 'Counted from servers this device knows.'],
 			['friendMarker', 'Not-a-friend marker'],
 			['botLook', 'Bots and apps look', 'Marked 🤖 and dimmed.'],
@@ -164,10 +164,13 @@ function SettingsPage() {
 						))}
 					</ScrollView>
 				</Stack>
+				<TableRowGroup title="Status">
+					<TableRow label="DM row hints" subLabel={previewStatus} />
+				</TableRowGroup>
 				<TableRowGroup>
 					<TableSwitchRow
 						label="Hints on a second line"
-						subLabel="Under the message preview instead of beside it. May be cut off if your Discord version keeps rows short."
+						subLabel="Under the message preview instead of inside it, with how long ago it was active. May be cut off if your Discord version keeps rows short."
 						value={s.extraLine}
 						onValueChange={(extraLine: boolean) => setSettings({ extraLine })}
 					/>

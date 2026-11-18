@@ -12,9 +12,9 @@ colour, label, emoji, pin, **careful** mode or a private nickname. Every feature
 
 - **DM list**: tabs above your DMs (All, or DMs and a separate **Groups** tab, plus Unread, Friends, Pinned and one tab
   per label); pinned DMs stay on top.
-- **On each row** (on the message preview line): colour tag, label, emoji, 👥 member count for group DMs, unread bubble
-  with the mention count in your colour, how long ago it was active (fading DMs unused for a chosen time), mutual
-  servers, not-a-friend and 🤖 bot markers, and your note. Optionally on a second line.
+- **On each row**, as coloured text inside the message preview (so the row's layout never changes): colour dot, label,
+  emoji, 👥 member count for group DMs, the mention count in your unread colour, not-a-friend and 🤖 bot markers, mutual
+  servers and your note; DMs unused for a chosen time are faded. Optionally on a second line, with how long ago.
 - **In a DM**: a "To: name" banner above the message box in its colour, "Send to …?" before each message in careful
   chats (if you don't send, the text is copied back), and private nicknames shown wherever Discord shows friend
   nicknames.

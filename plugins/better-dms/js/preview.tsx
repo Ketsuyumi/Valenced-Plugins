@@ -1,6 +1,6 @@
-import { Design } from '@valenced/discord/design'
 import { instead } from '@valenced/patcher'
-import { View } from 'react-native'
+import { cloneElement } from 'react'
+import { Text } from 'react-native'
 import { findModule } from './find'
 import {
 	ago,
@@ -27,67 +27,48 @@ import {
 
 const PREVIEW = 'modules/main_tabs_v2/native/shared_components/ChannelRowPreview.tsx'
 
-function Tag({ text, color, filled }: { text: string; color?: string; filled?: boolean }) {
-	const { Text } = Design as any
-	return (
-		<View
-			style={{
-				paddingHorizontal: 5,
-				borderRadius: 6,
-				marginRight: 4,
-				backgroundColor: filled ? color : color ? `${color}33` : 'rgba(127,127,127,0.2)',
-			}}
-		>
-			<Text variant="text-xxs/bold" style={{ color: filled ? '#ffffff' : (color ?? undefined) }} color={color ? undefined : 'text-muted'}>
-				{text}
-			</Text>
-		</View>
-	)
+/** One coloured piece of hint text. */
+interface Piece {
+	text: string
+	color?: string
+	bold?: boolean
 }
 
-function Muted({ text }: { text: string }) {
-	const { Text } = Design as any
-	return (
-		<Text variant="text-xxs/medium" color="text-muted" style={{ marginRight: 4 }}>
-			{text}
-		</Text>
-	)
-}
-
-/** The hint pieces for one DM, in order: identity first, then status, then info. */
-function pieces(id: string) {
+/** The hint pieces for one DM: identity and status before the preview, info after it. */
+function pieces(id: string): { lead: Piece[]; info: Piece[]; fade: boolean } {
 	const c = channel(id)
-	if (!c) return { lead: [] as any[], info: [] as any[], fade: false }
+	if (!c) return { lead: [], info: [], fade: false }
 	const s = settings()
 	const d = dmData(id)
 	const recipient = recipientOf(c)
 	const u = user(recipient)
-	const lead: any[] = []
-	const info: any[] = []
+	const lead: Piece[] = []
+	const info: Piece[] = []
 
-	if (on('colors') && d.color) lead.push(<View key="dot" style={{ width: 9, height: 9, borderRadius: 3, backgroundColor: d.color, marginRight: 4 }} />)
-	if (on('emoji') && d.emoji) lead.push(<Muted key="emoji" text={d.emoji} />)
-	if (on('labels') && d.label) lead.push(<Tag key="label" text={d.label} color={on('colors') ? d.color : undefined} />)
-	if (on('groupLook') && c.type === GROUP_DM)
-		lead.push(<Tag key="group" text={`👥 ${(c.recipients?.length ?? 0) + 1}`} />)
-	if (on('botLook') && u?.bot) lead.push(<Tag key="bot" text="🤖 bot" />)
-	else if (on('friendMarker') && c.type !== GROUP_DM && recipient && !isFriend(recipient)) lead.push(<Tag key="nf" text="not a friend" />)
+	if (on('colors') && d.color) lead.push({ text: '● ', color: d.color })
+	if (on('emoji') && d.emoji) lead.push({ text: `${d.emoji} ` })
+	if (on('labels') && d.label) lead.push({ text: `${d.label} · `, color: on('colors') ? d.color : undefined, bold: true })
+	if (on('groupLook') && c.type === GROUP_DM) lead.push({ text: `👥${(c.recipients?.length ?? 0) + 1} · ` })
+	if (on('botLook') && u?.bot) lead.push({ text: '🤖 bot · ' })
+	else if (on('friendMarker') && c.type !== GROUP_DM && recipient && !isFriend(recipient))
+		lead.push({ text: 'not a friend · ' })
 	if (on('unread')) {
 		const mentions = mentionCount(id)
-		if (mentions) lead.push(<Tag key="unread" text={String(mentions)} color={s.unreadColor} filled />)
-		else if (isUnread(id)) lead.push(<View key="unread" style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: s.unreadColor, marginRight: 4 }} />)
+		if (mentions) lead.push({ text: `(${mentions}) `, color: s.unreadColor, bold: true })
+		else if (isUnread(id)) lead.push({ text: '● ', color: s.unreadColor })
 	}
 
-	const active = lastActive(c)
-	if (on('lastActive') && active) info.push(<Muted key="ago" text={ago(active)} />)
 	if (on('mutuals') && c.type !== GROUP_DM) {
 		const n = mutualServers(recipient)
-		if (n) info.push(<Muted key="mutual" text={`${n} mutual`} />)
+		if (n) info.push({ text: ` · ${n} mutual` })
 	}
 	if (on('notes') && recipient) {
 		const note = noteOf(recipient)
-		if (note) info.push(<Muted key="note" text={`📝 ${note.slice(0, 40)}`} />)
+		if (note) info.push({ text: ` · 📝 ${note.slice(0, 40)}` })
 	}
+	// Discord already shows the time on the row; this only adds it on the second line.
+	const active = lastActive(c)
+	if (on('lastActive') && active && s.extraLine) info.push({ text: ` · ${ago(active)}` })
 
 	const days = s.fadeAfterDays
 	const fade =
@@ -96,30 +77,72 @@ function pieces(id: string) {
 	return { lead, info, fade }
 }
 
+/** How the last preview was decorated, for Settings → Status. */
+export let previewStatus = 'No DM row drawn yet'
+
+const textOf = (p: Piece, key: string) => (
+	<Text key={key} style={{ color: p.color, fontWeight: p.bold ? '700' : undefined }}>
+		{p.text}
+	</Text>
+)
+
+/**
+ * The element holding the preview's text: the first one with a string among its children. Hints
+ * go inside it as nested text, so they take the preview's own line and font and change no layout.
+ */
+function addToText(node: any, lead: Piece[], info: Piece[], fade: boolean, depth = 0): any {
+	if (!node || typeof node !== 'object' || depth > 10) return undefined
+	if (Array.isArray(node)) {
+		for (let i = 0; i < node.length; i++) {
+			const next = addToText(node[i], lead, info, fade, depth + 1)
+			if (next !== undefined) {
+				const copy = [...node]
+				copy[i] = next
+				return copy
+			}
+		}
+		return undefined
+	}
+	const kids = node.props?.children
+	if (kids == null) return undefined
+	const list = Array.isArray(kids) ? kids : [kids]
+	if (list.some(k => typeof k === 'string' || typeof k === 'number')) {
+		const style = fade ? [node.props.style, { opacity: 0.55 }] : node.props.style
+		return cloneElement(
+			node,
+			{ style },
+			...lead.map((p, i) => textOf(p, `bdl${i}`)),
+			...list,
+			...info.map((p, i) => textOf(p, `bdi${i}`)),
+		)
+	}
+	const next = addToText(kids, lead, info, fade, depth + 1)
+	return next === undefined ? undefined : cloneElement(node, undefined, ...(Array.isArray(next) ? next : [next]))
+}
+
 function decorate(output: any, id: string | undefined) {
 	if (!id) return output
 	const { lead, info, fade } = pieces(id)
 	if (!lead.length && !info.length && !fade) return output
-	const body = <View style={{ flex: 1, minWidth: 0, opacity: fade ? 0.55 : 1 }}>{output}</View>
-	if (settings().extraLine)
+	if (settings().extraLine) {
+		previewStatus = 'Hints on their own line'
 		return (
-			<View style={{ flex: 1, minWidth: 0 }}>
-				{body}
-				{lead.length || info.length ? (
-					<View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2, flexWrap: 'nowrap', overflow: 'hidden' }}>
-						{lead}
-						{info}
-					</View>
-				) : null}
-			</View>
+			<>
+				{output}
+				<Text numberOfLines={1} style={{ fontSize: 11, opacity: 0.8 }}>
+					{[...lead, ...info].map((p, i) => textOf(p, `bdx${i}`))}
+				</Text>
+			</>
 		)
-	return (
-		<View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0 }}>
-			{lead}
-			{body}
-			{info.length ? <View style={{ flexDirection: 'row', marginLeft: 4 }}>{info}</View> : null}
-		</View>
-	)
+	}
+	const inline = addToText(output, lead, info, fade)
+	if (inline !== undefined) {
+		previewStatus = 'Hints inside the preview text'
+		return inline
+	}
+	// The preview isn't plain text on this version: leave it alone rather than move it.
+	previewStatus = "Hints can't be shown here: the preview isn't plain text (try Hints on a second line)"
+	return output
 }
 
 export function installPreview(): () => void {
