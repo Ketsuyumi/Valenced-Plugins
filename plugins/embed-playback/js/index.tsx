@@ -6,7 +6,8 @@ import { Linking, ScrollView } from 'react-native'
 import { findModule } from './find'
 import { installPlayer, play, playerAvailable } from './player'
 import { findWebView } from './webview'
-import { describeSource, external, youtubeInSource, youtubeOf } from './youtube'
+import { describeSource, external, MODE_NAMES, MODES, youtubeInSource, youtubeOf } from './youtube'
+import type { PlayerMode } from './youtube'
 import type { PlayerSettings } from './player'
 
 interface Settings extends PlayerSettings {
@@ -15,7 +16,7 @@ interface Settings extends PlayerSettings {
 	/** YouTube links in messages open here instead of the YouTube app. */
 	links: boolean
 }
-const DEFAULTS: Settings = { embeds: true, links: true, pipSize: 'medium', startSmall: false }
+const DEFAULTS: Settings = { embeds: true, links: true, pipSize: 'medium', startSmall: false, mode: 'discord' }
 let settings: () => Settings = () => DEFAULTS
 
 let lastOpened = 0
@@ -79,6 +80,20 @@ function SettingsPage({ api }: { api: any }) {
 					<TableRadioRow label="Medium" value="medium" />
 					<TableRadioRow label="Large" value="large" />
 				</TableRadioGroup>
+				<TableRadioGroup
+					title="How the video loads"
+					defaultValue={s.mode}
+					value={s.mode}
+					onChange={(mode: PlayerMode) => set({ mode })}
+				>
+					{MODES.map(m => (
+						<TableRadioRow key={m} label={MODE_NAMES[m]} value={m} />
+					))}
+				</TableRadioGroup>
+				<Text variant="text-sm/medium" color="text-muted">
+					If YouTube says "This video is unavailable" or shows an error code, tap ↻ in the player to try
+					the next way. The one you end on is remembered.
+				</Text>
 				<TableRowGroup title="Status">
 					<TableRow label="Player" subLabel={playerAvailable() ? 'Ready' : 'Not attached yet (open any chat once)'} />
 					<TableRow label="Web view" subLabel={findWebView() ? 'Found' : "Not found: videos open Discord's usual way"} />
@@ -103,7 +118,12 @@ export default plugin<{ jsonStorage: Settings }>({
 	jsonStorage: { load: true, default: DEFAULTS },
 	start({ cleanup, jsonStorage }) {
 		settings = () => ({ ...DEFAULTS, ...jsonStorage.cache })
-		cleanup(installPlayer(() => settings()))
+		cleanup(
+			installPlayer(
+				() => settings(),
+				mode => jsonStorage.set({ ...settings(), mode }, true),
+			),
+		)
 
 		// Embeds: Discord opens YouTube embeds in its media viewer (openMediaModal).
 		cleanup(

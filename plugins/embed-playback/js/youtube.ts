@@ -55,12 +55,39 @@ export function describeSource(source: any): string {
 }
 
 /**
- * The page the player loads: YouTube's iframe player in a page whose origin is set, so YouTube
- * accepts the embed (a bare embed URL with no referrer can be refused).
+ * How the player loads YouTube. YouTube refuses embeds whose page doesn't identify itself the way
+ * it expects (errors 152 and 153), and which way works can differ by device, so there are three,
+ * tried in turn with the player's ↻ button; the one that works is remembered.
+ *
+ * - `discord`: YouTube's embed in a small page served as https://discord.com, as Discord's own
+ *   embeds are.
+ * - `nocookie`: the same with youtube-nocookie.com (YouTube's privacy-enhanced player).
+ * - `direct`: the embed page itself, with a Referer header.
  */
-export function playerHtml(videoId: string, start = 0): string {
-	const src = `https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&start=${start}&origin=https://www.youtube.com`
-	return `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+export type PlayerMode = 'discord' | 'nocookie' | 'direct'
+export const MODES: PlayerMode[] = ['discord', 'nocookie', 'direct']
+export const MODE_NAMES: Record<PlayerMode, string> = {
+	discord: 'Discord-style embed',
+	nocookie: 'Privacy-enhanced embed',
+	direct: 'Direct embed page',
+}
+
+const ORIGIN = 'https://discord.com'
+
+function embedUrl(host: string, videoId: string, start = 0): string {
+	return `https://${host}/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&start=${start}&origin=${encodeURIComponent(ORIGIN)}&widget_referrer=${encodeURIComponent(ORIGIN)}`
+}
+
+function page(src: string): string {
+	return `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin">
 <style>html,body{margin:0;padding:0;background:#000;height:100%;overflow:hidden}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style>
-</head><body><iframe src="${src}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></body></html>`
+</head><body><iframe src="${src}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></body></html>`
+}
+
+/** The WebView `source` for [mode]. */
+export function playerSource(mode: PlayerMode, videoId: string, start = 0): Record<string, unknown> {
+	if (mode === 'direct')
+		return { uri: embedUrl('www.youtube.com', videoId, start), headers: { Referer: `${ORIGIN}/` } }
+	const host = mode === 'nocookie' ? 'www.youtube-nocookie.com' : 'www.youtube.com'
+	return { html: page(embedUrl(host, videoId, start)), baseUrl: `${ORIGIN}/` }
 }

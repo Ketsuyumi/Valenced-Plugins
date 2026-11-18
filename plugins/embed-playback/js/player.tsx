@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { BackHandler, Linking, PanResponder, Pressable, useWindowDimensions, View } from 'react-native'
 import { findModule } from './find'
 import { findWebView } from './webview'
-import { external, playerHtml } from './youtube'
+import { external, MODES, playerSource } from './youtube'
+import type { PlayerMode } from './youtube'
 
 /**
  * The player, drawn beside Discord's toast container (mounted once over the whole app, like Multi
@@ -20,6 +21,7 @@ export interface Video {
 export interface PlayerSettings {
 	pipSize: 'small' | 'medium' | 'large'
 	startSmall: boolean
+	mode: PlayerMode
 }
 
 let current: (Video & { small: boolean }) | null = null
@@ -27,7 +29,8 @@ const listeners = new Set<() => void>()
 const emit = () => {
 	for (const l of listeners) l()
 }
-let readSettings: () => PlayerSettings = () => ({ pipSize: 'medium', startSmall: false })
+let readSettings: () => PlayerSettings = () => ({ pipSize: 'medium', startSmall: false, mode: 'discord' })
+let saveMode: (mode: PlayerMode) => void = () => {}
 let mounted = false
 export const playerAvailable = () => mounted
 
@@ -114,6 +117,15 @@ function Player({ video }: { video: Video & { small: boolean } }) {
 				<Text variant="text-xs/semibold" style={{ color: '#bbbbbb', flex: 1, paddingLeft: 10 }} numberOfLines={1}>
 					{small ? '⠿ drag' : 'YouTube'}
 				</Text>
+				<Button
+					label="↻"
+					hint="Try another way of loading the video"
+					onPress={() => {
+						const mode = readSettings().mode
+						saveMode(MODES[(MODES.indexOf(mode) + 1) % MODES.length])
+						emit()
+					}}
+				/>
 				{!small ? (
 					<Button
 						label="↗"
@@ -131,8 +143,8 @@ function Player({ video }: { video: Video & { small: boolean } }) {
 			<View style={{ width: w, height: h }}>
 				{WebView ? (
 					<WebView
-						key={video.videoId}
-						source={{ html: playerHtml(video.videoId, video.start), baseUrl: 'https://www.youtube.com' }}
+						key={`${video.videoId}:${readSettings().mode}`}
+						source={playerSource(readSettings().mode, video.videoId, video.start)}
 						originWhitelist={['*']}
 						javaScriptEnabled
 						domStorageEnabled
@@ -182,8 +194,9 @@ function Host() {
 	)
 }
 
-export function installPlayer(read: () => PlayerSettings): () => void {
+export function installPlayer(read: () => PlayerSettings, writeMode: (mode: PlayerMode) => void): () => void {
 	readSettings = read
+	saveMode = writeMode
 	const undo: Array<() => void> = []
 	undo.push(
 		findModule('modules/toast/native/AppToastContainer.tsx', ['AppToastContainer'], (mod: any) => {
