@@ -504,6 +504,30 @@
           }
         }
       }
+    },
+    "dev.ketsuyumi.spectators": {
+      "name": "Spectators",
+      "description": "See who is watching a stream, yours or someone else's, like on PC. Optional notices when people start or stop watching, and a notification with the count while you stream, also outside the app.",
+      "author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+      "icon": "EyeIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.spectators@1.0.0.zip",
+          "sha256": "3ceb200c0398eab8dbd1b30087a9f1f3565d9dae11c349c50ef1ead5061b949e",
+          "size": 8006,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
     }
   }
 }
