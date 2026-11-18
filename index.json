@@ -1,19 +1,19 @@
 {
   "format": 1,
-  "name": "Valenced Plugins by ketsuyumi",
+  "name": "Valenced Plugins by Satou",
   "description": "Plugins for Valenced.",
   "plugins": {
     "dev.ketsuyumi.block-by-id": {
       "name": "Block by ID",
       "description": "Block any Discord user by pasting their user ID, even if you share no server or DM with them.",
-      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "DenyIcon",
       "channels": {
-        "latest": "1.3.1"
+        "latest": "1.3.2"
       },
       "versions": {
         "1.1.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.block-by-id@1.1.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.block-by-id@1.1.0.zip",
           "sha256": "9cbb5970df3ce81dafffbb7d7214ce88ab9107c80b53a93b86daee10dd6c0ecb",
           "size": 3079,
           "dependencies": {
@@ -26,7 +26,7 @@
           }
         },
         "1.1.1": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.block-by-id@1.1.1.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.block-by-id@1.1.1.zip",
           "sha256": "fed800e3a29f5c36e322c38e8cddf297025f7f53b3f8f0194249e5d6592a913f",
           "size": 3133,
           "dependencies": {
@@ -39,7 +39,7 @@
           }
         },
         "1.2.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.block-by-id@1.2.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.block-by-id@1.2.0.zip",
           "sha256": "b6fcbe0ab8917fa0a580c73f7e85a27eb3a52bece0a7d8d291bc610823dfe83b",
           "size": 4870,
           "dependencies": {
@@ -52,7 +52,7 @@
           }
         },
         "1.3.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.block-by-id@1.3.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.block-by-id@1.3.0.zip",
           "sha256": "36436a6feb674a4c3e23ee73a80d8fb67590316458277f57aee40fb26205270b",
           "size": 5262,
           "dependencies": {
@@ -65,9 +65,22 @@
           }
         },
         "1.3.1": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.block-by-id@1.3.1.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.block-by-id@1.3.1.zip",
           "sha256": "bd03e9bda4b6add06aa21f7855bde9b098ab61c0556046c9ecce97f702e10add",
           "size": 5263,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.3.2": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.block-by-id@1.3.2.zip",
+          "sha256": "db56b664595f7083d046278762cda7755f83e169ecf51e4ea1934a562179c374",
+          "size": 5271,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -82,14 +95,14 @@
     "dev.ketsuyumi.dm-details-plus": {
       "name": "DM Details+",
       "description": "On a DM's details screen: hide the New Group button and the Files tab, and add Stickers and Emoji tabs.",
-      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "StickerIcon",
       "channels": {
-        "latest": "1.2.3"
+        "latest": "1.2.4"
       },
       "versions": {
         "1.0.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.0.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.0.0.zip",
           "sha256": "daab0e4cf0012d6ce16ba1b53495b7729f8823ad1e0542b0f98a1b215b8c727c",
           "size": 3989,
           "dependencies": {
@@ -102,7 +115,7 @@
           }
         },
         "1.1.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.1.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.1.0.zip",
           "sha256": "62ecde7e67de908fbd95892804e88482068c9a2133f6f269d2f96e38cb488cf7",
           "size": 5784,
           "dependencies": {
@@ -115,7 +128,7 @@
           }
         },
         "1.2.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.2.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.2.0.zip",
           "sha256": "6f174c6764b4d451ebbcc2ec888c289c92a7e5c47fb8039c8f3e84ea72aaef85",
           "size": 6054,
           "dependencies": {
@@ -128,7 +141,7 @@
           }
         },
         "1.2.1": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.2.1.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.2.1.zip",
           "sha256": "df2f068da0b950d1b0c459189a29ce792e4e6983a4bc07a5d14ae8efc2617291",
           "size": 6343,
           "dependencies": {
@@ -141,7 +154,7 @@
           }
         },
         "1.2.2": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.2.2.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.2.2.zip",
           "sha256": "6e481adb7cb198b505a0dbb5bd5aba2c7b85658e7608d1972789fba3be022282",
           "size": 6068,
           "dependencies": {
@@ -154,9 +167,22 @@
           }
         },
         "1.2.3": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.2.3.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.2.3.zip",
           "sha256": "50420b54bbaf8fe09e731e5cbf6947cfc6ec907b86ebb00a4340a80a1c1a2056",
           "size": 6071,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.2.4": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.2.4.zip",
+          "sha256": "d6ce604516c4420443e746593aa811fe61480a638b41a997c276cf978ee60407",
+          "size": 6078,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -171,14 +197,14 @@
     "dev.ketsuyumi.hide-dms": {
       "name": "Hide DMs",
       "description": "Hide chosen DMs and group DMs, or all of them, from your DM list without leaving them.",
-      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "EyeSlashIcon",
       "channels": {
-        "latest": "1.0.3"
+        "latest": "1.0.4"
       },
       "versions": {
         "1.0.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-dms@1.0.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-dms@1.0.0.zip",
           "sha256": "9737fdcaa821fe26425bdd7991d261876275ac3d6e7d66fd2ac6b33fdcf6f1b5",
           "size": 2471,
           "dependencies": {
@@ -191,7 +217,7 @@
           }
         },
         "1.0.1": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-dms@1.0.1.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-dms@1.0.1.zip",
           "sha256": "e4ecdbadf8253d51d4e3525f2cd62af9bc74cbc114176e3725cef2eb966c0e4e",
           "size": 2540,
           "dependencies": {
@@ -204,7 +230,7 @@
           }
         },
         "1.0.2": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-dms@1.0.2.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-dms@1.0.2.zip",
           "sha256": "bba74e06362a635046e4ba630d5eb700366a2a6e6873835fa6707bbaae43b407",
           "size": 2751,
           "dependencies": {
@@ -217,9 +243,22 @@
           }
         },
         "1.0.3": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-dms@1.0.3.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-dms@1.0.3.zip",
           "sha256": "e91e3e092267ccde5baed0af47441be2c82614784e6633270f2a341daece3442",
           "size": 2753,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.4": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-dms@1.0.4.zip",
+          "sha256": "6f6660814bb6bbd5bca65219264a65722fe2c04d82fc8dd847f81d0817ab19e0",
+          "size": 2760,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -234,14 +273,14 @@
     "dev.ketsuyumi.hide-server-banners": {
       "name": "Hide Server Banners",
       "description": "Hides server banners at the top of the channel list, so every server uses the compact header.",
-      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "ImageIcon",
       "channels": {
-        "latest": "1.1.1"
+        "latest": "1.1.2"
       },
       "versions": {
         "1.0.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-server-banners@1.0.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-server-banners@1.0.0.zip",
           "sha256": "55a8262be1131554356338f8cd55ba9485876e8b12224c1295c1751c498bc394",
           "size": 1089,
           "dependencies": {
@@ -254,7 +293,7 @@
           }
         },
         "1.1.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-server-banners@1.1.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-server-banners@1.1.0.zip",
           "sha256": "e6969416dbc2858c8dbc7ba111413a69a979cecc6cb7902ca41d42ae90eec790",
           "size": 1346,
           "dependencies": {
@@ -267,9 +306,22 @@
           }
         },
         "1.1.1": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-server-banners@1.1.1.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-server-banners@1.1.1.zip",
           "sha256": "18f8254fa5d0602ed82ef566619ede7108a3df052abc3099af6355304d32a0ac",
           "size": 1347,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.1.2": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-server-banners@1.1.2.zip",
+          "sha256": "5d59c0499c927be0d170091930047c4e22f816d92ba8b7010eb1533a96653556",
+          "size": 1354,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -284,14 +336,14 @@
     "dev.ketsuyumi.ignore-apps": {
       "name": "Ignore Apps",
       "description": "Hide messages from apps and bots that Discord doesn't let you block or ignore, like MEE6.",
-      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "EyeSlashIcon",
       "channels": {
-        "latest": "1.0.3"
+        "latest": "1.0.4"
       },
       "versions": {
         "1.0.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ignore-apps@1.0.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ignore-apps@1.0.0.zip",
           "sha256": "f2ff974ec2f05afd6f28b29ed245c50103b8f11d981ac6a2206bc193f3dabfa7",
           "size": 2188,
           "dependencies": {
@@ -304,7 +356,7 @@
           }
         },
         "1.0.1": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ignore-apps@1.0.1.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ignore-apps@1.0.1.zip",
           "sha256": "2603253c04233cb6c92974d4bcba217d244ebbcb2c547269e9a0f4b7f36e3594",
           "size": 2260,
           "dependencies": {
@@ -317,7 +369,7 @@
           }
         },
         "1.0.2": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ignore-apps@1.0.2.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ignore-apps@1.0.2.zip",
           "sha256": "5871065f44b63046bea57bc59fe819b61e52403780b87706923f45c2606bee8c",
           "size": 2367,
           "dependencies": {
@@ -330,9 +382,22 @@
           }
         },
         "1.0.3": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ignore-apps@1.0.3.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ignore-apps@1.0.3.zip",
           "sha256": "5be9380d794e5afb03c30d3af728dc06dabcb9855f633503d6554167d1faa7cc",
           "size": 2369,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.4": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ignore-apps@1.0.4.zip",
+          "sha256": "d64ca71ca209e978252ca815e05aaa271b7fb0c7cc146ce0f3202f0b8e10da3a",
+          "size": 2375,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -347,14 +412,14 @@
     "dev.ketsuyumi.multi-select": {
       "name": "Multi Select",
       "description": "Select several messages and delete them at once, like on WhatsApp. Long-press a message and choose Select messages, double-tap to add more, long-press for Delete.",
-      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "CheckmarkLargeIcon",
       "channels": {
-        "latest": "1.0.1"
+        "latest": "1.0.2"
       },
       "versions": {
         "1.0.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.multi-select@1.0.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.multi-select@1.0.0.zip",
           "sha256": "45544e8a64035c37b9d5e98ab107968ea055147fad2f22a4b960e4e93cb78308",
           "size": 4718,
           "dependencies": {
@@ -367,9 +432,22 @@
           }
         },
         "1.0.1": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.multi-select@1.0.1.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.multi-select@1.0.1.zip",
           "sha256": "4c161f8666110f48092270976e456322beb9430440e2d8ea4f123f0a8e549333",
           "size": 4718,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.2": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.multi-select@1.0.2.zip",
+          "sha256": "868a2e096589bb93c43c8cc788ac4fcc79927ef01f2a470d37cfb57bab6e36bb",
+          "size": 4725,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -384,14 +462,14 @@
     "dev.ketsuyumi.no-blackout": {
       "name": "No Blackout",
       "description": "Stops the screen going black during calls when the proximity sensor is covered (for example by a finger near the top of the screen). Android only.",
-      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "MobilePhoneIcon",
       "channels": {
-        "latest": "1.0.1"
+        "latest": "1.0.2"
       },
       "versions": {
         "1.0.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.no-blackout@1.0.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.no-blackout@1.0.0.zip",
           "sha256": "b7028dcc99ecc3877dc333258abe8e20a23cbb964e528688e9ef8ccd13cb082d",
           "size": 3465,
           "dependencies": {
@@ -404,9 +482,22 @@
           }
         },
         "1.0.1": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.no-blackout@1.0.1.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.no-blackout@1.0.1.zip",
           "sha256": "d957d66fdf5ca67922bd06fded26918bb208356e7dbd6322b94226a0bedc94fd",
           "size": 3463,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.2": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.no-blackout@1.0.2.zip",
+          "sha256": "97990e9dd59bdd313cc9a5bb44a9c07cbde294d8c5185c0616f67540ee5f6c06",
+          "size": 3472,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -421,14 +512,14 @@
     "dev.ketsuyumi.quick-reload": {
       "name": "Quick Access",
       "description": "Shortcut buttons next to the bell on the bar with your name: reload Discord, open Friends, Plugins or Performance Monitor. Each has its own switch. Also a \"Reload Discord\" row in Discord's settings. Formerly Quick Reload.",
-      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "RefreshIcon",
       "channels": {
-        "latest": "1.4.1"
+        "latest": "1.4.2"
       },
       "versions": {
         "1.0.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.0.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.0.0.zip",
           "sha256": "2b6e61afc295198167f14b42c4407b4b91d2a702f1ee27ab9be4bd2d9b8c29f2",
           "size": 2081,
           "dependencies": {
@@ -441,7 +532,7 @@
           }
         },
         "1.0.1": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.0.1.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.0.1.zip",
           "sha256": "fb09b37c652f92b8d945829e897e6a547e81fbcece8e51f3157746772048a5df",
           "size": 2355,
           "dependencies": {
@@ -454,7 +545,7 @@
           }
         },
         "1.1.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.1.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.1.0.zip",
           "sha256": "940a1deb38e6996450da398d403e47c31a62e9870b103a48e06ee184559c2d21",
           "size": 2780,
           "dependencies": {
@@ -467,7 +558,7 @@
           }
         },
         "1.2.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.2.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.2.0.zip",
           "sha256": "c095dcdcbfce95d900a8b338772a426584e56083f54c824a63827dda2a740f3c",
           "size": 3026,
           "dependencies": {
@@ -480,7 +571,7 @@
           }
         },
         "1.3.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.3.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.3.0.zip",
           "sha256": "136a56c152dd481d5e5d0c7d9cfac48d523a01c983314a9edb19b93c5eec2205",
           "size": 3376,
           "dependencies": {
@@ -493,7 +584,7 @@
           }
         },
         "1.4.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.4.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.4.0.zip",
           "sha256": "5fff1318562cc50564c42901381328847bf8edee16152e895e2f75e09b8af520",
           "size": 3589,
           "dependencies": {
@@ -506,9 +597,22 @@
           }
         },
         "1.4.1": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.4.1.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.4.1.zip",
           "sha256": "8e221f8881a40cea6dfa3de62c6067b2d87a545251e4133e402e20060f7914b9",
           "size": 3590,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.4.2": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.4.2.zip",
+          "sha256": "971878127656538fb759c042ca69b001367bddac46dfcff79298623c840e5b41",
+          "size": 3599,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -523,14 +627,14 @@
     "dev.ketsuyumi.smaller-media": {
       "name": "Smaller Media",
       "description": "Makes images, GIFs and videos in chat 30 to 50% smaller, from you and everyone else. Only the preview shrinks: tapping still opens them full size and videos and GIFs still play.",
-      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "ImageIcon",
       "channels": {
-        "latest": "1.2.1"
+        "latest": "1.2.2"
       },
       "versions": {
         "1.0.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.smaller-media@1.0.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.smaller-media@1.0.0.zip",
           "sha256": "261a082ba74039ad0458857f198cb83ed902b9580007ba57ccf86d137283564e",
           "size": 2612,
           "dependencies": {
@@ -543,7 +647,7 @@
           }
         },
         "1.0.1": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.smaller-media@1.0.1.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.smaller-media@1.0.1.zip",
           "sha256": "b768d27e0794dfd407314498d5e2f568c2e454f347b2993179c9a45e15b0c1a5",
           "size": 2829,
           "dependencies": {
@@ -556,7 +660,7 @@
           }
         },
         "1.0.2": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.smaller-media@1.0.2.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.smaller-media@1.0.2.zip",
           "sha256": "5789cf5a2b5e9d89ab7d67463fc3c73da4e620f29c011c268072f5dbfda18827",
           "size": 2969,
           "dependencies": {
@@ -569,7 +673,7 @@
           }
         },
         "1.1.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.smaller-media@1.1.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.smaller-media@1.1.0.zip",
           "sha256": "1c144562f2452418af476c4453f205c5da75a769175bab2a11df12d80bde2940",
           "size": 3259,
           "dependencies": {
@@ -582,7 +686,7 @@
           }
         },
         "1.1.1": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.smaller-media@1.1.1.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.smaller-media@1.1.1.zip",
           "sha256": "01f2b590e46dc9f38cf57b3e24c22f06fd74326850d3a4bca3d59ac9dfcbdf12",
           "size": 3098,
           "dependencies": {
@@ -595,7 +699,7 @@
           }
         },
         "1.2.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.smaller-media@1.2.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.smaller-media@1.2.0.zip",
           "sha256": "5562c6bf1a2edaf79d56eb74f2fa2a54cde04289990dbce8ef94a5b9154f228e",
           "size": 4239,
           "dependencies": {
@@ -608,9 +712,22 @@
           }
         },
         "1.2.1": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.smaller-media@1.2.1.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.smaller-media@1.2.1.zip",
           "sha256": "3cb35ea61fd0c249baa0104637c88dcc8011e0acc003af54c043103b9d8683f4",
           "size": 4240,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.2.2": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.smaller-media@1.2.2.zip",
+          "sha256": "e4867c4173a3e247d7ae12a2a54245b4e369c6014dbf7a7dd58a3a0e146f1132",
+          "size": 4247,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -625,14 +742,14 @@
     "dev.ketsuyumi.spectators": {
       "name": "Spectators",
       "description": "See who is watching a stream, yours or someone else's, like on PC. Optional notices when people start or stop watching, and a notification with the count while you stream, also outside the app.",
-      "author": "Satou (https://github.com/ketsuyumi \"GitHub\")",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "EyeIcon",
       "channels": {
-        "latest": "1.0.1"
+        "latest": "1.0.2"
       },
       "versions": {
         "1.0.0": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.spectators@1.0.0.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.spectators@1.0.0.zip",
           "sha256": "3ceb200c0398eab8dbd1b30087a9f1f3565d9dae11c349c50ef1ead5061b949e",
           "size": 8006,
           "dependencies": {
@@ -645,9 +762,22 @@
           }
         },
         "1.0.1": {
-          "url": "https://ketsuyumi.github.io/Valenced-Plugins/pool/dev.ketsuyumi.spectators@1.0.1.zip",
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.spectators@1.0.1.zip",
           "sha256": "b77caf8092f48ab33a2400bb5716658db1b8b5daea03e4b1957714372f000f1c",
           "size": 8007,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.2": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.spectators@1.0.2.zip",
+          "sha256": "4df2096183d0865e1443b6a6af6a390c8459053edf57c002c2c7b907a6d5e610",
+          "size": 8013,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
