@@ -126,6 +126,13 @@ Uploads are drawn in Discord's image grid, which fills the message's width whate
 the grid is the only way uploads are drawn (switching it off makes them disappear). So for a message with uploads the
 plugin leaves the grid on and scales the width it fills, the row's `constrainedWidth`.
 
+### Default Typing Indicator (`dev.ketsuyumi.default-typing`)
+
+Shows everyone's typing indicator as Discord's plain "• • •", without custom animated emoji wiggling around. When someone
+with a custom typing indicator types, their glyph is swapped for Discord's own dots and the "is typing…" text stays.
+It hooks Discord's typing row (`TypingIndicator`'s `renderItem`) the same way Better Typing Indicators does, so the two
+work together. Needs a reload when turned on or off, since Discord keeps rows it already drew.
+
 ### Spectators (`dev.ketsuyumi.spectators`)
 
 See who is watching a stream, like on PC: your own stream and the streams you are watching, with avatars, on the

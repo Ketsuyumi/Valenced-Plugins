@@ -1,0 +1,20 @@
+{
+	"format": 1,
+	"id": "dev.ketsuyumi.default-typing",
+	"name": "Default Typing Indicator",
+	"description": "Shows everyone's typing indicator as Discord's plain dots, without custom animated emoji wiggling around.",
+	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+	"icon": "ChatIcon",
+	"version": "1.0.0",
+	"dependencies": {
+		"valenced.api": {
+			"version": ">=1 <2"
+		},
+		"discord": {
+			"version": "*"
+		}
+	},
+	"dist": {
+		"script": "index.js"
+	}
+}
