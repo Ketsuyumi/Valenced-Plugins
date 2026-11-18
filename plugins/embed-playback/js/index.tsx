@@ -1,4 +1,6 @@
+import { ToastActionCreators } from '@valenced/discord/actions'
 import { Design } from '@valenced/discord/design'
+import { Clipboard } from '@valenced/externals/react-native-clipboard'
 import { existsSync } from '@valenced/modules/native/fs'
 import { pluginDistDirFor } from '@valenced/plugins/constants'
 import { getModules } from '@valenced/modules/finders'
@@ -10,15 +12,17 @@ import { installPlayer, play, playerAvailable } from './player'
 import { findWebView } from './webview'
 import { describeSource, external, MODE_NAMES, MODES, youtubeInSource, youtubeOf } from './youtube'
 import type { PlayerMode } from './youtube'
-import type { PlayerSettings } from './player'
+import type { OpenAs, PlayerSettings, Rect } from './player'
 
 interface Settings extends PlayerSettings {
+	/** Old setting (1.0–1.2): open as a floating window. Read once to pick `openAs`. */
+	startSmall?: boolean
 	/** YouTube embeds open here instead of Discord's full-screen viewer. */
 	embeds: boolean
 	/** YouTube links in messages open here instead of the YouTube app. */
 	links: boolean
 }
-const DEFAULTS: Settings = { embeds: true, links: true, pipSize: 'medium', startSmall: false, mode: 'discord' }
+const DEFAULTS: Settings = { embeds: true, links: true, pipSize: 'medium', openAs: 'big', mode: 'discord' }
 let settings: () => Settings = () => DEFAULTS
 
 /**
@@ -36,6 +40,52 @@ function adblockInstalled(): boolean {
 }
 
 let lastOpened = 0
+
+/**
+ * Where the embed's thumbnail is on screen, if Discord passed it to the viewer (viewers are given
+ * the tapped item's position so they can animate from it). Any object in the arguments with a
+ * position and a size counts; layout-like key names are preferred.
+ */
+function findRect(value: unknown): Rect | undefined {
+	let best: { rect: Rect; score: number } | undefined
+	const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined)
+	const visit = (node: any, key: string, depth: number) => {
+		if (!node || typeof node !== 'object' || depth > 5) return
+		const x = num(node.pageX) ?? num(node.x) ?? num(node.left)
+		const y = num(node.pageY) ?? num(node.y) ?? num(node.top)
+		const width = num(node.width)
+		const height = num(node.height)
+		if (x !== undefined && y !== undefined && width && height && width > 60 && height > 40) {
+			const score = (/layout|origin|frame|rect|measure|position/i.test(key) ? 2 : 0) + (node.pageX !== undefined ? 1 : 0)
+			if (!best || score > best.score) best = { rect: { x, y, width, height }, score }
+		}
+		for (const [k, v] of Object.entries(node)) if (v && typeof v === 'object') visit(v, k, depth + 1)
+	}
+	visit(value, '', 0)
+	return best?.rect
+}
+
+/** The arguments the viewer opener got for the last YouTube video, for "Copy debug info". */
+let lastArgs = ''
+function describeArgs(args: unknown): string {
+	const seen = new WeakSet<object>()
+	try {
+		return JSON.stringify(
+			args,
+			(_k, v) => {
+				if (typeof v === 'function') return '[fn]'
+				if (v && typeof v === 'object') {
+					if (seen.has(v)) return '[seen]'
+					seen.add(v)
+				}
+				return typeof v === 'string' && v.length > 200 ? `${v.slice(0, 200)}…` : v
+			},
+			1,
+		).slice(0, 6000)
+	} catch (e) {
+		return String(e)
+	}
+}
 /** What happened to the last YouTube tap, for Settings → Status. */
 let lastTap = 'No YouTube video tapped yet'
 /** Which hooks attached, and what the viewer was last given. */
@@ -43,7 +93,7 @@ const hooked = { opener: false, header: false, links: false }
 let lastSource = 'Nothing opened in the viewer yet'
 
 /** Plays [video] if the player can; false lets Discord do what it would have done. */
-function tryPlay(video: { videoId: string; start?: number } | undefined, via: string): boolean {
+function tryPlay(video: { videoId: string; start?: number } | undefined, via: string, rect?: Rect): boolean {
 	if (!video) return false
 	if (!playerAvailable()) {
 		lastTap = `Caught by ${via}, but the player isn't attached (open a chat once)`
@@ -58,7 +108,9 @@ function tryPlay(video: { videoId: string; start?: number } | undefined, via: st
 	const now = Date.now()
 	if (now - lastOpened < 800) return true
 	lastOpened = now
-	play(video)
+	if (settings().openAs === 'thumbnail')
+		lastTap += rect ? ' · on the thumbnail' : " · thumbnail position not given, opened big"
+	play(video, rect)
 	return true
 }
 
@@ -83,14 +135,11 @@ function SettingsPage({ api }: { api: any }) {
 						onValueChange={(links: boolean) => set({ links })}
 					/>
 				</TableRowGroup>
-				<TableRowGroup title="Floating window">
-					<TableSwitchRow
-						label="Start as a floating window"
-						subLabel="Open straight into picture-in-picture."
-						value={s.startSmall}
-						onValueChange={(startSmall: boolean) => set({ startSmall })}
-					/>
-				</TableRowGroup>
+				<TableRadioGroup title="Open as" defaultValue={s.openAs} value={s.openAs} onChange={(openAs: OpenAs) => set({ openAs })}>
+					<TableRadioRow label="Big" subLabel="Across the top of the screen." value="big" />
+					<TableRadioRow label="On the thumbnail" subLabel="Where the embed's picture is, the same size." value="thumbnail" />
+					<TableRadioRow label="Small floating window" value="small" />
+				</TableRadioGroup>
 				<TableRadioGroup title="Floating window size" defaultValue={s.pipSize} value={s.pipSize} onChange={(pipSize: Settings['pipSize']) => set({ pipSize })}>
 					<TableRadioRow label="Small" value="small" />
 					<TableRadioRow label="Medium" value="medium" />
@@ -129,11 +178,21 @@ function SettingsPage({ api }: { api: any }) {
 						subLabel={`Viewer opener: ${hooked.opener ? 'yes' : 'no'} · Viewer header: ${hooked.header ? 'yes' : 'no'} · Links: ${hooked.links ? 'yes' : 'no'}`}
 					/>
 					<TableRow label="Last thing the viewer showed" subLabel={lastSource} />
+					<TableRow
+						label="Copy debug info"
+						subLabel="What Discord passed for the last YouTube video, to send to the developer."
+						onPress={() => {
+							void Clipboard.setString(lastArgs || 'No YouTube video opened through the viewer yet')
+							try {
+								ToastActionCreators.open('embed-playback', { text: 'Copied' } as never)
+							} catch {}
+						}}
+					/>
 				</TableRowGroup>
 				<Text variant="text-sm/medium" color="text-muted">
-					▁ shrinks the player into a floating window you can drag anywhere; it keeps playing while you
-					scroll and switch channels. ⤢ makes it big again, ↗ opens the video in YouTube, ✕ closes it.
-					Back shrinks the big player.
+					Drag the player by its bar and resize it from the ◢ corner. ▁ shrinks it to a small floating
+					window and ⤢ makes it big; it keeps playing while you scroll and switch channels. ↻ tries
+					another way of loading the video, ↗ opens it in YouTube, ✕ closes it. Back shrinks a big player.
 				</Text>
 			</Stack>
 		</ScrollView>
@@ -143,7 +202,11 @@ function SettingsPage({ api }: { api: any }) {
 export default plugin<{ jsonStorage: Settings }>({
 	jsonStorage: { load: true, default: DEFAULTS },
 	start({ cleanup, jsonStorage }) {
-		settings = () => ({ ...DEFAULTS, ...jsonStorage.cache })
+		settings = () => {
+			const s = { ...DEFAULTS, ...jsonStorage.cache } as Settings
+			if (!(jsonStorage.cache as any)?.openAs && s.startSmall) s.openAs = 'small'
+			return s
+		}
 		cleanup(
 			installPlayer(
 				() => settings(),
@@ -165,7 +228,9 @@ export default plugin<{ jsonStorage: Settings }>({
 								const sources: any[] = options.initialSources ?? options.sources ?? []
 								const index = Number(options.initialIndex ?? options.index ?? 0) || 0
 								lastSource = `opener: ${describeSource(sources[index] ?? sources[0] ?? options)}`
-								if (tryPlay(youtubeInSource(sources[index] ?? sources[0]), 'the viewer opener')) return
+								const video = youtubeInSource(sources[index] ?? sources[0]) ?? youtubeInSource(args)
+								if (video) lastArgs = describeArgs(args)
+								if (tryPlay(video, 'the viewer opener', findRect(args))) return
 							}
 						} catch {}
 						return orig.apply(this, args)

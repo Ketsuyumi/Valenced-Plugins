@@ -1,55 +1,113 @@
 import { Design } from '@valenced/discord/design'
 import { after } from '@valenced/patcher'
 import { useEffect, useRef, useState } from 'react'
-import { BackHandler, Linking, PanResponder, Pressable, useWindowDimensions, View } from 'react-native'
+import { BackHandler, Dimensions, Linking, PanResponder, Pressable, View } from 'react-native'
 import { findModule } from './find'
 import { findWebView } from './webview'
 import { external, MODES, playerSource } from './youtube'
 import type { PlayerMode } from './youtube'
 
 /**
- * The player, drawn beside Discord's toast container (mounted once over the whole app, like Multi
- * Select's bar), so it stays while you scroll and change channels. "Big" docks it under the
- * header; "small" is a floating picture-in-picture window you can drag to a corner. Switching only
- * changes the outer box's size and place, so the WebView (and the video) is never reloaded.
+ * The player, drawn beside Discord's toast container (mounted once over the whole app), so it stays
+ * while you scroll and change channels. It is one free window: drag it by its bar, resize it from
+ * the ◢ corner (16:9 kept), or jump to the big or small preset. It opens big, on the embed's
+ * thumbnail (when Discord says where that is), or small. Moving and resizing only change the outer
+ * box, so the WebView (and the video) is never reloaded.
  */
 
 export interface Video {
 	videoId: string
 	start?: number
 }
+/** A rectangle in window coordinates (where the embed's thumbnail is). */
+export interface Rect {
+	x: number
+	y: number
+	width: number
+	height: number
+}
+export type OpenAs = 'big' | 'thumbnail' | 'small'
 export interface PlayerSettings {
 	pipSize: 'small' | 'medium' | 'large'
-	startSmall: boolean
+	openAs: OpenAs
 	mode: PlayerMode
 }
 
-let current: (Video & { small: boolean }) | null = null
+interface Window {
+	x: number
+	y: number
+	/** Video width; the height follows at 16:9, plus the bar. */
+	w: number
+}
+
+let current: (Video & Window) | null = null
 const listeners = new Set<() => void>()
 const emit = () => {
 	for (const l of listeners) l()
 }
-let readSettings: () => PlayerSettings = () => ({ pipSize: 'medium', startSmall: false, mode: 'discord' })
+let readSettings: () => PlayerSettings = () => ({ pipSize: 'medium', openAs: 'big', mode: 'discord' })
 let saveMode: (mode: PlayerMode) => void = () => {}
 let mounted = false
+/** Where the overlay's top-left sits in the window, to place a thumbnail rectangle exactly. */
+let overlayOffset = { x: 0, y: 0 }
 export const playerAvailable = () => mounted
 
-export function play(video: Video) {
-	current = { ...video, small: readSettings().startSmall }
+const BAR = 30
+const MIN_W = 160
+const BIG_TOP = 120
+const SIZES = { small: 0.42, medium: 0.56, large: 0.72 }
+const heightOf = (w: number) => Math.round((w * 9) / 16) + BAR
+
+function screen() {
+	const { width, height } = Dimensions.get('window')
+	return { width, height }
+}
+
+/** Keeps the window on screen. */
+function clamp(win: Window): Window {
+	const { width, height } = screen()
+	const w = Math.max(MIN_W, Math.min(width, Math.round(win.w)))
+	const h = heightOf(w)
+	return {
+		w,
+		x: Math.max(0, Math.min(width - w, Math.round(win.x))),
+		y: Math.max(0, Math.min(height - h, Math.round(win.y))),
+	}
+}
+
+export function bigWindow(): Window {
+	return clamp({ x: 0, y: BIG_TOP, w: screen().width })
+}
+export function smallWindow(): Window {
+	const { width, height } = screen()
+	const w = Math.round(width * SIZES[readSettings().pipSize])
+	return clamp({ x: width - w - 12, y: height - heightOf(w) - 150, w })
+}
+/** The window over the thumbnail: same width, the video where the thumbnail is, the bar just above. */
+export function thumbnailWindow(rect: Rect): Window {
+	return clamp({
+		x: rect.x - overlayOffset.x,
+		y: rect.y - overlayOffset.y - BAR,
+		w: rect.width,
+	})
+}
+
+export function play(video: Video, rect?: Rect) {
+	const how = readSettings().openAs
+	const win = how === 'small' ? smallWindow() : how === 'thumbnail' && rect ? thumbnailWindow(rect) : bigWindow()
+	current = { ...video, ...win }
 	emit()
 }
 export function closePlayer() {
 	current = null
 	emit()
 }
-const setSmall = (small: boolean) => {
+function move(win: Window) {
 	if (!current) return
-	current = { ...current, small }
+	current = { ...current, ...clamp(win) }
 	emit()
 }
-
-const BAR = 30
-const SIZES = { small: 0.42, medium: 0.56, large: 0.72 }
+const isBig = () => !!current && current.w >= screen().width * 0.8
 
 function Button({ label, onPress, hint }: { label: string; onPress: () => void; hint: string }) {
 	const { Text } = Design as any
@@ -62,60 +120,52 @@ function Button({ label, onPress, hint }: { label: string; onPress: () => void; 
 	)
 }
 
-function Player({ video }: { video: Video & { small: boolean } }) {
+// Drag and resize read and write the module's `current`, so the responders can be made once.
+let dragStart: Window = { x: 0, y: 0, w: 0 }
+const dragger = PanResponder.create({
+	onStartShouldSetPanResponder: () => false,
+	onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) + Math.abs(g.dy) > 4,
+	onPanResponderGrant: () => {
+		if (current) dragStart = { x: current.x, y: current.y, w: current.w }
+	},
+	onPanResponderMove: (_, g) => move({ x: dragStart.x + g.dx, y: dragStart.y + g.dy, w: dragStart.w }),
+})
+const resizer = PanResponder.create({
+	onStartShouldSetPanResponder: () => true,
+	onMoveShouldSetPanResponder: () => true,
+	onPanResponderGrant: () => {
+		if (current) dragStart = { x: current.x, y: current.y, w: current.w }
+	},
+	// Whichever way the finger moved more decides the change; down or right grows, up or left shrinks.
+	onPanResponderMove: (_, g) => {
+		const fromHeight = (g.dy * 16) / 9
+		const delta = Math.abs(g.dx) >= Math.abs(fromHeight) ? g.dx : fromHeight
+		move({ x: dragStart.x, y: dragStart.y, w: dragStart.w + delta })
+	},
+})
+
+function Player({ video }: { video: Video & Window }) {
 	const { Text } = Design as any
-	const { width, height } = useWindowDimensions()
 	const WebView = findWebView()
-	// Where the small window sits: offset from the bottom-right corner, moved by dragging.
-	const [offset, setOffset] = useState({ x: 12, y: 150 })
-	const start = useRef(offset)
-	const pan = useRef(
-		PanResponder.create({
-			onStartShouldSetPanResponder: () => false,
-			onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) + Math.abs(g.dy) > 6,
-			onPanResponderGrant: () => {
-				start.current = offsetRef.current
-			},
-			onPanResponderMove: (_, g) => {
-				setOffset({
-					x: Math.max(0, start.current.x - g.dx),
-					y: Math.max(0, start.current.y - g.dy),
-				})
-			},
-		}),
-	).current
-	const offsetRef = useRef(offset)
-	offsetRef.current = offset
-
-	const small = video.small
-	const w = small ? Math.round(width * SIZES[readSettings().pipSize]) : width
-	const h = Math.round((w * 9) / 16)
-	const box = small
-		? {
-				right: Math.min(offset.x, width - w),
-				bottom: Math.min(offset.y, height - h - BAR - 40),
-				width: w,
-				borderRadius: 12,
-			}
-		: { top: 96, left: 0, width: w }
-
+	const big = isBig()
+	const h = heightOf(video.w) - BAR
 	return (
 		<View
 			style={{
 				position: 'absolute',
-				...box,
+				left: video.x,
+				top: video.y,
+				width: video.w,
+				borderRadius: big ? 0 : 12,
 				overflow: 'hidden',
 				backgroundColor: '#000',
 				elevation: 1000,
 				zIndex: 1000,
 			}}
 		>
-			<View
-				{...(small ? pan.panHandlers : {})}
-				style={{ height: BAR, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(20,20,24,0.92)' }}
-			>
+			<View {...dragger.panHandlers} style={{ height: BAR, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(20,20,24,0.92)' }}>
 				<Text variant="text-xs/semibold" style={{ color: '#bbbbbb', flex: 1, paddingLeft: 10 }} numberOfLines={1}>
-					{small ? '⠿ drag' : 'YouTube'}
+					⠿ YouTube
 				</Text>
 				<Button
 					label="↻"
@@ -126,7 +176,7 @@ function Player({ video }: { video: Video & { small: boolean } }) {
 						emit()
 					}}
 				/>
-				{!small ? (
+				{video.w >= 220 ? (
 					<Button
 						label="↗"
 						hint="Open in YouTube"
@@ -137,10 +187,14 @@ function Player({ video }: { video: Video & { small: boolean } }) {
 						}}
 					/>
 				) : null}
-				<Button label={small ? '⤢' : '▁'} hint={small ? 'Make bigger' : 'Shrink to a floating window'} onPress={() => setSmall(!small)} />
+				<Button
+					label={big ? '▁' : '⤢'}
+					hint={big ? 'Shrink to a floating window' : 'Make bigger'}
+					onPress={() => move(big ? smallWindow() : bigWindow())}
+				/>
 				<Button label="✕" hint="Close the player" onPress={closePlayer} />
 			</View>
-			<View style={{ width: w, height: h }}>
+			<View style={{ width: video.w, height: h }}>
 				{WebView ? (
 					<WebView
 						key={`${video.videoId}:${readSettings().mode}`}
@@ -161,6 +215,24 @@ function Player({ video }: { video: Video & { small: boolean } }) {
 						</Text>
 					</View>
 				)}
+				<View
+					{...resizer.panHandlers}
+					accessibilityLabel="Resize"
+					style={{
+						position: 'absolute',
+						right: 0,
+						bottom: 0,
+						width: 30,
+						height: 30,
+						alignItems: 'flex-end',
+						justifyContent: 'flex-end',
+						padding: 4,
+					}}
+				>
+					<Text variant="text-md/bold" style={{ color: 'rgba(255,255,255,0.8)' }}>
+						◢
+					</Text>
+				</View>
 			</View>
 		</View>
 	)
@@ -168,6 +240,7 @@ function Player({ video }: { video: Video & { small: boolean } }) {
 
 function Host() {
 	const [, tick] = useState(0)
+	const root = useRef<any>(null)
 	useEffect(() => {
 		mounted = true
 		const on = () => tick(n => n + 1)
@@ -177,19 +250,29 @@ function Host() {
 			mounted = false
 		}
 	}, [])
-	// Back shrinks the big player first, then lets Discord handle back as usual.
+	// Back shrinks a big player first, then lets Discord handle back as usual.
 	useEffect(() => {
-		if (!current || current.small) return
+		if (!current || !isBig()) return
 		const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-			setSmall(true)
+			move(smallWindow())
 			return true
 		})
 		return () => sub.remove()
-	}, [current?.videoId, current?.small])
-	if (!current) return null
+	}, [current?.videoId, current ? isBig() : false])
 	return (
-		<View pointerEvents="box-none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-			<Player video={current} />
+		<View
+			ref={root}
+			pointerEvents="box-none"
+			onLayout={() => {
+				try {
+					root.current?.measureInWindow?.((x: number, y: number) => {
+						if (Number.isFinite(x) && Number.isFinite(y)) overlayOffset = { x, y }
+					})
+				} catch {}
+			}}
+			style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+		>
+			{current ? <Player video={current} /> : null}
 		</View>
 	)
 }

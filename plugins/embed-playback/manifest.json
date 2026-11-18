@@ -5,7 +5,7 @@
 	"description": "Play YouTube videos from chat in a player right over the chat instead of leaving Discord, and shrink it to a floating picture-in-picture window that keeps playing while you scroll and switch channels.",
 	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
 	"icon": "PlayIcon",
-	"version": "1.2.0",
+	"version": "1.3.0",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

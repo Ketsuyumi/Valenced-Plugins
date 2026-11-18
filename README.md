@@ -183,21 +183,23 @@ as documented by Discord Userdoccers), through Discord's own request helper. Buy
 ### Embed Playback (`dev.ketsuyumi.embed-playback`)
 
 Play YouTube videos without leaving Discord, like Aliucord's old inline playback. Tapping a YouTube embed (or a YouTube
-link) opens a player docked under the chat header instead of Discord's full-screen viewer or the YouTube app.
+link) opens a player over the chat instead of Discord's full-screen viewer or the YouTube app.
 
-- **▁** shrinks it to a floating picture-in-picture window you can drag anywhere. It keeps playing while you scroll and
-  switch channels. **⤢** makes it big again, **↗** opens the video in YouTube, **✕** closes it. Back shrinks the big
-  player.
-- Settings: embeds and links each on or off, start as a floating window, and small, medium or large window size.
-  Timestamps (`t=1m5s`, `start=42`) are kept.
+- **Open as**: big (across the top), **on the thumbnail** (where the embed's picture is, the same size), or a small
+  floating window.
+- The player is a free window: **drag** it by its bar, **resize** it from the ◢ corner (16:9 kept), **▁** jumps to the
+  small window and **⤢** to big. It keeps playing while you scroll and switch channels. **↗** opens the video in YouTube,
+  **✕** closes it, and Back shrinks a big player. Timestamps (`t=1m5s`, `start=42`) are kept.
 - **Ads**: works with Palm's **Block YouTube Ads** (Community Plugins), which adds AdGuard's script to every YouTube frame
   in the app, this player's included. It's an optional dependency; settings say whether it's installed.
 - If YouTube says "This video is unavailable" or shows an error code, **↻** in the player tries the next way of loading it
   (Discord-style embed, privacy-enhanced embed, direct embed page) and remembers the one that works.
 
 The player is drawn beside Discord's toast container, which floats over every screen, using Discord's own WebView
-(found the way dxckie's Spotify Preview finds it, GPL-3.0). Discord draws chat rows natively, so the video plays over the
-chat rather than inside the embed itself. If the web view can't be found, videos open Discord's usual way.
+(found the way dxckie's Spotify Preview finds it, GPL-3.0). Chat rows are drawn natively, so "on the thumbnail" opens the
+player over the thumbnail rather than inside the message, and it stays put when you scroll. It needs Discord to pass the
+thumbnail's position to its viewer; if it doesn't, the player opens big, and **Copy debug info** in settings copies what
+Discord passed.
 
 ### Forum Grid (`dev.ketsuyumi.forum-grid`)
 
