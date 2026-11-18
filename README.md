@@ -184,7 +184,17 @@ an error. Text stays near-white on plum (about 13:1 contrast). Works on every ba
 - **Ame-chan Glitch** (+ Background): deep magenta, hot pink and the glitch's cyan for links; the background fades the
   art into grainy magenta.
 
-Both themes recolour every Discord colour with the theme engine from dxckie's themes (GPL-3.0), so nothing is left default grey.
+### Mari (`dev.ketsuyumi.theme.mari`)
+
+A cute, simple OMORI theme inspired by Mari: violet-night surfaces from her hair, her blue vest for buttons and toggles,
+and coral links and mentions from her neckerchief, with the art's magenta sparkles for highlights. Text stays near-white
+(about 13:1 contrast). Works on every base, including a light version.
+
+- **Mari**: just the colours.
+- **Mari (Background)**: the same colours with Mari at the top of the screen, uncut, and the art's purple floor (with
+  sparkles) continuing below.
+
+All the themes recolour every Discord colour with the theme engine from dxckie's themes (GPL-3.0), so nothing is left default grey.
 
 ## Building
 

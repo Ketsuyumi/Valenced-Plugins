@@ -1,0 +1,22 @@
+{
+	"format": 1,
+	"id": "dev.ketsuyumi.theme.mari",
+	"name": "Mari",
+	"description": "A cute, readable OMORI theme inspired by Mari: violet-night surfaces, her blue vest for accents and coral links. Comes with an optional background.",
+	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+	"version": "1.0.0",
+	"dependencies": {
+		"valenced.api": {
+			"version": ">=1 <2"
+		},
+		"discord": {
+			"version": ">=352.2"
+		},
+		"valenced.api.themes": {
+			"version": ">=1.0.1 <2"
+		}
+	},
+	"dist": {
+		"script": "index.js"
+	}
+}
