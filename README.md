@@ -153,6 +153,23 @@ The viewers come from Discord's `ApplicationStreamingStore` (`getViewerIds`); Di
 streaming or watching. The native part only posts and removes the notification, on a quiet channel (no sound or
 vibration).
 
+## Themes
+
+Pick these under **Settings > Valenced > Themes > Colors** after installing the plugin from **Manage theme plugins**
+(needs Discord 352.2 or later).
+
+### Aubrey (`dev.ketsuyumi.theme.aubrey`)
+
+A cute, simple OMORI theme inspired by Aubrey: soft plum surfaces from her hair, bow-pink buttons, toggles and reactions,
+and mint links and mentions from her dress. Text stays near-white on plum (about 13:1 contrast), so chat is as readable
+as Discord's own dark theme. Works on every base (Ash, Dark, Onyx and a pastel Light).
+
+- **Aubrey**: just the colours.
+- **Aubrey (Background)**: the same colours over OMORI artwork, blurred a little and dimmed so text stays readable. The
+  Background screen (settings icon on the Colors page) changes opacity, blur and dimming, or swaps in your own image.
+
+Every Discord colour is recoloured with the theme engine from dxckie's themes (GPL-3.0), so nothing is left default grey.
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.
