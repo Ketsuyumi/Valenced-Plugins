@@ -1,0 +1,20 @@
+{
+	"format": 1,
+	"id": "dev.ketsuyumi.multi-select",
+	"name": "Multi Select",
+	"description": "Select several messages and delete them at once, like on WhatsApp. Long-press a message and choose Select messages, double-tap to add more, long-press for Delete.",
+	"author": "ketsuyumi (https://github.com/ketsuyumi \"GitHub\")",
+	"icon": "CheckmarkLargeIcon",
+	"version": "1.0.0",
+	"dependencies": {
+		"valenced.api": {
+			"version": ">=1 <2"
+		},
+		"discord": {
+			"version": "*"
+		}
+	},
+	"dist": {
+		"script": "index.js"
+	}
+}

@@ -126,6 +126,16 @@ Uploads are drawn in Discord's image grid, which fills the message's width whate
 the grid is the only way uploads are drawn (switching it off makes them disappear). So for a message with uploads the
 plugin leaves the grid on and scales the width it fills, the row's `constrainedWidth`.
 
+### Multi Select (`dev.ketsuyumi.multi-select`)
+
+Select several messages and delete them at once, like on WhatsApp. Long-press a message and choose **Select messages**,
+double-tap more messages to add or remove them (each one is highlighted), then long-press any message for **Delete N**,
+**Select this message** or **Clear selection**. Your own messages can always be deleted; other people's only where you
+have Manage Messages. Messages are deleted one at a time through Discord's own action, a third of a second apart.
+
+If another plugin uses double-tap, switch "Double-tap to select" off: long-press then selects instead. A message with
+no text shows its highlight the next time its row is redrawn (scroll it off and back).
+
 ## Building
 
 Requires [Bun](https://bun.com) or Node.js 22.18+.
