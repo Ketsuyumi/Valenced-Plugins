@@ -840,6 +840,32 @@
           }
         }
       }
+    },
+    "dev.ketsuyumi.theme.aubrey": {
+      "name": "Aubrey",
+      "description": "A cute, readable OMORI theme inspired by Aubrey: soft plum surfaces, bow-pink accents and mint links. Comes with an optional background.",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.theme.aubrey@1.0.0.zip",
+          "sha256": "3f0c3a4e51a1a1c9bce854283e17edba354e722d052b03e6a4dd7c18af0e005d",
+          "size": 76159,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": ">=352.2"
+            },
+            "valenced.api.themes": {
+              "version": ">=1.0.1 <2"
+            }
+          }
+        }
+      }
     }
   }
 }
