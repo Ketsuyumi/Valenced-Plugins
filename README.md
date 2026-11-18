@@ -133,6 +133,21 @@ with a custom typing indicator types, their glyph is swapped for Discord's own d
 It hooks Discord's typing row (`TypingIndicator`'s `renderItem`) the same way Better Typing Indicators does, so the two
 work together. Needs a reload when turned on or off, since Discord keeps rows it already drew.
 
+### Profile Widgets (`dev.ketsuyumi.profile-widgets`)
+
+Edit your profile's game widgets on mobile, where Discord says "Widget editing isn't available on mobile yet". Open the
+plugin's settings to see Favorite Game (1), Games in Rotation (5), Games I Like (20) and Want to Play (20):
+
+- **Add a game**: search Discord's game list by name or alias, pick from your suggested games, or paste a game ID.
+- **Edit a game**: comment, skill tag and other tags (shown on Favorite Game and Games in Rotation), move up or down,
+  or remove it.
+- **Save to profile**: sends the whole set with `PUT /users/@me/widgets` through Discord's own request helper (the plugin
+  never touches your token). Custom app widgets you already have are kept exactly as they are; empty game widgets are
+  removed.
+
+Request shapes follow Discord Userdoccers' widgets page. Creating new custom app widgets is not supported (Discord ended
+that experiment).
+
 ### Spectators (`dev.ketsuyumi.spectators`)
 
 See who is watching a stream, like on PC: your own stream and the streams you are watching, with avatars, on the
