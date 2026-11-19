@@ -180,6 +180,19 @@ plugin's settings to see Favorite Game (1), Games in Rotation (5), Games I Like 
 Request shapes follow Discord Userdoccers' widgets page. Creating new custom app widgets is not supported (Discord ended
 that experiment).
 
+### AO3 Reader (`dev.ketsuyumi.ao3-reader`)
+
+Read AO3 works inside Discord, made for phones. Tap an AO3 work link in any chat (or paste one on the plugin's page)
+and it opens in a reader instead of the browser:
+
+- The whole work loads at once (`view_full_work`, adult works included) and is turned into native text, keeping
+  italics, bold, underline, strikethrough, centred lines and dividers. A virtualized list keeps long works smooth.
+- **Aa**: text size, line spacing, margins, serif or sans, justified text, and themes (Discord, Light, Sepia, Dark,
+  AMOLED Black). **☰**: the chapter list; ‹ Prev / Next › and the % read at the bottom. Tap the page to hide the bars.
+- Your place is saved, and the plugin's page lists your library with progress.
+
+Works locked to logged-in AO3 users can't be read without logging in; those offer "Open in browser".
+
 ### Auto Collapse (`dev.ketsuyumi.auto-collapse`)
 
 Opening a server, new or old, collapses its categories, so only channels with new messages show (Discord keeps

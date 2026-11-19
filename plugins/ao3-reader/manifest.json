@@ -1,0 +1,20 @@
+{
+	"format": 1,
+	"id": "dev.ketsuyumi.ao3-reader",
+	"name": "AO3 Reader",
+	"description": "Read AO3 works inside Discord, made for phones: AO3 links open in a clean reader with text size, spacing, serif/sans and themes (sepia, dark, AMOLED black), a chapter list, and your place saved in a library.",
+	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+	"icon": "ChatIcon",
+	"version": "1.0.0",
+	"dependencies": {
+		"valenced.api": {
+			"version": ">=1 <2"
+		},
+		"discord": {
+			"version": "*"
+		}
+	},
+	"dist": {
+		"script": "index.js"
+	}
+}
