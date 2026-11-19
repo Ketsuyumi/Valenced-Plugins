@@ -59,7 +59,7 @@
       "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "ChatIcon",
       "channels": {
-        "latest": "1.1.0"
+        "latest": "1.1.1"
       },
       "versions": {
         "1.0.0": {
@@ -118,6 +118,19 @@
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.better-dms@1.1.0.zip",
           "sha256": "2365df1e2be8cd70d80c515312ba4e896364263c22ba92912477be3cf40ed120",
           "size": 10253,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.1.1": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.better-dms@1.1.1.zip",
+          "sha256": "0034741be30812a42d7516628d272a9f1019694d4acfec5b157ababd342802ee",
+          "size": 10454,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
