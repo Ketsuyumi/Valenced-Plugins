@@ -195,6 +195,16 @@ when you leave it), so a server is already tidy when you open it.
 It uses Discord's own collapse actions, so it's the same as tapping the category headers, and you can open any of
 them again by hand.
 
+### Meow Picker (`dev.ketsuyumi.meow-picker`)
+
+A cat button by the emoji button in the chat bar opens a picker like the emoji one, with 487 meows in 11 tabs:
+Meows, Mrrps, Purrs, Sleepy, Hungry, Grumpy, Actions (`*headbutts*`, `*makes biscuits*`…), Kaomoji (`ฅ^•ﻌ•^ฅ`,
+`/ᐠ｡ꞈ｡ᐟ\`…), Emoji, Puns and Stretchy (meow → meooooooow), plus Recent and a search box. Tap one to add it to your
+message, hold one to send it straight away (or switch tap to send in settings).
+
+Adding text at the cursor uses the chat box handle and the sheet's scrolling list the way bleelblep's Pocket
+Browser and Character Counter do (GPL-3.0).
+
 ### Quick Folders (`dev.ketsuyumi.quick-folders`)
 
 Put servers in folders without dragging. Long-press a server icon and choose **Move to**:
