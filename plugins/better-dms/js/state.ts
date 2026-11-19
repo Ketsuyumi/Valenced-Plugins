@@ -88,9 +88,19 @@ export function bindSettings(r: () => Settings, w: (s: Settings) => void) {
 	read = r
 	write = w
 }
+/**
+ * The settings with defaults filled in. Built once per change (the storage hands back the same
+ * object until something is saved), because Discord's list and nickname lookups read it thousands
+ * of times a minute.
+ */
+let lastRaw: unknown
+let lastMerged: Settings = DEFAULTS
 export const settings = (): Settings => {
 	const s = read()
-	return { ...DEFAULTS, ...s, features: { ...DEFAULTS.features, ...s?.features }, dms: s?.dms ?? {} }
+	if (s === lastRaw) return lastMerged
+	lastRaw = s
+	lastMerged = { ...DEFAULTS, ...s, features: { ...DEFAULTS.features, ...s?.features }, dms: s?.dms ?? {} }
+	return lastMerged
 }
 export const on = (f: keyof Features) => settings().features[f]
 export const dmData = (id: string): DmData => settings().dms[id] ?? {}
@@ -121,6 +131,7 @@ export function onChange(fn: () => void): () => void {
 	}
 }
 export function changed() {
+	lastRaw = undefined
 	for (const fn of listeners) fn()
 }
 

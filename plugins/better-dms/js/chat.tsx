@@ -194,12 +194,33 @@ export function installNicknames(): () => void {
 	})
 }
 
-export function nicknameFor(userId: string): string | undefined {
-	if (!on('nicknames')) return undefined
-	for (const [id, d] of Object.entries(settings().dms)) {
+/**
+ * Your private nicknames by user ID, rebuilt only when the settings change. Discord asks for
+ * nicknames constantly (thousands of times a minute), so each ask is one map lookup.
+ */
+let nickSource: unknown
+let nicks = new Map<string, string>()
+function nicknameMap(): Map<string, string> {
+	const dms = settings().dms
+	if (dms === nickSource) return nicks
+	nickSource = dms
+	const next = new Map<string, string>()
+	let complete = true
+	for (const [id, d] of Object.entries(dms)) {
 		if (!d.nickname) continue
 		const c = channel(id)
-		if (c?.type === 1 && recipientOf(c) === userId) return d.nickname
+		if (!c) complete = false
+		const userId = c?.type === 1 ? recipientOf(c) : undefined
+		if (userId) next.set(String(userId), d.nickname)
 	}
-	return undefined
+	// A DM that isn't loaded yet can't be resolved: try again on the next ask until all are.
+	if (!complete) nickSource = undefined
+	nicks = next
+	return nicks
+}
+
+export function nicknameFor(userId: string): string | undefined {
+	if (!on('nicknames')) return undefined
+	const map = nicknameMap()
+	return map.size ? map.get(userId) : undefined
 }
