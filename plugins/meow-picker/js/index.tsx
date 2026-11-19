@@ -4,7 +4,7 @@ import { ScrollView } from 'react-native'
 import { chatbarStatus, installChatbar } from './chatbar'
 import { inputStatus, patchInput } from './input'
 import { TOTAL } from './meows'
-import { openPicker, type PickerOptions } from './sheet'
+import { installOverlay, openPicker, type PickerOptions } from './sheet'
 
 interface Settings {
 	button: boolean
@@ -100,6 +100,7 @@ export default plugin({
 		storage = jsonStorage
 		cleanup(
 			patchInput(),
+			installOverlay(),
 			installChatbar({
 				onPress: () => openPicker(options),
 				enabled: () => settings().button,

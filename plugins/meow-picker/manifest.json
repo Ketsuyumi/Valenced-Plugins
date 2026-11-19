@@ -6,7 +6,7 @@
 	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
 	"contributors": ["bleelblep (chat box handle, GPL-3.0)"],
 	"icon": "ChatIcon",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

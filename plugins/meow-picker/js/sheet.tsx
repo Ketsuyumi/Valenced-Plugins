@@ -1,13 +1,20 @@
-import {
-	ActionSheetActionCreators,
-	ToastActionCreators,
-} from '@valenced/discord/actions'
+import { ToastActionCreators } from '@valenced/discord/actions'
+import { Tokens } from '@valenced/discord/common/tokens'
+import { Stores } from '@valenced/discord/flux'
 import { Design } from '@valenced/discord/design'
-import * as finders from '@valenced/modules/finders'
-import * as filters from '@valenced/modules/finders/filters'
-import { Component, useMemo, useState } from 'react'
-import * as ReactNative from 'react-native'
-import { Dimensions, Pressable, View } from 'react-native'
+import { after } from '@valenced/patcher'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+	Animated,
+	BackHandler,
+	Dimensions,
+	Keyboard,
+	Platform,
+	Pressable,
+	ScrollView,
+	View,
+} from 'react-native'
+import { findModule } from './find'
 import { textColor } from './color'
 import { addToMessage, send } from './input'
 import { TABS } from './meows'
@@ -27,58 +34,11 @@ function toast(text: string) {
 	} catch {}
 }
 
-/**
- * A list a Discord bottom sheet lets scroll. Discord's sheets are @gorhom/bottom-sheet, whose drag
- * only gives way to its own BottomSheetScrollView (what the emoji list uses); a plain ScrollView
- * can't be scrolled in one. Approach from bleelblep's Pocket Browser / Character Counter (GPL-3.0).
- */
-let SheetList: any
-function sheetList(): any {
-	if (SheetList) return SheetList
-	try {
-		for (const [exports] of (finders as any).lookupModules(
-			(filters as any).withProps(
-				'BottomSheetScrollView',
-				'BottomSheetFlatList',
-			),
-		)) {
-			SheetList = exports.BottomSheetScrollView
-			break
-		}
-	} catch {}
-	return SheetList
-}
-class Boundary extends Component<
-	{ fallback: () => any; children?: any },
-	{ failed: boolean }
-> {
-	state = { failed: false }
-	static getDerivedStateFromError() {
-		return { failed: true }
-	}
-	render() {
-		return this.state.failed ? this.props.fallback() : this.props.children
-	}
-}
-function SheetScrollView(props: any) {
-	const Plain: any = (ReactNative as any).ScrollView
-	const Sheet = sheetList()
-	if (!Sheet) return <Plain {...props} />
-	return (
-		<Boundary fallback={() => <Plain {...props} />}>
-			<Sheet {...props} />
-		</Boundary>
-	)
-}
-
 function pick(text: string, sendNow: boolean, opts: PickerOptions) {
 	opts.remember(text)
 	const done = sendNow ? send(text) : addToMessage(text) || send(text)
 	if (!done) return toast('Open a chat first')
-	if (!opts.keepOpen())
-		try {
-			;(ActionSheetActionCreators as any).hideActionSheet(KEY)
-		} catch {}
+	if (!opts.keepOpen()) closePicker()
 }
 
 function Chip({
@@ -116,8 +76,8 @@ function Chip({
 	)
 }
 
-function MeowSheet({ opts }: { opts: PickerOptions }) {
-	const { ActionSheet, Text, TextInput } = Design as any
+function MeowPanel({ opts }: { opts: PickerOptions }) {
+	const { Text, TextInput } = Design as any
 	const recent = opts.recent()
 	const tabs = useMemo(
 		() => [
@@ -142,106 +102,272 @@ function MeowSheet({ opts }: { opts: PickerOptions }) {
 			]
 		: tabs[tab][2]
 	return (
-		<ActionSheet startExpanded>
-			{/* A fixed height: the sheet sizes itself to what's inside, and a list with only a
-			    maximum height measured as almost nothing, so the sheet opened cut off. */}
-			<View
-				style={{ height: Math.round(Dimensions.get('window').height * 0.62) }}
-			>
-				<View style={{ paddingHorizontal: 12, paddingTop: 4 }}>
-					<View
-						style={{
-							flexDirection: 'row',
-							alignItems: 'center',
-							marginBottom: 8,
-						}}
-					>
-						<Text variant="heading-md/bold" style={{ color, flex: 1 }}>
-							{q ? `${shown.length} found` : tabs[tab][0]}
-						</Text>
-						<Text variant="text-xs/medium" color="text-muted">
-							tap adds · hold sends
-						</Text>
-					</View>
-					{TextInput ? (
-						<TextInput
-							placeholder="Search meows"
-							value={query}
-							onChange={setQuery}
-							isClearable
-							size="sm"
-						/>
-					) : null}
-					<View
-						style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}
-					>
-						{tabs.map(([name, icon], i) => {
-							const on = i === tab && !q
-							return (
-								<Pressable
-									key={name}
-									onPress={() => {
-										setQuery('')
-										setTab(i)
-									}}
-									accessibilityRole="tab"
-									accessibilityLabel={name}
-									accessibilityState={{ selected: on }}
-									style={{
-										width: 38,
-										height: 34,
-										margin: 2,
-										borderRadius: 10,
-										alignItems: 'center',
-										justifyContent: 'center',
-										backgroundColor: on
-											? 'rgba(88,101,242,0.35)'
-											: 'rgba(255,255,255,0.05)',
-									}}
-								>
-									<Text variant="text-md/bold" style={{ color }}>
-										{icon}
-									</Text>
-								</Pressable>
-							)
-						})}
-					</View>
-				</View>
-				<SheetScrollView
-					style={{ flex: 1 }}
-					contentContainerStyle={{
+		<View style={{ flex: 1 }}>
+			<View style={{ paddingHorizontal: 12, paddingTop: 4 }}>
+				<View
+					style={{
 						flexDirection: 'row',
-						flexWrap: 'wrap',
-						padding: 9,
-						paddingBottom: 32,
+						alignItems: 'center',
+						marginBottom: 8,
 					}}
-					keyboardShouldPersistTaps="handled"
 				>
-					{shown.length ? (
-						shown.map(m => <Chip key={m} text={m} opts={opts} color={color} />)
-					) : (
-						<Text
-							variant="text-sm/medium"
-							color="text-muted"
-							style={{ padding: 8 }}
-						>
-							No meows match that.
-						</Text>
-					)}
-				</SheetScrollView>
+					<Text variant="heading-md/bold" style={{ color, flex: 1 }}>
+						{q ? `${shown.length} found` : tabs[tab][0]}
+					</Text>
+					<Text variant="text-xs/medium" color="text-muted">
+						tap adds · hold sends
+					</Text>
+				</View>
+				{TextInput ? (
+					<TextInput
+						placeholder="Search meows"
+						value={query}
+						onChange={setQuery}
+						isClearable
+						size="sm"
+					/>
+				) : null}
+				<View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
+					{tabs.map(([name, icon], i) => {
+						const on = i === tab && !q
+						return (
+							<Pressable
+								key={name}
+								onPress={() => {
+									setQuery('')
+									setTab(i)
+								}}
+								accessibilityRole="tab"
+								accessibilityLabel={name}
+								accessibilityState={{ selected: on }}
+								style={{
+									width: 38,
+									height: 34,
+									margin: 2,
+									borderRadius: 10,
+									alignItems: 'center',
+									justifyContent: 'center',
+									backgroundColor: on
+										? 'rgba(88,101,242,0.35)'
+										: 'rgba(255,255,255,0.05)',
+								}}
+							>
+								<Text variant="text-md/bold" style={{ color }}>
+									{icon}
+								</Text>
+							</Pressable>
+						)
+					})}
+				</View>
 			</View>
-		</ActionSheet>
+			<ScrollView
+				style={{ flex: 1 }}
+				contentContainerStyle={{
+					flexDirection: 'row',
+					flexWrap: 'wrap',
+					padding: 9,
+					paddingBottom: 32,
+				}}
+				keyboardShouldPersistTaps="handled"
+			>
+				{shown.length ? (
+					shown.map(m => <Chip key={m} text={m} opts={opts} color={color} />)
+				) : (
+					<Text
+						variant="text-sm/medium"
+						color="text-muted"
+						style={{ padding: 8 }}
+					>
+						No meows match that.
+					</Text>
+				)}
+			</ScrollView>
+		</View>
 	)
 }
 
-export function openPicker(opts: PickerOptions) {
-	try {
-		;(ActionSheetActionCreators as any).openLazy(
-			Promise.resolve({ default: MeowSheet }),
-			KEY,
-			{ opts },
+/**
+ * The picker is drawn by the plugin itself, over the chat: Discord's own bottom sheet opened it at
+ * its lowest resting height, cut off, whatever size it was given. It is mounted beside Discord's
+ * toast container (AppToastContainer's `default`, over the whole app), as Forum Grid's grid is.
+ */
+let openWith: PickerOptions | undefined
+const listeners = new Set<() => void>()
+const notify = () => {
+	for (const fn of listeners) fn()
+}
+let mounted = false
+
+export function closePicker() {
+	openWith = undefined
+	notify()
+}
+
+function Overlay() {
+	const { Text } = Design as any
+	const [, tick] = useState(0)
+	const [keyboard, setKeyboard] = useState(0)
+	const slide = useRef(new Animated.Value(0)).current
+	useEffect(() => {
+		mounted = true
+		const on = () => tick(n => n + 1)
+		listeners.add(on)
+		return () => {
+			listeners.delete(on)
+			mounted = false
+		}
+	}, [])
+	const open = !!openWith
+	useEffect(() => {
+		if (!open) return
+		slide.setValue(0)
+		Animated.timing(slide, {
+			toValue: 1,
+			duration: 180,
+			useNativeDriver: true,
+		}).start()
+		const back = BackHandler.addEventListener('hardwareBackPress', () => {
+			closePicker()
+			return true
+		})
+		const show = Keyboard.addListener(
+			Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+			(e: any) => setKeyboard(e?.endCoordinates?.height ?? 0),
 		)
-	} catch (e: any) {
-		toast(`Couldn't open the meows: ${e?.message ?? e}`)
+		const hide = Keyboard.addListener(
+			Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+			() => setKeyboard(0),
+		)
+		return () => {
+			back.remove()
+			show.remove()
+			hide.remove()
+			setKeyboard(0)
+		}
+	}, [open])
+	if (!openWith) return null
+	const screen = Dimensions.get('window').height
+	const height = Math.min(Math.round(screen * 0.62), screen - keyboard - 80)
+	return (
+		<View
+			style={{
+				position: 'absolute',
+				top: 0,
+				left: 0,
+				right: 0,
+				bottom: 0,
+				zIndex: 1000,
+				elevation: 1000,
+			}}
+		>
+			<Pressable
+				accessibilityLabel="Close meows"
+				onPress={closePicker}
+				style={{
+					position: 'absolute',
+					top: 0,
+					left: 0,
+					right: 0,
+					bottom: 0,
+					backgroundColor: 'rgba(0,0,0,0.45)',
+				}}
+			/>
+			<Animated.View
+				style={{
+					position: 'absolute',
+					left: 0,
+					right: 0,
+					bottom: keyboard,
+					height,
+					paddingTop: 8,
+					paddingBottom: keyboard ? 0 : 24,
+					borderTopLeftRadius: 20,
+					borderTopRightRadius: 20,
+					backgroundColor: panelColor(),
+					borderWidth: 1,
+					borderColor: 'rgba(255,255,255,0.08)',
+					transform: [
+						{
+							translateY: slide.interpolate({
+								inputRange: [0, 1],
+								outputRange: [height, 0],
+							}),
+						},
+					],
+				}}
+			>
+				<Pressable
+					onPress={closePicker}
+					accessibilityLabel="Close"
+					style={{ alignItems: 'center', paddingBottom: 6 }}
+				>
+					<View
+						style={{
+							width: 40,
+							height: 5,
+							borderRadius: 3,
+							backgroundColor: 'rgba(255,255,255,0.3)',
+						}}
+					/>
+				</Pressable>
+				{Text ? <MeowPanel opts={openWith} /> : null}
+			</Animated.View>
+		</View>
+	)
+}
+
+/** The theme's sheet colour, so it matches Discord (a dark fallback). */
+function panelColor(): string {
+	try {
+		const T = (Tokens as any).default
+		const theme = (Stores as any).ThemeStore?.theme
+		for (const name of [
+			'BACKGROUND_FLOATING',
+			'BG_SURFACE_OVERLAY',
+			'BACKGROUND_SECONDARY',
+		]) {
+			const token = T?.colors?.[name]
+			if (!token) continue
+			const v = T.internal.resolveSemanticColor(theme, token)
+			if (typeof v === 'string' && v) return v
+		}
+	} catch {}
+	return '#2b2d31'
+}
+
+export function openPicker(opts: PickerOptions) {
+	if (!mounted)
+		return toast("The picker isn't ready yet, try again in a moment")
+	try {
+		Keyboard.dismiss()
+	} catch {}
+	openWith = opts
+	notify()
+}
+
+export function installOverlay(): () => void {
+	const unpatches: Array<() => void> = []
+	const unfind = findModule(
+		'modules/toast/native/AppToastContainer.tsx',
+		['AppToastContainer'],
+		(mod: any) => {
+			if (typeof mod?.default !== 'function') return
+			unpatches.push(
+				after(mod, 'default', ((rendered: any) => (
+					<>
+						{rendered}
+						<Overlay />
+					</>
+				)) as never),
+			)
+		},
+	)
+	return () => {
+		unfind()
+		for (const u of unpatches.splice(0))
+			try {
+				u()
+			} catch {}
+		openWith = undefined
 	}
 }
