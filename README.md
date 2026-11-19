@@ -304,7 +304,8 @@ A browser window that floats over Discord, so a video keeps playing while you ch
 it with the 🌐 button in the chat bar (or the plugin's page). Drag it by its bar, resize from ◢, or pick Big, Corner or
 16:9 from ☰. Tap the title to type an address or a search. ❐ shows your tabs (up to 6, each keeps playing in the
 background); ⛶ makes the page's video fill the window. Your window size and position, tabs and bookmarks are
-remembered, and ▁ goes back to the size you gave the window.
+remembered, and ▁ goes back to the size you gave the window. Hold the middle of the page (or long-press the title)
+to move the window by dragging anywhere on it; it never goes under the status bar.
 
 **Ad blocking with uBlock Origin's filter lists** (uBlock filters, uBlock Badware risks, EasyList, Peter Lowe's list;
 EasyPrivacy optional). The lists are downloaded on your phone, compiled and cached, and refreshed every 4 days. This is

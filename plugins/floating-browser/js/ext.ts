@@ -17,6 +17,16 @@ import { hostOf, type Settings } from './store'
 const wrap = (name: string, code: string) =>
 	`try{${code}\n}catch(e){console.warn('[Floating Browser] ${name.replace(/'/g, '')}',e)}`
 
+/** Holding a finger still in the middle of the page asks the app to let you move the window. */
+const HOLD = `
+if(window===window.top){var ht=0,sx=0,sy=0;var stop=function(){clearTimeout(ht);ht=0};
+document.addEventListener('touchstart',function(e){stop();if(e.touches.length!==1)return;var t=e.touches[0];sx=t.clientX;sy=t.clientY;var w=window.innerWidth,h=window.innerHeight;
+if(sx<w*0.25||sx>w*0.75||sy<h*0.25||sy>h*0.75)return;ht=setTimeout(function(){ht=0;try{window.ReactNativeWebView.postMessage(JSON.stringify({fb:'hold'}))}catch(x){}},550)},{passive:true,capture:true});
+document.addEventListener('touchmove',function(e){var t=e.touches[0];if(t&&(Math.abs(t.clientX-sx)>10||Math.abs(t.clientY-sy)>10))stop()},{passive:true,capture:true});
+document.addEventListener('touchend',stop,{passive:true,capture:true});document.addEventListener('touchcancel',stop,{passive:true,capture:true});
+document.addEventListener('scroll',stop,{passive:true,capture:true})}
+`
+
 const POPUPS = `
 window.open=function(){return null};
 document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[target=_blank]');if(a&&a.href&&a.host!==location.host){a.removeAttribute('target')}},true);
@@ -130,7 +140,7 @@ export function matches(match: string, url: string): boolean {
 }
 
 export function beforeLoad(s: Settings): string {
-	const parts: string[] = []
+	const parts: string[] = [wrap('hold to move', HOLD)]
 	if (s.popupBlock) parts.push(wrap('pop-ups', POPUPS))
 	if (s.uBlock && compiled()) {
 		const { blocked, allow } = pageHosts()

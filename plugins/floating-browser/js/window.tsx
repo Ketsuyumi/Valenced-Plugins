@@ -22,6 +22,7 @@ import {
 } from './ext'
 import { blocksDocument, compiled, cosmeticForTokens } from './filters'
 import { onFilters } from './updater'
+import { ReactNativeSafeAreaContext } from '@valenced/externals/react-native-safe-area-context'
 import { findModule } from './find'
 import { hostOf, save, settings, toUrl, useSettings, type Win } from './store'
 import { findWebView } from './webview'
@@ -56,6 +57,22 @@ function toast(text: string) {
 }
 
 const screen = () => Dimensions.get('window')
+/** The status bar's height (where the clock is). */
+function topInset(): number {
+	try {
+		const top = (ReactNativeSafeAreaContext as any)?.initialWindowMetrics
+			?.insets?.top
+		if (typeof top === 'number' && top > 0) return Math.round(top) + 4
+	} catch {}
+	return 44
+}
+
+/** Move mode: the window shows a dim cover you drag it by (hold its middle, or long-press the title). */
+let moving = false
+function setMoving(on: boolean) {
+	moving = on
+	emit()
+}
 function clamp(w: Win): Win {
 	const { width, height } = screen()
 	const ww = Math.max(MIN_W, Math.min(width, Math.round(w.w)))
@@ -64,7 +81,8 @@ function clamp(w: Win): Win {
 		w: ww,
 		h: hh,
 		x: Math.max(0, Math.min(width - ww, Math.round(w.x))),
-		y: Math.max(24, Math.min(height - hh, Math.round(w.y))),
+		// Never above the status bar, where the bar can't be grabbed.
+		y: Math.max(topInset(), Math.min(height - hh, Math.round(w.y))),
 	}
 }
 const presets = {
@@ -196,12 +214,13 @@ export function openBrowser(url?: string) {
 		if (activeTab()?.url && tabs.length < MAX_TABS) newTab(target)
 		else loadInActive(target)
 	}
-	win = win ?? (s.win ? clamp(s.win) : presets.big())
+	win = clamp(win ?? s.win ?? presets.big())
 	open = true
 	emit()
 }
 export function closeBrowser() {
 	if (win) save({ win })
+	moving = false
 	// Reopening picks each tab up where it was, not at the address it first opened.
 	tabs = tabs.map(t => ({ ...t, url: t.page.url || t.url }))
 	open = false
@@ -241,6 +260,25 @@ const dragger = PanResponder.create({
 		setWin({ ...dragStart, x: dragStart.x + g.dx, y: dragStart.y + g.dy }),
 	onPanResponderRelease: () => win && setWin(win, true),
 })
+/** The move-mode cover: drag to move; a tap without moving ends move mode. */
+let moved = 0
+const mover = PanResponder.create({
+	onStartShouldSetPanResponder: () => true,
+	onMoveShouldSetPanResponder: () => true,
+	onPanResponderGrant: () => {
+		moved = 0
+		if (win) dragStart = { ...win }
+	},
+	onPanResponderMove: (_, g) => {
+		moved = Math.max(moved, Math.abs(g.dx) + Math.abs(g.dy))
+		setWin({ ...dragStart, x: dragStart.x + g.dx, y: dragStart.y + g.dy })
+	},
+	onPanResponderRelease: () => {
+		if (moved < 6) setMoving(false)
+		else if (win) setWin(win, true)
+	},
+})
+
 const resizer = PanResponder.create({
 	onStartShouldSetPanResponder: () => true,
 	onMoveShouldSetPanResponder: () => true,
@@ -424,6 +462,7 @@ function TabView({
 						return
 					}
 					if (data?.fb === 'fs') return sideways(!!data.on)
+					if (data?.fb === 'hold') return setMoving(true)
 					if (data?.fb === 'blocked' && typeof data.n === 'number')
 						onPage(tab.id, { blocked: data.n })
 					else if (
@@ -576,6 +615,7 @@ function Browser({ box }: { box: Win }) {
 				<Pressable
 					style={{ flex: 1, height: BAR, justifyContent: 'center' }}
 					onPress={() => setAddress(page.url)}
+					onLongPress={() => setMoving(true)}
 					accessibilityLabel="Address"
 				>
 					<Text numberOfLines={1} style={{ color: '#c4c9ce', fontSize: 12 }}>
@@ -830,6 +870,14 @@ function Browser({ box }: { box: Win }) {
 						</View>
 						<Label>WINDOW</Label>
 						<View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+							<Toggle
+								label="✥ Move window"
+								on={false}
+								onPress={() => {
+									setPanel('none')
+									setMoving(true)
+								}}
+							/>
 							<Toggle label="Big" on={false} onPress={() => grow()} />
 							<Toggle
 								label="Corner"
@@ -893,6 +941,37 @@ function Browser({ box }: { box: Win }) {
 					</ScrollView>
 				) : null}
 
+				{moving ? (
+					<View
+						{...mover.panHandlers}
+						accessibilityLabel="Drag to move the window, tap when done"
+						style={{
+							position: 'absolute',
+							top: 0,
+							left: 0,
+							right: 0,
+							bottom: 0,
+							alignItems: 'center',
+							justifyContent: 'center',
+							backgroundColor: 'rgba(0,0,0,0.45)',
+						}}
+					>
+						<View
+							style={{
+								paddingHorizontal: 14,
+								paddingVertical: 9,
+								borderRadius: 18,
+								backgroundColor: 'rgba(88,101,242,0.9)',
+							}}
+						>
+							<Text
+								style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}
+							>
+								✥ Drag to move · tap when done
+							</Text>
+						</View>
+					</View>
+				) : null}
 				<View
 					{...resizer.panHandlers}
 					accessibilityLabel="Resize"
