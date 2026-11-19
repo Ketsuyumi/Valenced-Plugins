@@ -47,9 +47,15 @@ export function layout(): Entry[] {
 const isFolder = (e: Entry) => e.folderId !== undefined && e.folderId !== null
 
 export const colorHex = (n?: number | null) =>
-	typeof n === 'number' ? `#${(n & 0xffffff).toString(16).padStart(6, '0')}` : undefined
+	typeof n === 'number'
+		? `#${(n & 0xffffff).toString(16).padStart(6, '0')}`
+		: undefined
 
-export const guildName = (id: string) => S().GuildStore?.getGuild?.(id)?.name ?? 'Server'
+/** Whether [id] is a server Discord knows (not a user or message with a numeric key). */
+export const isGuild = (id: string) => !!S().GuildStore?.getGuild?.(id)
+
+export const guildName = (id: string) =>
+	S().GuildStore?.getGuild?.(id)?.name ?? 'Server'
 
 /** Folders in sidebar order, with a readable name for unnamed ones. */
 export function folders(): Folder[] {
@@ -59,17 +65,16 @@ export function folders(): Folder[] {
 			id: e.folderId as number | string,
 			name:
 				e.folderName?.trim() ||
-				e.guildIds
-					.slice(0, 3)
-					.map(guildName)
-					.join(', ') + (e.guildIds.length > 3 ? '…' : ''),
+				e.guildIds.slice(0, 3).map(guildName).join(', ') +
+					(e.guildIds.length > 3 ? '…' : ''),
 			color: colorHex(e.folderColor),
 			guildIds: e.guildIds,
 		}))
 }
 
 /** The folder [guildId] is in, if any. */
-export const folderOf = (guildId: string) => folders().find(f => f.guildIds.includes(guildId))
+export const folderOf = (guildId: string) =>
+	folders().find(f => f.guildIds.includes(guildId))
 
 /** [list] without [guildId], dropping folders it leaves empty. Returns where it was (entry index). */
 function take(list: Entry[], guildId: string): { list: Entry[]; at: number } {
@@ -95,7 +100,9 @@ async function save(list: Entry[]) {
 /** Moves [guildId] to the end of folder [folderId]. */
 export async function moveToFolder(guildId: string, folderId: number | string) {
 	const { list } = take(layout(), guildId)
-	const target = list.find(e => isFolder(e) && String(e.folderId) === String(folderId))
+	const target = list.find(
+		e => isFolder(e) && String(e.folderId) === String(folderId),
+	)
 	if (!target) throw new Error('That folder is gone')
 	target.guildIds = [...target.guildIds, guildId]
 	await save(list)
@@ -108,14 +115,21 @@ export async function newFolder(guildId: string, name: string, color?: number) {
 	let id = 0
 	do id = Math.floor(Math.random() * 0xfffffffe) + 1
 	while (used.has(String(id)))
-	list.splice(at, 0, { folderId: id, folderName: name.trim() || null, folderColor: color ?? null, guildIds: [guildId] })
+	list.splice(at, 0, {
+		folderId: id,
+		folderName: name.trim() || null,
+		folderColor: color ?? null,
+		guildIds: [guildId],
+	})
 	await save(list)
 }
 
 /** Takes [guildId] out of its folder, just after the folder. */
 export async function removeFromFolder(guildId: string) {
 	const before = layout()
-	const index = before.findIndex(e => isFolder(e) && e.guildIds.includes(guildId))
+	const index = before.findIndex(
+		e => isFolder(e) && e.guildIds.includes(guildId),
+	)
 	if (index === -1) return
 	const folderId = before[index].folderId
 	const { list } = take(before, guildId)

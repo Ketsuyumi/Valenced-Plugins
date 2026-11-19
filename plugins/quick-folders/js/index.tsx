@@ -1,11 +1,25 @@
-import { ActionSheetActionCreators, AlertActionCreators, ToastActionCreators } from '@valenced/discord/actions'
+import {
+	ActionSheetActionCreators,
+	AlertActionCreators,
+	ToastActionCreators,
+} from '@valenced/discord/actions'
 import { Design } from '@valenced/discord/design'
 import { instead } from '@valenced/patcher'
 import { lookupGeneratedIconComponent } from '@valenced/utils/discord'
 import { useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
 import { findModule } from './find'
-import { canSave, folderOf, folders, guildName, moveToFolder, newFolder, removeFromFolder, setSaver } from './folders'
+import {
+	canSave,
+	folderOf,
+	folders,
+	guildName,
+	isGuild,
+	moveToFolder,
+	newFolder,
+	removeFromFolder,
+	setSaver,
+} from './folders'
 
 /**
  * "Move to folder" in a server's long-press menu. The menu draws
@@ -13,9 +27,35 @@ import { canSave, folderOf, folders, guildName, moveToFolder, newFolder, removeF
  * time (as Review DB documents), so wrapping that export adds a group after it.
  */
 
-const SHEET = 'modules/guild_action_sheet/native/components/GuildActionSheetActions.tsx'
+/**
+ * The small popup from long-pressing a server icon (Mark as Read, Notifications, More Options,
+ * Server Info) is built in the server bar's gesture handler and handed to `showContextMenu`, with
+ * the server ID as its key (folders have none). Rows are pushed onto that same array, as
+ * Override Server Appearance does: Discord picks the tapped row from it.
+ */
+const CONTEXT_MENU =
+	'design/components/ContextMenu/native/ContextMenuState.native.tsx'
+
+interface Settings {
+	/** In the popup from long-pressing a server icon. */
+	popup: boolean
+	/** In the More Options sheet. */
+	sheet: boolean
+}
+const DEFAULTS: Settings = { popup: true, sheet: false }
+let storage: any
+const settings = (): Settings => ({ ...DEFAULTS, ...(storage?.cache ?? {}) })
+function setSettings(patch: Partial<Settings>) {
+	storage?.set?.({ ...settings(), ...patch }, true)
+}
+
+const SHEET =
+	'modules/guild_action_sheet/native/components/GuildActionSheetActions.tsx'
 const TARGET = 'GuildActionSheetSecondaryActions'
-const COLORS = [0x5865f2, 0x23a55a, 0xf0b232, 0xeb459e, 0xf23f42, 0x00a8fc, 0xb07fe6, 0xe8743b]
+const COLORS = [
+	0x5865f2, 0x23a55a, 0xf0b232, 0xeb459e, 0xf23f42, 0x00a8fc, 0xb07fe6,
+	0xe8743b,
+]
 
 function toast(text: string) {
 	try {
@@ -33,7 +73,8 @@ async function run(task: () => Promise<void>, done: string) {
 }
 
 function Picker({ guildId, close }: { guildId: string; close: () => void }) {
-	const { Stack, Text, TextInput, TableRowGroup, TableRow, Button } = Design as any
+	const { Stack, Text, TextInput, TableRowGroup, TableRow, Button } =
+		Design as any
 	const [naming, setNaming] = useState(false)
 	const [name, setName] = useState('')
 	const [color, setColor] = useState(COLORS[0])
@@ -44,7 +85,14 @@ function Picker({ guildId, close }: { guildId: string; close: () => void }) {
 	if (naming)
 		return (
 			<Stack spacing={12}>
-				<TextInput label="Folder name" placeholder="Friends, Games…" value={name} onChange={setName} isClearable autoFocus />
+				<TextInput
+					label="Folder name"
+					placeholder="Friends, Games…"
+					value={name}
+					onChange={setName}
+					isClearable
+					autoFocus
+				/>
 				<ScrollView horizontal showsHorizontalScrollIndicator={false}>
 					{COLORS.map(c => (
 						<Pressable
@@ -67,10 +115,17 @@ function Picker({ guildId, close }: { guildId: string; close: () => void }) {
 					text="Create folder"
 					onPress={() => {
 						close()
-						void run(() => newFolder(guildId, name, color), `${server} → ${name.trim() || 'new folder'}`)
+						void run(
+							() => newFolder(guildId, name, color),
+							`${server} → ${name.trim() || 'new folder'}`,
+						)
 					}}
 				/>
-				<Button text="Back" variant="secondary" onPress={() => setNaming(false)} />
+				<Button
+					text="Back"
+					variant="secondary"
+					onPress={() => setNaming(false)}
+				/>
 			</Stack>
 		)
 
@@ -79,14 +134,21 @@ function Picker({ guildId, close }: { guildId: string; close: () => void }) {
 			<ScrollView keyboardShouldPersistTaps="handled">
 				<Stack spacing={12}>
 					<TableRowGroup>
-						<TableRow label="New folder…" arrow onPress={() => setNaming(true)} />
+						<TableRow
+							label="New folder…"
+							arrow
+							onPress={() => setNaming(true)}
+						/>
 						{current ? (
 							<TableRow
 								label="Remove from folder"
 								subLabel={`Out of ${current.name}`}
 								onPress={() => {
 									close()
-									void run(() => removeFromFolder(guildId), `${server} is out of ${current.name}`)
+									void run(
+										() => removeFromFolder(guildId),
+										`${server} is out of ${current.name}`,
+									)
 								}}
 							/>
 						) : null}
@@ -100,11 +162,23 @@ function Picker({ guildId, close }: { guildId: string; close: () => void }) {
 										key={String(f.id)}
 										label={f.name}
 										subLabel={`${f.guildIds.length} server${f.guildIds.length === 1 ? '' : 's'}${here ? ' · already here' : ''}`}
-										icon={<View style={{ width: 14, height: 14, borderRadius: 4, backgroundColor: f.color ?? '#5865f2' }} />}
+										icon={
+											<View
+												style={{
+													width: 14,
+													height: 14,
+													borderRadius: 4,
+													backgroundColor: f.color ?? '#5865f2',
+												}}
+											/>
+										}
 										disabled={here}
 										onPress={() => {
 											close()
-											void run(() => moveToFolder(guildId, f.id), `${server} → ${f.name}`)
+											void run(
+												() => moveToFolder(guildId, f.id),
+												`${server} → ${f.name}`,
+											)
 										}}
 									/>
 								)
@@ -122,7 +196,8 @@ function Picker({ guildId, close }: { guildId: string; close: () => void }) {
 }
 
 export function openPicker(guildId: string) {
-	if (!canSave()) return toast("Couldn't find Discord's folder saving on this version")
+	if (!canSave())
+		return toast("Couldn't find Discord's folder saving on this version")
 	const { AlertModal, AlertActionButton } = Design as any
 	const key = `quick-folders-${guildId}`
 	const close = () => (AlertActionCreators as any).dismissAlert(key)
@@ -131,7 +206,9 @@ export function openPicker(guildId: string) {
 		<AlertModal
 			title={`Move ${guildName(guildId)} to…`}
 			extraContent={<Picker guildId={guildId} close={close} />}
-			actions={<AlertActionButton text="Cancel" variant="secondary" onPress={close} />}
+			actions={
+				<AlertActionButton text="Cancel" variant="secondary" onPress={close} />
+			}
 		/>,
 	)
 }
@@ -139,7 +216,9 @@ export function openPicker(guildId: string) {
 function MoveGroup({ guildId }: { guildId: string }) {
 	const { ActionSheetRow } = Design as any
 	if (!ActionSheetRow?.Group) return null
-	const Icon: any = lookupGeneratedIconComponent('FolderIcon' as any) ?? lookupGeneratedIconComponent('FolderPlusIcon' as any)
+	const Icon: any =
+		lookupGeneratedIconComponent('FolderIcon' as any) ??
+		lookupGeneratedIconComponent('FolderPlusIcon' as any)
 	const current = folderOf(guildId)
 	return (
 		<ActionSheetRow.Group hasIcons={!!Icon}>
@@ -160,17 +239,42 @@ function MoveGroup({ guildId }: { guildId: string }) {
 }
 
 function SettingsPage() {
-	const { Stack, Text, TableRowGroup, TableRow } = Design as any
+	const { Stack, Text, TableRowGroup, TableRow, TableSwitchRow } = Design as any
+	const [s, setS] = useState(settings)
+	const set = (patch: Partial<Settings>) => {
+		setSettings(patch)
+		setS({ ...s, ...patch })
+	}
 	return (
 		<ScrollView contentContainerStyle={{ padding: 16 }}>
 			<Stack spacing={16}>
 				<Text variant="text-md/normal">
-					Long-press a server and choose Move to folder. Pick a folder, make a new one (with a name and
-					colour), or take the server out of its folder. It saves the same way dragging does, so it
-					syncs to your other devices.
+					Long-press a server and choose Move to folder. Pick a folder, make a
+					new one (with a name and colour), or take the server out of its
+					folder. It saves the same way dragging does, so it syncs to your other
+					devices.
 				</Text>
+				<TableRowGroup title="Where it shows">
+					<TableSwitchRow
+						label="Long-press popup"
+						subLabel="The small menu with Mark as Read and Server Info"
+						value={s.popup}
+						onValueChange={(popup: boolean) => set({ popup })}
+					/>
+					<TableSwitchRow
+						label="More Options"
+						subLabel="The full server sheet"
+						value={s.sheet}
+						onValueChange={(sheet: boolean) => set({ sheet })}
+					/>
+				</TableRowGroup>
 				<TableRowGroup title="Status">
-					<TableRow label="Folder saving" subLabel={canSave() ? 'Ready' : "Not found yet (open the server list once)"} />
+					<TableRow
+						label="Folder saving"
+						subLabel={
+							canSave() ? 'Ready' : 'Not found yet (open the server list once)'
+						}
+					/>
 					<TableRow label="Folders" subLabel={`${folders().length}`} />
 				</TableRowGroup>
 			</Stack>
@@ -179,29 +283,76 @@ function SettingsPage() {
 }
 
 export default plugin({
-	start({ cleanup }) {
+	start({ cleanup, jsonStorage }) {
+		storage = jsonStorage
 		cleanup(
-			findModule('actions/UserSettingsActionCreators.tsx', ['saveGuildFolders'], (mod: any) => {
-				const host = typeof mod?.saveGuildFolders === 'function' ? mod : mod?.default
-				if (typeof host?.saveGuildFolders === 'function') setSaver(list => host.saveGuildFolders(list))
+			findModule(CONTEXT_MENU, ['showContextMenu'], (mod: any) => {
+				if (typeof mod?.showContextMenu !== 'function') return
+				cleanup(
+					instead(
+						mod,
+						'showContextMenu',
+						function (this: unknown, args: any[], orig: (...a: any[]) => any) {
+							try {
+								const menu = args[0]
+								const id = menu?.key
+								if (
+									settings().popup &&
+									Array.isArray(menu?.items) &&
+									typeof id === 'string' &&
+									/^\d{5,}$/.test(id) &&
+									isGuild(id) &&
+									!menu.items.some((i: any) => i?.quickFolders)
+								)
+									menu.items.push({
+										quickFolders: true,
+										IconComponent:
+											lookupGeneratedIconComponent('FolderIcon' as any) ??
+											lookupGeneratedIconComponent('FolderPlusIcon' as any),
+										label: 'Move to folder',
+										action() {
+											// Opened once the menu has closed, so the two don't fight over the screen.
+											setTimeout(() => openPicker(id), 300)
+										},
+									})
+							} catch {}
+							return orig.apply(this, args)
+						},
+					),
+				)
 			}),
+			findModule(
+				'actions/UserSettingsActionCreators.tsx',
+				['saveGuildFolders'],
+				(mod: any) => {
+					const host =
+						typeof mod?.saveGuildFolders === 'function' ? mod : mod?.default
+					if (typeof host?.saveGuildFolders === 'function')
+						setSaver(list => host.saveGuildFolders(list))
+				},
+			),
 			findModule(SHEET, [TARGET], (mod: any) => {
 				if (typeof mod?.[TARGET] !== 'function') return
 				cleanup(
-					instead(mod, TARGET, function (this: unknown, args: any[], orig: (...a: any[]) => any) {
-						const out = orig.apply(this, args)
-						const guildId = args[0]?.guild?.id
-						if (typeof guildId !== 'string') return out
-						return (
-							<>
-								{out}
-								<MoveGroup guildId={guildId} />
-							</>
-						)
-					}),
+					instead(
+						mod,
+						TARGET,
+						function (this: unknown, args: any[], orig: (...a: any[]) => any) {
+							const out = orig.apply(this, args)
+							const guildId = args[0]?.guild?.id
+							if (typeof guildId !== 'string' || !settings().sheet) return out
+							return (
+								<>
+									{out}
+									<MoveGroup guildId={guildId} />
+								</>
+							)
+						},
+					),
 				)
 			}),
 			() => setSaver(undefined),
+			() => (storage = undefined),
 		)
 	},
 	SettingsComponent: SettingsPage,
