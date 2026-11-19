@@ -66,11 +66,39 @@ function openSettingsScreen(route: string, failure: string) {
 	}
 }
 
-const openMonitor = () =>
+/**
+ * Whether Performance Monitor's page exists. Opening a settings screen that isn't registered
+ * crashes Discord ("Couldn't find a screen named …"), so the route is looked up first in Discord's
+ * settings registry, where Valenced registers plugin pages. True / false when the registry could be
+ * read; undefined when it couldn't (then the button is shown and opening is attempted as before).
+ */
+function monitorInstalled(): boolean | undefined {
+	try {
+		const config = settingsConfig()
+		if (!config) return undefined
+		return Object.entries(config).some(
+			([key, item]: [string, any]) =>
+				key === MONITOR_ROUTE || item?.screen?.route === MONITOR_ROUTE,
+		)
+	} catch {
+		return undefined
+	}
+}
+
+function openMonitor() {
+	if (monitorInstalled() === false) {
+		try {
+			ToastActionCreators.open('quick-access-open', {
+				text: "Performance Monitor isn't installed. It's dariussbezy's plugin (dariuss.performance-monitor): add it from the plugin list first.",
+			} as never)
+		} catch {}
+		return
+	}
 	openSettingsScreen(
 		MONITOR_ROUTE,
 		"Couldn't open Performance Monitor. Is the plugin installed and on?",
 	)
+}
 
 /** Valenced's own Plugins page: the settings item's key, and the route it has by Valenced's naming. */
 const PLUGINS_SETTING = 'ValencedPlugins'
@@ -80,14 +108,19 @@ const PLUGINS_ROUTE_FALLBACK = 'Valenced Plugins'
  * The route of Valenced's Plugins page, read from Discord's settings registry (where Valenced
  * registers its items) so a renamed route still works; the conventional name otherwise.
  */
+/** Discord's settings registry (every settings screen, plugin pages included). */
+function settingsConfig(): Record<string, any> | undefined {
+	const found = lookupModule(
+		withProps<{ SETTING_RENDERER_CONFIG: Record<string, any> }>(
+			'SETTING_RENDERER_CONFIG',
+		),
+	)?.[0]
+	return found?.SETTING_RENDERER_CONFIG
+}
+
 function pluginsRoute(): string {
 	try {
-		const found = lookupModule(
-			withProps<{ SETTING_RENDERER_CONFIG: Record<string, any> }>(
-				'SETTING_RENDERER_CONFIG',
-			),
-		)?.[0]
-		const config = found?.SETTING_RENDERER_CONFIG
+		const config = settingsConfig()
 		const route = config?.[PLUGINS_SETTING]?.screen?.route
 		if (typeof route === 'string' && route) return route
 	} catch {}
@@ -148,7 +181,8 @@ const BAR_BUTTONS: BarButton[] = [
 		label: 'Performance Monitor',
 		icons: ['AnalyticsIcon', 'ChartIcon', 'StatsIcon', 'PollsIcon'],
 		onPress: openMonitor,
-		enabled: settings => settings.monitorButton,
+		// Not on the bar when Performance Monitor isn't installed (its page would be missing).
+		enabled: settings => settings.monitorButton && monitorInstalled() !== false,
 	},
 	{
 		key: 'quick-reload',
@@ -368,7 +402,7 @@ function SettingsPage({ api }: { api: Api }) {
 					/>
 					<TableSwitchRow
 						label="Performance Monitor button on your bar"
-						subLabel="Opens the Performance Monitor plugin's page. Needs that plugin installed and on."
+						subLabel="Opens dariussbezy's Performance Monitor plugin (dariuss.performance-monitor). Only shows when that plugin is installed."
 						value={settings.monitorButton}
 						onValueChange={(monitorButton: boolean) => set({ monitorButton })}
 					/>
