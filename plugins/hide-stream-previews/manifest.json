@@ -1,0 +1,24 @@
+{
+	"format": 1,
+	"id": "dev.ketsuyumi.hide-stream-previews",
+	"name": "Hide Stream Previews",
+	"description": "Hides the floating call / stream preview tile that stays over the chat after you leave the call screen. Switch it on or off from the call's own menu.",
+	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+	"contributors": [
+		"Yumistra (the tile's module, Voice Overlay)",
+		"il1ll (adding a row to the call menu, Mute Bubble, GPL-3.0)"
+	],
+	"icon": "VideoIcon",
+	"version": "1.0.0",
+	"dependencies": {
+		"valenced.api": {
+			"version": ">=1 <2"
+		},
+		"discord": {
+			"version": "*"
+		}
+	},
+	"dist": {
+		"script": "index.js"
+	}
+}

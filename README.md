@@ -198,6 +198,14 @@ when you leave it), so a server is already tidy when you open it.
 It uses Discord's own collapse actions, so it's the same as tapping the category headers, and you can open any of
 them again by hand.
 
+### Hide Stream Previews (`dev.ketsuyumi.hide-stream-previews`)
+
+Hides the floating call / stream preview tile that stays over the chat after you leave the call screen. Turn it on or
+off from the call's own menu (**Hide Stream Previews**, under Change Audio Output) or the plugin's settings.
+
+The tile is `voice_panel/native/pip/VoicePanelPIP` (found by Yumistra for Voice Overlay); the menu row is added the way
+il1ll's Mute Bubble adds "Enable Bubble" (GPL-3.0).
+
 ### Meow Picker (`dev.ketsuyumi.meow-picker`)
 
 A cat button by the emoji button in the chat bar opens a picker like the emoji one, with 599 meows in 13 tabs:
