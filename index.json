@@ -741,13 +741,26 @@
       ],
       "icon": "VideoIcon",
       "channels": {
-        "latest": "1.0.0"
+        "latest": "1.0.1"
       },
       "versions": {
         "1.0.0": {
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-stream-previews@1.0.0.zip",
           "sha256": "55c059eecb6cf8adfc034142253511d8ab8bef42a1ea0f75bb203de08ef1e55c",
           "size": 2069,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.1": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-stream-previews@1.0.1.zip",
+          "sha256": "fa692f970fa3ef81ef71efea5dc0f0c207551917165b94a30d60c839d5731dcb",
+          "size": 2201,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -1422,6 +1435,34 @@
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.spectators@1.0.2.zip",
           "sha256": "4df2096183d0865e1443b6a6af6a390c8459053edf57c002c2c7b907a6d5e610",
           "size": 8013,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
+    "dev.ketsuyumi.stream-tools": {
+      "name": "Stream Tools",
+      "description": "More control when watching streams in a call: auto-watch and auto-focus streams (full video without tapping, great with Only Show Videos), a bar on the stream to switch streams and change its volume, and a clean view that hides other tiles and the call controls. Switches in the call's menu.",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+      "contributors": [
+        "il1ll (stream actions, Stream Button; adding a row to the call menu, Mute Bubble, GPL-3.0)",
+        "bleelblep (call tile components, Pronouns, GPL-3.0)"
+      ],
+      "icon": "ScreenIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.stream-tools@1.0.0.zip",
+          "sha256": "ba356729f2df1b1dd19111808d31c7202e53449d35a0ea71ed4f2a94650d2d00",
+          "size": 5714,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
