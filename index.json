@@ -787,7 +787,7 @@
       "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "FolderIcon",
       "channels": {
-        "latest": "1.1.1"
+        "latest": "1.2.0"
       },
       "versions": {
         "1.0.0": {
@@ -820,6 +820,19 @@
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-folders@1.1.1.zip",
           "sha256": "6dc346ee46ae8883ec0579b0c9f88d40a24d33294efe42203665841211bc51a3",
           "size": 4205,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.2.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-folders@1.2.0.zip",
+          "sha256": "6d56ff2499c432758980808765577ddcb0ef60e59259313fa5afb8a286e23ca9",
+          "size": 4710,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
