@@ -781,6 +781,30 @@
         }
       }
     },
+    "dev.ketsuyumi.quick-folders": {
+      "name": "Quick Folders",
+      "description": "Long-press a server and choose Move to folder: pick a folder, make a new one, or take it out of its folder. No dragging.",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+      "icon": "FolderIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-folders@1.0.0.zip",
+          "sha256": "5236bd996ff2ba9f8aa93b017cc7cd96599011d6a616a533fd13122967c60182",
+          "size": 3433,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.quick-reload": {
       "name": "Quick Access",
       "description": "Shortcut buttons next to the bell on the bar with your name: reload Discord, open Friends, Plugins or Performance Monitor. Each has its own switch. Also a \"Reload Discord\" row in Discord's settings. Formerly Quick Reload.",
