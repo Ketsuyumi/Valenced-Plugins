@@ -4,6 +4,7 @@ import { lookupGeneratedIconComponent } from '@valenced/utils/discord'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { findModule } from './find'
+import { PickerHost } from './sheet'
 
 /**
  * The cat button in the chat bar, right before the emoji button: `after` on
@@ -100,11 +101,14 @@ function CatButton() {
 		CatIcon
 	if (!Button || !onPress) return null
 	return (
-		<Button
-			accessibilityLabel="Meows"
-			IconComponent={Icon}
-			onPress={() => onPress?.()}
-		/>
+		<>
+			<Button
+				accessibilityLabel="Meows"
+				IconComponent={Icon}
+				onPress={() => onPress?.()}
+			/>
+			<PickerHost />
+		</>
 	)
 }
 

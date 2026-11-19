@@ -2,19 +2,17 @@ import { ToastActionCreators } from '@valenced/discord/actions'
 import { Tokens } from '@valenced/discord/common/tokens'
 import { Stores } from '@valenced/discord/flux'
 import { Design } from '@valenced/discord/design'
-import { after } from '@valenced/patcher'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
 	Animated,
-	BackHandler,
 	Dimensions,
 	Keyboard,
+	Modal,
 	Platform,
 	Pressable,
 	ScrollView,
 	View,
 } from 'react-native'
-import { findModule } from './find'
 import { textColor } from './color'
 import { addToMessage, send } from './input'
 import { TABS } from './meows'
@@ -196,7 +194,6 @@ const listeners = new Set<() => void>()
 const notify = () => {
 	for (const fn of listeners) fn()
 }
-let mounted = false
 /** Read by key: the build tool rewrote `Animated.View` into `Animated.<the View import>`. */
 const AnimatedView: any = (Animated as any)['View']
 
@@ -205,21 +202,34 @@ export function closePicker() {
 	notify()
 }
 
-function Overlay() {
+/**
+ * Rendered by the cat button (and by the settings page): a React Native Modal opens as its own
+ * full-screen layer from wherever it sits in the tree. Only the newest one on screen opens, so the
+ * settings page's copy and the chat bar's underneath don't both show.
+ */
+const hosts: number[] = []
+let nextHost = 0
+
+export function PickerHost() {
 	const { Text } = Design as any
 	const [, tick] = useState(0)
 	const [keyboard, setKeyboard] = useState(0)
 	const slide = useRef(new Animated.Value(0)).current
+	const me = useRef(-1)
+	if (me.current === -1) me.current = nextHost++
 	useEffect(() => {
-		mounted = true
+		hosts.push(me.current)
 		const on = () => tick(n => n + 1)
 		listeners.add(on)
+		notify()
 		return () => {
 			listeners.delete(on)
-			mounted = false
+			const i = hosts.indexOf(me.current)
+			if (i !== -1) hosts.splice(i, 1)
+			notify()
 		}
 	}, [])
-	const open = !!openWith
+	const open = !!openWith && hosts[hosts.length - 1] === me.current
 	useEffect(() => {
 		if (!open) return
 		slide.setValue(0)
@@ -228,10 +238,6 @@ function Overlay() {
 			duration: 180,
 			useNativeDriver: true,
 		}).start()
-		const back = BackHandler.addEventListener('hardwareBackPress', () => {
-			closePicker()
-			return true
-		})
 		const show = Keyboard.addListener(
 			Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
 			(e: any) => setKeyboard(e?.endCoordinates?.height ?? 0),
@@ -241,80 +247,87 @@ function Overlay() {
 			() => setKeyboard(0),
 		)
 		return () => {
-			back.remove()
 			show.remove()
 			hide.remove()
 			setKeyboard(0)
 		}
 	}, [open])
-	if (!openWith) return null
+	if (!open || !openWith) return null
 	const screen = Dimensions.get('window').height
 	const height = Math.min(Math.round(screen * 0.62), screen - keyboard - 80)
 	return (
-		<View
-			style={{
-				position: 'absolute',
-				top: 0,
-				left: 0,
-				right: 0,
-				bottom: 0,
-				zIndex: 1000,
-				elevation: 1000,
-			}}
+		<Modal
+			visible
+			transparent
+			animationType="none"
+			statusBarTranslucent
+			onRequestClose={closePicker}
 		>
-			<Pressable
-				accessibilityLabel="Close meows"
-				onPress={closePicker}
+			<View
 				style={{
 					position: 'absolute',
 					top: 0,
 					left: 0,
 					right: 0,
 					bottom: 0,
-					backgroundColor: 'rgba(0,0,0,0.45)',
-				}}
-			/>
-			<AnimatedView
-				style={{
-					position: 'absolute',
-					left: 0,
-					right: 0,
-					bottom: keyboard,
-					height,
-					paddingTop: 8,
-					paddingBottom: keyboard ? 0 : 24,
-					borderTopLeftRadius: 20,
-					borderTopRightRadius: 20,
-					backgroundColor: panelColor(),
-					borderWidth: 1,
-					borderColor: 'rgba(255,255,255,0.08)',
-					transform: [
-						{
-							translateY: slide.interpolate({
-								inputRange: [0, 1],
-								outputRange: [height, 0],
-							}),
-						},
-					],
+					zIndex: 1000,
+					elevation: 1000,
 				}}
 			>
 				<Pressable
+					accessibilityLabel="Close meows"
 					onPress={closePicker}
-					accessibilityLabel="Close"
-					style={{ alignItems: 'center', paddingBottom: 6 }}
+					style={{
+						position: 'absolute',
+						top: 0,
+						left: 0,
+						right: 0,
+						bottom: 0,
+						backgroundColor: 'rgba(0,0,0,0.45)',
+					}}
+				/>
+				<AnimatedView
+					style={{
+						position: 'absolute',
+						left: 0,
+						right: 0,
+						bottom: keyboard,
+						height,
+						paddingTop: 8,
+						paddingBottom: keyboard ? 0 : 24,
+						borderTopLeftRadius: 20,
+						borderTopRightRadius: 20,
+						backgroundColor: panelColor(),
+						borderWidth: 1,
+						borderColor: 'rgba(255,255,255,0.08)',
+						transform: [
+							{
+								translateY: slide.interpolate({
+									inputRange: [0, 1],
+									outputRange: [height, 0],
+								}),
+							},
+						],
+					}}
 				>
-					<View
-						style={{
-							width: 40,
-							height: 5,
-							borderRadius: 3,
-							backgroundColor: 'rgba(255,255,255,0.3)',
-						}}
-					/>
-				</Pressable>
-				{Text ? <MeowPanel opts={openWith} /> : null}
-			</AnimatedView>
-		</View>
+					<Pressable
+						onPress={closePicker}
+						accessibilityLabel="Close"
+						style={{ alignItems: 'center', paddingBottom: 6 }}
+					>
+						<View
+							style={{
+								width: 40,
+								height: 5,
+								borderRadius: 3,
+								backgroundColor: 'rgba(255,255,255,0.3)',
+							}}
+						/>
+					</Pressable>
+					{Text ? <MeowPanel opts={openWith} /> : null}
+				</AnimatedView>
+			</View>
+		</Modal>
 	)
 }
 
@@ -338,38 +351,10 @@ function panelColor(): string {
 }
 
 export function openPicker(opts: PickerOptions) {
-	if (!mounted)
-		return toast("The picker isn't ready yet, try again in a moment")
+	if (!hosts.length) return toast('Open a chat first')
 	try {
 		Keyboard.dismiss()
 	} catch {}
 	openWith = opts
 	notify()
-}
-
-export function installOverlay(): () => void {
-	const unpatches: Array<() => void> = []
-	const unfind = findModule(
-		'modules/toast/native/AppToastContainer.tsx',
-		['AppToastContainer'],
-		(mod: any) => {
-			if (typeof mod?.default !== 'function') return
-			unpatches.push(
-				after(mod, 'default', ((rendered: any) => (
-					<>
-						{rendered}
-						<Overlay />
-					</>
-				)) as never),
-			)
-		},
-	)
-	return () => {
-		unfind()
-		for (const u of unpatches.splice(0))
-			try {
-				u()
-			} catch {}
-		openWith = undefined
-	}
 }
