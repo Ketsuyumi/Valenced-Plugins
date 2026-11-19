@@ -10,7 +10,7 @@ import {
 	save,
 	useSettings,
 } from './state'
-import { patchTiles, tileStatus } from './tiles'
+import { installExitPill, patchTiles, tileStatus } from './tiles'
 
 type Key = keyof Settings
 const ROWS: Array<[Key, string, string]> = [
@@ -43,7 +43,7 @@ const ROWS: Array<[Key, string, string]> = [
 	[
 		'clean',
 		'Clean view',
-		'Only the stream: hides the parts chosen below (👁 on the stream toggles it)',
+		'Only the stream: hides the parts chosen below (⛶ on the stream turns it on, ⛶ Exit turns it off)',
 	],
 	[
 		'cleanHidesTiles',
@@ -160,7 +160,7 @@ export default plugin<{ jsonStorage: Settings }>({
 	jsonStorage: { load: true, default: DEFAULTS },
 	start({ cleanup, jsonStorage }) {
 		bindStorage(jsonStorage)
-		cleanup(startAuto(), patchTiles())
+		cleanup(startAuto(), patchTiles(), installExitPill())
 		const SwitchRowType = (Design as any).TableSwitchRow
 		for (const Row of rowTypes())
 			cleanup(

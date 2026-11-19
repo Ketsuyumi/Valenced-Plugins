@@ -1,5 +1,6 @@
 import * as discordFinders from '@valenced/discord/utils/modules/finders'
-import { instead } from '@valenced/patcher'
+import { ReactNativeSafeAreaContext } from '@valenced/externals/react-native-safe-area-context'
+import { after, instead } from '@valenced/patcher'
 import { cloneElement, isValidElement, useEffect, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { findModule } from './find'
@@ -18,6 +19,7 @@ import {
 	toggleMute,
 	useSettings,
 	volumeOf,
+	voiceChannelId,
 	watch,
 } from './state'
 
@@ -111,7 +113,7 @@ function StreamBar({ streamKey }: { streamKey: string }) {
 				style={{ position: 'absolute', right: 8, bottom: 8 }}
 			>
 				<View style={{ borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.45)' }}>
-					<Btn label="👁" onPress={() => save({ clean: false })} />
+					<Btn label="⛶ Exit" wide onPress={() => save({ clean: false })} />
 				</View>
 			</View>
 		)
@@ -145,7 +147,7 @@ function StreamBar({ streamKey }: { streamKey: string }) {
 				/>
 				<Btn label="+" onPress={() => setVolume(owner, vol + 10)} />
 				{list.length > 1 ? <Btn label="▶" onPress={() => go(1)} /> : null}
-				<Btn label="👁" onPress={() => save({ clean: true })} />
+				<Btn label="⛶" onPress={() => save({ clean: true })} />
 			</View>
 		</View>
 	)
@@ -189,6 +191,81 @@ const CONTROL_GUESSES = [
 const CONTROL_PATH =
 	/^modules\/voice_panel\/native\/(controls\/)?(?!.*Floating)[^/]*Controls?[^/]*\.tsx$/
 
+/**
+ * Clean view's way out, floating over the whole app while it's on in a call: the stream's own bar
+ * isn't drawn on every stream screen (the full-screen view isn't built from call tiles).
+ */
+function ExitPill() {
+	const s = useSettings()
+	useRedraw()
+	const top = useTop()
+	if (!s.clean || !voiceChannelId()) return null
+	return (
+		<View
+			pointerEvents="box-none"
+			style={{ position: 'absolute', top: top + 54, right: 12 }}
+		>
+			<Pressable
+				accessibilityRole="button"
+				accessibilityLabel="Exit clean view"
+				onPress={() => save({ clean: false })}
+				hitSlop={8}
+				style={({ pressed }: { pressed: boolean }) => ({
+					paddingHorizontal: 12,
+					height: 32,
+					borderRadius: 16,
+					justifyContent: 'center',
+					backgroundColor: pressed ? 'rgba(0,0,0,0.75)' : 'rgba(0,0,0,0.5)',
+				})}
+			>
+				<Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '600' }}>
+					⛶ Exit clean view
+				</Text>
+			</Pressable>
+		</View>
+	)
+}
+
+function useTop(): number {
+	let top = 0
+	try {
+		const { useSafeAreaInsets, initialWindowMetrics } =
+			ReactNativeSafeAreaContext as any
+		top = Math.max(
+			useSafeAreaInsets?.()?.top ?? 0,
+			initialWindowMetrics?.insets?.top ?? 0,
+		)
+	} catch {}
+	return top > 0 ? top : 44
+}
+
+export function installExitPill(): () => void {
+	const undo: Array<() => void> = []
+	undo.push(
+		findModule(
+			'modules/toast/native/AppToastContainer.tsx',
+			['AppToastContainer'],
+			(mod: any) => {
+				if (typeof mod?.default !== 'function') return
+				undo.push(
+					after(mod, 'default', ((rendered: any) => (
+						<>
+							{rendered}
+							<ExitPill />
+						</>
+					)) as never),
+				)
+			},
+		),
+	)
+	return () => {
+		for (const u of undo.splice(0))
+			try {
+				u()
+			} catch {}
+	}
+}
+
 export function patchTiles(): () => void {
 	const undo: Array<() => void> = []
 	undo.push(
@@ -217,7 +294,7 @@ export function patchTiles(): () => void {
 									id !== focused
 								)
 									return null
-								// In clean view the 👁 (the way back out) shows even with the bar switched off.
+								// In clean view the ⛶ Exit button (the way back out) shows even with the bar switched off.
 								if (
 									(s.showBar || s.clean) &&
 									id &&

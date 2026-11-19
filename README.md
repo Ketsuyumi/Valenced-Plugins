@@ -227,7 +227,7 @@ More control when watching streams in a call:
   also with Only Show Videos). Each stream is focused once, so tapping out of it yourself sticks.
 - **Next stream when one ends**, a **"went live" toast**, and **ignore my own stream**.
 - A **stream bar** on the focused stream: ◀ ▶ to switch between streams, 🔇 mute, − / + volume (tap the % to reset),
-  👁 clean view.
+  ⛶ clean view (and a floating "⛶ Exit clean view" button while it's on).
 - **Clean view**: only the stream; hides other tiles, the stream's own overlays and the call controls (each optional).
 
 Auto-watch, auto-focus and clean view are also in the call's menu, under Only Show Videos. Stream actions are Discord's
