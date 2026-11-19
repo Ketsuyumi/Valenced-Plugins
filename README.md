@@ -167,17 +167,32 @@ plugin's settings to see Favorite Game (1), Games in Rotation (5), Games I Like 
 Request shapes follow Discord Userdoccers' widgets page. Creating new custom app widgets is not supported (Discord ended
 that experiment).
 
+### Auto Collapse (`dev.ketsuyumi.auto-collapse`)
+
+Opening a server, new or old, collapses every category whose channels are all read. Channels with new messages
+still show under a collapsed category, as Discord always does. Settings:
+
+- **Open categories with new messages** (on): expands a collapsed category that has something unread.
+- **Muted channels count as read** (on): mentions still count as new.
+- **Only once per server** (off): just the first time you open each server after starting Discord.
+
+It uses Discord's own collapse actions, so it's the same as tapping the category headers, and you can open any of
+them again by hand.
+
 ### Quick Folders (`dev.ketsuyumi.quick-folders`)
 
-Put servers in folders without dragging. Long-press a server and choose **Move to folder**:
+Put servers in folders without dragging. Long-press a server icon and choose **Move to**:
 
 - **Your folders**: tap one and the server moves to the end of it (unnamed folders are shown by their servers' names).
 - **New folder…**: a name and a colour; it appears where the server was.
 - **Remove from folder**: takes it out, just after its folder. A folder left empty disappears, as when dragging.
 
+For a server in a folder, **Move all to** moves every server in that folder into another folder (merging them), or
+takes them all out of folders. It can be turned off in settings, and so can the rows in the long-press popup and in
+More Options (off by default).
+
 It saves through Discord's own `saveGuildFolders`, the same path drag-to-reorder uses, so the change syncs to your
-other devices. The row is added after the server menu's own actions (`GuildActionSheetSecondaryActions`, as Review DB
-documents).
+other devices.
 
 ### Shop Browser (`dev.ketsuyumi.shop-browser`)
 
