@@ -200,8 +200,8 @@ them again by hand.
 
 ### Meow Picker (`dev.ketsuyumi.meow-picker`)
 
-A cat button by the emoji button in the chat bar opens a picker like the emoji one, with 487 meows in 11 tabs:
-Meows, Mrrps, Purrs, Sleepy, Hungry, Grumpy, Actions (`*headbutts*`, `*makes biscuits*`…), Kaomoji (`ฅ^•ﻌ•^ฅ`,
+A cat button by the emoji button in the chat bar opens a picker like the emoji one, with 599 meows in 13 tabs:
+Meows, Mrrps, Purrs, Sleepy, Hungry, Grumpy, Actions (`*headbutts*`, `*makes biscuits*`…), Clingy, Flirty, Kaomoji (`ฅ^•ﻌ•^ฅ`,
 `/ᐠ｡ꞈ｡ᐟ\`…), Emoji, Puns and Stretchy (meow → meooooooow), plus Recent and a search box. Tap one to add it to your
 message, hold one to send it straight away (or switch tap to send in settings).
 
