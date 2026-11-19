@@ -304,6 +304,18 @@ A browser window that floats over Discord, so a video keeps playing while you ch
 it with the 🌐 button in the chat bar (or the plugin's page). Drag it by its bar, resize from ◢, or pick Big, Corner or
 16:9 from ☰. Tap the title to type an address or a search; your window, last page and bookmarks are remembered.
 
+**Ad blocking with uBlock Origin's filter lists** (uBlock filters, uBlock Badware risks, EasyList, Peter Lowe's list;
+EasyPrivacy optional). The lists are downloaded on your phone, compiled and cached, and refreshed every 4 days. This is
+not uBlock Origin itself (an app's web view can't run extensions) but a small engine using its lists:
+
+- requests to ad, tracker and malware hosts are stopped inside pages (scripts, frames, images, fetch, XHR, beacons),
+  and the window won't leave a page for one of them (pop-unders and ad redirects);
+- each site's own hiding rules apply, and generic ones are added for the classes and ids a page actually has;
+- the common `+js()` scriptlets run (set-constant, abort-on-property-read/write, abort-current-script,
+  prevent-addEventListener, no-setTimeout/setInterval-if, no-window-open-if, prevent-fetch/xhr, remove-attr/class…).
+
+Procedural filters (`:has-text` and friends), HTML filtering and redirect resources aren't supported.
+
 Extensions (scripts put into pages, each a switch in ☰ and in settings):
 
 - **Fullscreen in the window**: a video's fullscreen button fills the floating window instead of the whole screen.

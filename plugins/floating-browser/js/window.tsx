@@ -1,6 +1,6 @@
 import { ToastActionCreators } from '@valenced/discord/actions'
 import { after } from '@valenced/patcher'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
 	BackHandler,
 	Dimensions,
@@ -12,7 +12,16 @@ import {
 	TextInput,
 	View,
 } from 'react-native'
-import { afterLoad, beforeLoad, blockedNav, DESKTOP_UA } from './ext'
+import {
+	afterLoad,
+	beforeLoad,
+	blockedNav,
+	DESKTOP_UA,
+	pageFilters,
+	tokensCss,
+} from './ext'
+import { blocksDocument, compiled, cosmeticForTokens } from './filters'
+import { onFilters } from './updater'
 import { findModule } from './find'
 import { hostOf, save, settings, toUrl, useSettings, type Win } from './store'
 import { findWebView } from './webview'
@@ -247,6 +256,15 @@ function Browser({ box }: { box: Win }) {
 		setPanel(false)
 	}
 	const bookmarked = s.bookmarks.some(b => b.url === page.url)
+	// Requests and pages stopped by the filters on this page.
+	const [blocked, setBlocked] = useState({ inPage: 0, pages: 0 })
+	const [filtersVersion, setFiltersVersion] = useState(0)
+	useEffect(() => onFilters(() => setFiltersVersion(v => v + 1)), [])
+	// The start-of-page script only changes with these, so it isn't rebuilt (and resent) every render.
+	const startScript = useMemo(
+		() => beforeLoad(s),
+		[s.popupBlock, s.uBlock, s.inWindowFullscreen, filtersVersion],
+	)
 	const h = box.h - BAR
 
 	return (
@@ -327,8 +345,37 @@ function Browser({ box }: { box: Win }) {
 						mediaPlaybackRequiresUserAction={false}
 						setSupportMultipleWindows={false}
 						javaScriptCanOpenWindowsAutomatically={!s.popupBlock}
-						injectedJavaScriptBeforeContentLoaded={beforeLoad(s)}
+						injectedJavaScriptBeforeContentLoaded={startScript}
 						injectedJavaScript={afterLoad(s, url)}
+						onLoadStart={(e: any) => {
+							const u = e?.nativeEvent?.url
+							setBlocked({ inPage: 0, pages: 0 })
+							if (u && settings().uBlock && compiled())
+								ref.current?.injectJavaScript?.(
+									`(function(){${pageFilters(u)}})();true;`,
+								)
+						}}
+						onMessage={(e: any) => {
+							let data: any
+							try {
+								data = JSON.parse(e?.nativeEvent?.data ?? '')
+							} catch {
+								return
+							}
+							if (data?.fb === 'blocked' && typeof data.n === 'number')
+								setBlocked(b => ({ ...b, inPage: data.n }))
+							else if (
+								data?.fb === 'tokens' &&
+								Array.isArray(data.t) &&
+								settings().uBlock
+							) {
+								const css = cosmeticForTokens(
+									data.t.slice(0, 4000),
+									String(data.h ?? ''),
+								)
+								if (css.length) ref.current?.injectJavaScript?.(tokensCss(css))
+							}
+						}}
 						onLoadEnd={(e: any) => {
 							const u = e?.nativeEvent?.url ?? page.url
 							ref.current?.injectJavaScript?.(afterLoad(settings(), u))
@@ -336,6 +383,16 @@ function Browser({ box }: { box: Win }) {
 						onShouldStartLoadWithRequest={(req: any) => {
 							const next = String(req?.url ?? '')
 							if (settings().popupBlock && blockedNav(next)) return false
+							// uBlock's lists: don't leave the page for an ad or malware host (the usual pop-under trick).
+							if (
+								settings().uBlock &&
+								/^https?:/i.test(next) &&
+								hostOf(next) !== hostOf(page.url) &&
+								blocksDocument(hostOf(next))
+							) {
+								setBlocked(b => ({ ...b, pages: b.pages + 1 }))
+								return false
+							}
 							if (!/^(https?|about|data|blob):/i.test(next)) return false
 							return true
 						}}
@@ -424,6 +481,11 @@ function Browser({ box }: { box: Win }) {
 								label="Pop-up blocker"
 								on={s.popupBlock}
 								onPress={() => save({ popupBlock: !s.popupBlock })}
+							/>
+							<Toggle
+								label={`uBlock${s.uBlock && (blocked.inPage || blocked.pages) ? ` · ${blocked.inPage + blocked.pages} blocked` : ''}`}
+								on={s.uBlock}
+								onPress={() => save({ uBlock: !s.uBlock })}
 							/>
 							<Toggle
 								label="Fullscreen in window"

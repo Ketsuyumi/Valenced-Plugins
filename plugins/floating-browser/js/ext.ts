@@ -1,3 +1,11 @@
+import {
+	compiled,
+	cosmeticFor,
+	HASH_JS,
+	pageHosts,
+	scriptletsFor,
+} from './filters'
+import { callsFor, RUNTIME } from './scriptlets'
 import { hostOf, type Settings } from './store'
 
 /**
@@ -33,6 +41,34 @@ var DS=[Document.prototype,document];DS.forEach(function(D){['exitFullscreen','w
 ['fullscreenEnabled','webkitFullscreenEnabled','webkitSupportsFullscreen'].forEach(function(n){try{Object.defineProperty(D,n,{configurable:true,get:function(){return true}})}catch(e){}});
 try{Object.defineProperty(D,'webkitIsFullScreen',{configurable:true,get:function(){return !!cur}})}catch(e){}});
 try{if(screen.orientation){screen.orientation.lock=function(){return Promise.resolve()}}}catch(e){}
+`
+
+/** Stops requests to blocked hosts inside the page (hosts arrive hashed; see filters.ts). */
+const net = (blocked: string, allow: string) => `
+var hf=${HASH_JS};var B=new Set('${blocked}'.split(',')),AL=new Set('${allow}'.split(','));var own=location.hostname;
+var n=0,pt=0;var post=function(){n++;if(pt)return;pt=setTimeout(function(){pt=0;try{window.ReactNativeWebView.postMessage(JSON.stringify({fb:'blocked',n:n}))}catch(e){}},500)};
+var bad=function(u){try{if(!u)return false;var h=new URL(String(u),location.href).hostname.toLowerCase();if(!h||h===own)return false;h=h.replace(/^www\\./,'');while(h.indexOf('.')>0){var x=hf(h);if(AL.has(x))return false;if(B.has(x)){post();return true}h=h.slice(h.indexOf('.')+1)}}catch(e){}return false};
+window.__fbBad=bad;
+var of=window.fetch;if(of)window.fetch=function(r){if(bad(r&&r.url||r))return Promise.reject(new TypeError('Failed to fetch'));return of.apply(this,arguments)};
+var xo=XMLHttpRequest.prototype.open,xs=XMLHttpRequest.prototype.send;XMLHttpRequest.prototype.open=function(m,u){this.__fbBad=bad(u);return xo.apply(this,arguments)};
+XMLHttpRequest.prototype.send=function(){if(this.__fbBad){var x=this;setTimeout(function(){try{x.dispatchEvent(new Event('error'));x.dispatchEvent(new Event('loadend'))}catch(e){}},0);return}return xs.apply(this,arguments)};
+if(navigator.sendBeacon){var sb=navigator.sendBeacon.bind(navigator);navigator.sendBeacon=function(u){if(bad(u))return true;return sb.apply(null,arguments)}}
+var guard=function(proto,prop){var d=Object.getOwnPropertyDescriptor(proto,prop);if(!d||!d.set)return;Object.defineProperty(proto,prop,{configurable:true,enumerable:d.enumerable,get:d.get,set:function(v){if(bad(v)){var el=this;setTimeout(function(){try{el.dispatchEvent(new Event('error'))}catch(e){}},0);return}return d.set.call(this,v)}})};
+[[HTMLScriptElement,'src'],[HTMLIFrameElement,'src'],[HTMLImageElement,'src'],[HTMLLinkElement,'href'],[HTMLSourceElement,'src']].forEach(function(p){try{guard(p[0].prototype,p[1])}catch(e){}});
+var sa=Element.prototype.setAttribute;Element.prototype.setAttribute=function(k,v){if((k==='src'||k==='href'&&this.tagName==='LINK')&&/^(SCRIPT|IFRAME|IMG|LINK|SOURCE)$/.test(this.tagName)&&bad(v))return;return sa.apply(this,arguments)};
+var sweep=function(nodes){nodes.forEach(function(el){if(el.nodeType!==1)return;var t=el.tagName;if((t==='SCRIPT'||t==='IFRAME'||t==='IMG')&&bad(el.getAttribute('src'))){if(t==='SCRIPT')el.type='javascript/blocked';el.remove()}})};
+var start=function(){new MutationObserver(function(ms){ms.forEach(function(m){sweep(m.addedNodes)})}).observe(document.documentElement,{childList:true,subtree:true})};
+if(document.documentElement)start();else document.addEventListener('readystatechange',start,{once:true});
+`
+
+/** Tells the app which classes and ids the page has, so generic hiding rules for them can be added. */
+const TOKENS = `
+var seen=new Set(),t=0;
+var scan=function(){var out=[];document.querySelectorAll('[id],[class]').forEach(function(el){if(el.id&&!seen.has('#'+el.id)){seen.add('#'+el.id);out.push('#'+el.id)}var c=el.classList;if(c)for(var i=0;i<c.length;i++){var k='.'+c[i];if(!seen.has(k)){seen.add(k);out.push(k)}}});if(out.length)try{window.ReactNativeWebView.postMessage(JSON.stringify({fb:'tokens',t:out.slice(0,4000),h:location.hostname}))}catch(e){}};
+var later=function(){if(t)return;t=setTimeout(function(){t=0;scan()},400)};
+var go=function(){scan();new MutationObserver(later).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','id']})};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',go);else go();
+window.__fbCss=function(list){var st=document.getElementById('__fb_ubo');if(!st){st=document.createElement('style');st.id='__fb_ubo';(document.head||document.documentElement).appendChild(st)}var sh=st.sheet;if(!sh)return;for(var i=0;i<list.length;i++){try{sh.insertRule(list[i]+'{display:none!important}',sh.cssRules.length)}catch(e){}}};
 `
 
 const ADS = `
@@ -73,6 +109,12 @@ export function matches(match: string, url: string): boolean {
 export function beforeLoad(s: Settings): string {
 	const parts: string[] = []
 	if (s.popupBlock) parts.push(wrap('pop-ups', POPUPS))
+	if (s.uBlock && compiled()) {
+		const { blocked, allow } = pageHosts()
+		parts.push(wrap('scriptlets', RUNTIME))
+		parts.push(wrap('network filters', net(blocked, allow)))
+		parts.push(wrap('cosmetic filters', TOKENS))
+	}
 	if (s.inWindowFullscreen) parts.push(wrap('fullscreen', FULLSCREEN))
 	return `(function(){${parts.join('\n')}})();true;`
 }
@@ -81,6 +123,7 @@ export function beforeLoad(s: Settings): string {
 export function afterLoad(s: Settings, url: string): string {
 	const parts: string[] = []
 	if (s.adHide) parts.push(wrap('ads', ADS))
+	if (s.uBlock && compiled()) parts.push(pageFilters(url))
 	parts.push(wrap('dark', s.dark ? DARK : UNDARK))
 	parts.push(wrap('video', s.videoFocus ? FOCUS : UNFOCUS))
 	for (const sc of s.scripts)
@@ -94,6 +137,29 @@ export function afterLoad(s: Settings, url: string): string {
 				),
 			)
 	return `(function(){${parts.join('\n')}})();true;`
+}
+
+/**
+ * A page's own uBlock rules: its scriptlets (run as early as the app can get them in: when loading
+ * starts, again when it ends; each guards itself against running twice) and its hiding rules.
+ */
+export function pageFilters(url: string): string {
+	const host = hostOf(url)
+	if (!host) return ''
+	const calls = callsFor(scriptletsFor(host))
+	const css = cosmeticFor(host)
+	return wrap(
+		'site filters',
+		`if(window.__fbSite!==${JSON.stringify(host)}){window.__fbSite=${JSON.stringify(host)};${calls ? `if(window.__fbScriptlet){${calls}}` : ''}}` +
+			(css.length
+				? `if(window.__fbCss)window.__fbCss(${JSON.stringify(css)});`
+				: ''),
+	)
+}
+
+/** Generic hiding rules for classes / ids a page reported. */
+export function tokensCss(selectors: string[]): string {
+	return `(function(){try{if(window.__fbCss)window.__fbCss(${JSON.stringify(selectors)})}catch(e){}})();true;`
 }
 
 export const DESKTOP_UA =

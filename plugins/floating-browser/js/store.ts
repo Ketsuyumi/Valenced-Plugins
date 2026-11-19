@@ -18,6 +18,12 @@ export interface Win {
 }
 export interface Settings {
 	popupBlock: boolean
+	/** Block ads with uBlock Origin's filter lists. */
+	uBlock: boolean
+	/** Which lists are on (by id; unset = the list's default). */
+	lists: Record<string, boolean>
+	filtersBuiltAt: number
+	filterLists: string
 	/** A page's fullscreen button fills the floating window instead of the whole screen. */
 	inWindowFullscreen: boolean
 	adHide: boolean
@@ -35,6 +41,10 @@ export interface Settings {
 }
 export const DEFAULTS: Settings = {
 	popupBlock: true,
+	uBlock: true,
+	lists: {},
+	filtersBuiltAt: 0,
+	filterLists: '',
 	inWindowFullscreen: true,
 	adHide: true,
 	dark: false,

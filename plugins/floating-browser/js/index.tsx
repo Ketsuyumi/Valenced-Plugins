@@ -2,7 +2,7 @@ import { Design } from '@valenced/discord/design'
 import { getModules } from '@valenced/modules/finders'
 import { withProps } from '@valenced/modules/finders/filters'
 import { instead } from '@valenced/patcher'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Linking, ScrollView, View } from 'react-native'
 import { chatbarStatus, installChatbar } from './chatbar'
 import {
@@ -14,6 +14,8 @@ import {
 	type UserScript,
 	useSettings,
 } from './store'
+import { counts, LISTS } from './filters'
+import { filterStatus, loadFilters, onFilters, updateFilters } from './updater'
 import { findWebView } from './webview'
 import { browserReady, external, installWindow, openBrowser } from './window'
 
@@ -89,6 +91,9 @@ function SettingsPage() {
 	} = Design as any
 	const s = useSettings()
 	const [editing, setEditing] = useState<UserScript | undefined>()
+	const [, tick] = useState(0)
+	useEffect(() => onFilters(() => tick(n => n + 1)), [])
+	const c = counts()
 	const sw = (k: keyof Settings, label: string, sub: string) => (
 		<TableSwitchRow
 			key={k}
@@ -111,6 +116,39 @@ function SettingsPage() {
 					Tap the title to type an address.
 				</Text>
 				<Button text="Open the browser" onPress={() => openBrowser()} />
+				<TableRowGroup title="uBlock Origin filters">
+					{sw(
+						'uBlock',
+						'Block ads with uBlock lists',
+						"Uses uBlock Origin's filter lists: stops ad and tracker requests, hides ads, defuses pop-unders",
+					)}
+					{LISTS.map(l => (
+						<TableSwitchRow
+							key={l.id}
+							label={l.name}
+							disabled={!s.uBlock}
+							value={s.lists[l.id] ?? l.defaultOn}
+							onValueChange={(v: boolean) =>
+								save({ lists: { ...s.lists, [l.id]: v } })
+							}
+						/>
+					))}
+					<TableRow
+						label={
+							filterStatus.updating ? filterStatus.state : 'Update filters now'
+						}
+						subLabel={
+							filterStatus.error
+								? `Last try: ${filterStatus.error}`
+								: c
+									? `${c.network.toLocaleString()} blocked hosts · ${c.cosmetic.toLocaleString()} hiding rules · ${c.scriptlets.toLocaleString()} scriptlets${s.filtersBuiltAt ? ` · updated ${new Date(s.filtersBuiltAt).toLocaleDateString()}` : ''}`
+									: 'Not downloaded yet'
+						}
+						arrow
+						disabled={filterStatus.updating}
+						onPress={() => void updateFilters(true)}
+					/>
+				</TableRowGroup>
 				<TableRowGroup title="Extensions">
 					{sw(
 						'popupBlock',
@@ -261,6 +299,7 @@ export default plugin<{ jsonStorage: Settings }>({
 	jsonStorage: { load: true, default: DEFAULTS },
 	start({ cleanup, jsonStorage }) {
 		bindStorage(jsonStorage)
+		void loadFilters()
 		cleanup(
 			installWindow(),
 			installChatbar({
