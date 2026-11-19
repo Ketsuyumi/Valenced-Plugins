@@ -22,11 +22,27 @@ import { Chip } from './ui'
  * Nitro isn't needed because the badge is only drawn for you). Pasting `<:name:id>`,
  * `<a:name:id>` or an emoji link into the field works for emoji from other servers.
  */
+/** Part of a server-emoji code rather than a normal emoji: <…, :…, a link or an ID. */
+const looksLikeCode = (text: string) =>
+	/[<:]|https?:|cdn\.|\d{3,}|^[a-z_]/i.test(text)
+
+/** `:name:` (or just the full name) of an emoji in one of your servers. */
+function byName(text: string): CustomEmoji | undefined {
+	const m = /^:?([\w~]{2,32}):$/.exec(text.trim())
+	if (!m) return undefined
+	return searchEmoji(m[1], 200).find(
+		e => e.name.toLowerCase() === m[1].toLowerCase(),
+	)
+}
+
 function EmojiField({ id }: { id: string }) {
 	const { Stack, Text, TextInput } = Design as any
 	const [, tick] = useState(0)
 	useEffect(() => onChange(() => tick(n => n + 1)), [])
 	const [query, setQuery] = useState('')
+	// What's typed in the Emoji field. Kept apart from the saved badge so a code like <a:name:id>
+	// can be typed (or pasted in pieces) without being cut to two characters on every keystroke.
+	const [draft, setDraft] = useState<string | undefined>(undefined)
 	const d = dmData(id)
 	const set = (patch: Parameters<typeof setDm>[1]) => {
 		setDm(id, patch)
@@ -41,10 +57,22 @@ function EmojiField({ id }: { id: string }) {
 			<TextInput
 				label="Emoji"
 				placeholder="⭐  or paste <:name:id>"
-				value={d.customEmoji ? '' : (d.emoji ?? '')}
+				value={draft ?? (d.customEmoji ? '' : (d.emoji ?? ''))}
+				description={
+					draft !== undefined && looksLikeCode(draft)
+						? 'Finish the code: <:name:id>, <a:name:id>, :name: or an emoji link'
+						: undefined
+				}
 				onChange={(text: string) => {
-					const custom = parseEmoji(text)
-					if (custom) return pickCustom(custom)
+					const before = draft ?? (d.customEmoji ? '' : (d.emoji ?? ''))
+					const pasted = text.length - before.length > 3
+					const custom = parseEmoji(text, pasted) ?? byName(text)
+					if (custom) {
+						setDraft(undefined)
+						return pickCustom(custom)
+					}
+					if (looksLikeCode(text)) return setDraft(text)
+					setDraft(undefined)
 					set({
 						emoji: [...text].slice(0, 2).join('') || undefined,
 						customEmoji: undefined,

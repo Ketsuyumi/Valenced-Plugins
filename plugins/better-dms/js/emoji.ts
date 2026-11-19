@@ -17,7 +17,11 @@ export const emojiUrl = (e: CustomEmoji, size = 48) =>
 	`https://cdn.discordapp.com/emojis/${e.id}.${e.animated ? 'gif' : 'webp'}?size=${size}&quality=lossless`
 
 /** `<:name:id>`, `<a:name:id>` (what "Copy text" or \:emoji: gives) or an emoji link. */
-export function parseEmoji(text: string): CustomEmoji | undefined {
+export function parseEmoji(
+	text: string,
+	/** Accept a bare ID: only for a paste, as a typed ID has no clear end. */
+	allowBareId = false,
+): CustomEmoji | undefined {
 	const tag = /<(a?):([\w~]{1,32}):(\d{15,25})>/.exec(text)
 	if (tag) return { id: tag[3], name: tag[2], animated: tag[1] === 'a' }
 	const link =
@@ -31,6 +35,9 @@ export function parseEmoji(text: string): CustomEmoji | undefined {
 			animated:
 				link[2].toLowerCase() === 'gif' || /animated=true/i.test(link[0]),
 		}
+	// Just the ID (Copy ID on an emoji): drawn as a still picture.
+	const bare = allowBareId ? /^\s*(\d{17,21})\s*$/.exec(text) : null
+	if (bare) return { id: bare[1], name: 'emoji' }
 	return undefined
 }
 
