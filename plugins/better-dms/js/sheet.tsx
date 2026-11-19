@@ -73,6 +73,8 @@ export function installSheet(options: {
 	const undo: Array<() => void> = []
 	const patched = new WeakSet<object>()
 	const wrapped = new WeakMap<object, any>()
+	/** The sheet being drawn now: its channel and how to open our page for it. */
+	let current: { channel: any; open: () => void } | undefined
 
 	const decorate = (out: any, props: any) => {
 		const channel =
@@ -91,12 +93,16 @@ export function installSheet(options: {
 		const type = out?.type
 		const render = type?.$$typeof === Symbol.for('react.memo') ? type.type : type
 		if (typeof render !== 'function') return out
+		// The wrapper is made once per component and reused, so it reads the sheet it's drawing now
+		// from here, not from the first sheet it was made for (1.0.2 fix: every sheet showed the
+		// first channel opened until a restart).
+		current = { channel, open }
 		let inner = wrapped.get(type)
 		if (!inner) {
 			inner = function BetterDmsSheet(p: any) {
 				const o = render(p)
 				try {
-					return options.enabled() ? addRow(o, channel, open) : o
+					return options.enabled() && current ? addRow(o, current.channel, current.open) : o
 				} catch {
 					return o
 				}
