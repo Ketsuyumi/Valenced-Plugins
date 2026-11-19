@@ -114,14 +114,21 @@ export function openBrowser(url?: string) {
 }
 export function closeBrowser() {
 	open = false
+	videoFull = false
+	beforeFullscreen = undefined
 	emit()
 }
 let loadHook: ((url: string) => void) | undefined
 
 /** The window before a video went fullscreen in it, to go back to afterwards. */
 let beforeFullscreen: Win | undefined
+/** A video is filling the window (shows ⛶ in the bar to leave). */
+let videoFull = false
 /** A video went fullscreen in the window: turn the window into a full-width landscape box, and back. */
 function sideways(on: boolean) {
+	videoFull = on
+	emit()
+	if (!settings().fullscreenSideways) return
 	if (on) {
 		if (!beforeFullscreen && win) beforeFullscreen = { ...win }
 		const { width, height } = screen()
@@ -328,6 +335,18 @@ function Browser({ box }: { box: Win }) {
 						label="↻"
 						hint="Reload"
 						onPress={() => ref.current?.reload?.()}
+					/>
+				) : null}
+				{videoFull ? (
+					<Btn
+						label="⛶"
+						hint="Leave fullscreen"
+						onPress={() => {
+							ref.current?.injectJavaScript?.(
+								'(function(){try{window.__fbExitFs&&window.__fbExitFs()}catch(e){}})();true;',
+							)
+							sideways(false)
+						}}
 					/>
 				) : null}
 				<Btn

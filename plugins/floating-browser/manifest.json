@@ -6,7 +6,7 @@
 	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
 	"contributors": ["dxckie (finding the web view, Spotify Preview, GPL-3.0)"],
 	"icon": "LinkIcon",
-	"version": "1.3.0",
+	"version": "1.4.0",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

@@ -318,8 +318,9 @@ Procedural filters (`:has-text` and friends), HTML filtering and redirect resour
 
 Extensions (scripts put into pages, each a switch in ☰ and in settings):
 
-- **Fullscreen in the window**: a video's fullscreen button turns the floating window into a full-width landscape box
-  instead of taking the whole screen (players inside embedded frames too), and puts it back afterwards.
+- **Fullscreen in the window**: a video's fullscreen button makes the video fill the floating window (over the site's
+  header), without resizing the window or taking the whole screen; players inside embedded frames too. ⛶ in the bar
+  leaves it. Optional: also turn the window into a full-width landscape box.
 - **Pop-up blocker**: no new windows, no jumps to app stores or `intent://` links.
 - **Hide ads**: hides common ad boxes.
 - **Dark pages**, **Video focus** (the page's main video fills the window) and **Desktop site**.

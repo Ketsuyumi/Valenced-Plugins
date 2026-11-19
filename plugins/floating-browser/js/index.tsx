@@ -160,6 +160,11 @@ function SettingsPage() {
 						'Fullscreen in the window',
 						"A video's fullscreen button fills the floating window, so you can keep chatting",
 					)}
+					{sw(
+						'fullscreenSideways',
+						'Fullscreen turns the window sideways',
+						'Also makes the window a full-width landscape box while a video is fullscreen',
+					)}
 					{sw('adHide', 'Hide ads', 'Hides common ad boxes')}
 					{sw(
 						'dark',

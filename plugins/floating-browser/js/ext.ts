@@ -35,9 +35,17 @@ var top=window===window.top;
 var tell=function(on){try{if(top){window.ReactNativeWebView&&window.ReactNativeWebView.postMessage(JSON.stringify({fb:'fs',on:on}))}else{window.parent.postMessage({__fbFs:1,on:on},'*')}}catch(e){}};
 var FILL=';position:fixed!important;left:0!important;top:0!important;right:0!important;bottom:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;z-index:2147483647!important;background:#000!important;margin:0!important;transform:none!important;border-radius:0!important;border:0!important';
 var frames=new Map();
-if(top)window.addEventListener('message',function(e){var d=e.data;if(!d||!d.__fbFs)return;var f=null;document.querySelectorAll('iframe').forEach(function(x){if(x.contentWindow===e.source)f=x});if(!f)return;
-if(d.on){if(!frames.has(f)){frames.set(f,[f.getAttribute('style')||'',document.documentElement.style.overflow])}f.style.cssText+=FILL;document.documentElement.style.overflow='hidden';tell(true)}
-else if(frames.has(f)){var k=frames.get(f);f.setAttribute('style',k[0]);document.documentElement.style.overflow=k[1];frames.delete(f);tell(false)}});
+var stretch=function(f,on){if(on){if(frames.has(f))return;frames.set(f,[f.getAttribute('style')||'',document.documentElement.style.overflow]);f.style.cssText+=FILL;document.documentElement.style.overflow='hidden';tell(true)}
+else if(frames.has(f)){var k=frames.get(f);f.setAttribute('style',k[0]);document.documentElement.style.overflow=k[1];frames.delete(f);if(!frames.size)tell(false)}};
+if(top)window.addEventListener('message',function(e){var d=e.data;if(!d||!d.__fbFs)return;var f=null;document.querySelectorAll('iframe').forEach(function(x){if(x.contentWindow===e.source)f=x});if(f)stretch(f,!!d.on)});
+// A player in a frame this script can't reach goes into real fullscreen (the whole phone screen):
+// the page around it sees that, cancels it at once, and stretches the frame over the window
+// instead. Pressing the player's button again does the same, and shrinks it back.
+var nFs=Object.getOwnPropertyDescriptor(Document.prototype,'fullscreenElement')||Object.getOwnPropertyDescriptor(Document.prototype,'webkitFullscreenElement');
+var nExit=Document.prototype.exitFullscreen||Document.prototype.webkitExitFullscreen;
+var onNative=function(){var el=null;try{el=nFs&&nFs.get?nFs.get.call(document):null}catch(e){}if(!el||el.tagName!=='IFRAME')return;try{nExit&&nExit.call(document)}catch(e){}stretch(el,!frames.has(el))};
+if(top){document.addEventListener('fullscreenchange',onNative,true);document.addEventListener('webkitfullscreenchange',onNative,true)}
+window.__fbExitFs=function(){Array.from(frames.keys()).forEach(function(f){stretch(f,false)});if(cur)exit()};
 var fire=function(el){['fullscreenchange','webkitfullscreenchange'].forEach(function(t){try{(el||document).dispatchEvent(new Event(t,{bubbles:true}))}catch(e){}})};
 var enter=function(el){if(cur&&cur!==el)exit();if(cur===el)return Promise.resolve();cur=last=el;saved=el.getAttribute('style')||'';
 el.style.cssText+=FILL;

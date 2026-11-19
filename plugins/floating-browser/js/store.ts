@@ -26,6 +26,8 @@ export interface Settings {
 	filterLists: string
 	/** A page's fullscreen button fills the floating window instead of the whole screen. */
 	inWindowFullscreen: boolean
+	/** Fullscreen in the window also turns the window into a full-width landscape box. */
+	fullscreenSideways: boolean
 	adHide: boolean
 	dark: boolean
 	desktop: boolean
@@ -46,6 +48,7 @@ export const DEFAULTS: Settings = {
 	filtersBuiltAt: 0,
 	filterLists: '',
 	inWindowFullscreen: true,
+	fullscreenSideways: false,
 	adHide: true,
 	dark: false,
 	desktop: false,
