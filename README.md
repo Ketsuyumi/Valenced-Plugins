@@ -167,6 +167,18 @@ plugin's settings to see Favorite Game (1), Games in Rotation (5), Games I Like 
 Request shapes follow Discord Userdoccers' widgets page. Creating new custom app widgets is not supported (Discord ended
 that experiment).
 
+### Quick Folders (`dev.ketsuyumi.quick-folders`)
+
+Put servers in folders without dragging. Long-press a server and choose **Move to folder**:
+
+- **Your folders**: tap one and the server moves to the end of it (unnamed folders are shown by their servers' names).
+- **New folder…**: a name and a colour; it appears where the server was.
+- **Remove from folder**: takes it out, just after its folder. A folder left empty disappears, as when dragging.
+
+It saves through Discord's own `saveGuildFolders`, the same path drag-to-reorder uses, so the change syncs to your
+other devices. The row is added after the server menu's own actions (`GuildActionSheetSecondaryActions`, as Review DB
+documents).
+
 ### Shop Browser (`dev.ketsuyumi.shop-browser`)
 
 The Discord Shop in a compact 3 × 3, 4 × 4 or 5 × 5 grid (5 × 5 hides the price line) with filters. Open the plugin's settings to browse:

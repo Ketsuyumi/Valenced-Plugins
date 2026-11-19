@@ -1,0 +1,20 @@
+{
+	"format": 1,
+	"id": "dev.ketsuyumi.quick-folders",
+	"name": "Quick Folders",
+	"description": "Long-press a server and choose Move to folder: pick a folder, make a new one, or take it out of its folder. No dragging.",
+	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+	"icon": "FolderIcon",
+	"version": "1.0.0",
+	"dependencies": {
+		"valenced.api": {
+			"version": ">=1 <2"
+		},
+		"discord": {
+			"version": "*"
+		}
+	},
+	"dist": {
+		"script": "index.js"
+	}
+}
