@@ -5,6 +5,7 @@ import { getModules } from '@valenced/modules/finders'
 import { withProps } from '@valenced/modules/finders/filters'
 import { useState } from 'react'
 import { ScrollView } from 'react-native'
+import { looseStatus, patchLoose } from './loose'
 
 /**
  * When a server is opened, every category whose channels are all read is collapsed (and, if
@@ -27,12 +28,15 @@ interface Settings {
 	mutedAsRead: boolean
 	/** Only the first time each server is opened after the app starts. */
 	oncePerLaunch: boolean
+	/** Hide read channels that aren't in any category. */
+	hideLoose: boolean
 }
 const DEFAULTS: Settings = {
 	collapseAll: true,
 	expandUnread: true,
 	mutedAsRead: true,
 	oncePerLaunch: false,
+	hideLoose: false,
 }
 let storage: any
 const settings = (): Settings => ({ ...DEFAULTS, ...(storage?.cache ?? {}) })
@@ -49,6 +53,7 @@ const status = {
 let actions: {
 	collapse?: (id: string) => void
 	expand?: (id: string) => void
+	collapseAll?: (guildId: string) => void
 } = {}
 
 function collapse(id: string) {
@@ -121,6 +126,16 @@ function tidy(guildId: string) {
 	try {
 		const { categories, others } = channelsOf(guildId)
 		if (!categories.length) return
+		if (s.collapseAll) {
+			const open = categories.filter(c => isCollapsed(String(c.id)) !== true)
+			if (!open.length) return
+			// One action for the whole server when there's more than a couple to do.
+			if (open.length > 2 && actions.collapseAll) actions.collapseAll(guildId)
+			else for (const c of open) collapse(String(c.id))
+			status.collapsed += open.length
+			status.runs++
+			return
+		}
 		const fresh = new Set<string>()
 		for (const c of others)
 			if (c?.parent_id && hasNew(guildId, c.id, s))
@@ -191,9 +206,26 @@ function SettingsPage() {
 						value={s.oncePerLaunch}
 						onValueChange={(oncePerLaunch: boolean) => set({ oncePerLaunch })}
 					/>
+					<TableSwitchRow
+						label="Hide read channels outside categories"
+						subLabel="The loose channels at the top. Ones with new messages, the one you're in and voice channels with people stay"
+						value={s.hideLoose}
+						onValueChange={(hideLoose: boolean) => {
+							set({ hideLoose })
+							try {
+								S().ChannelListStore?.emitChange?.()
+							} catch {}
+						}}
+					/>
 				</TableRowGroup>
 				<TableRowGroup title="Status">
 					<TableRow label="Collapse actions" subLabel={status.actions} />
+					<TableRow
+						label="Channel rows"
+						subLabel={
+							looseStatus.hooked ? 'Hooked' : 'Not found yet (open a server)'
+						}
+					/>
 					<TableRow
 						label="So far"
 						subLabel={`${status.runs} servers tidied, ${status.collapsed} collapsed, ${status.expanded} opened`}
@@ -219,6 +251,10 @@ export default plugin({
 					actions = {
 						collapse: id => m.categoryCollapse(id),
 						expand: id => m.categoryExpand(id),
+						collapseAll:
+							typeof m.categoryCollapseAll === 'function'
+								? guildId => m.categoryCollapseAll(guildId)
+								: undefined,
 					}
 					status.actions = "Discord's own"
 				},
@@ -226,25 +262,59 @@ export default plugin({
 		)
 		if (!actions.collapse) status.actions = 'Direct actions'
 
+		// After the action that caused it has finished (Discord doesn't take a new action in the
+		// middle of one), but before the screen is drawn again.
+		const soon = (guildId: string) =>
+			Promise.resolve().then(() => tidy(guildId))
+
 		const store = S().SelectedGuildStore
 		let last: string | undefined
-		let timer: any
 		const onChange = () => {
-			const id = store?.getGuildId?.()
-			if (!id || id === last) {
-				last = id ?? undefined
-				return
-			}
+			const id: string | undefined = store?.getGuildId?.() ?? undefined
+			if (id === last) return
+			const left = last
 			last = id
-			// After Discord has finished switching, so the channel list it builds already sees it.
-			clearTimeout(timer)
-			timer = setTimeout(() => tidy(id), 50)
+			// Ready for next time: the server you left is collapsed while it's off screen.
+			if (left) soon(left)
+			// And the one you opened, in case it wasn't ready yet.
+			if (id) soon(id)
 		}
 		store?.addChangeListener?.(onChange)
 		onChange()
+
+		// Every server, ahead of time, a few at a time so starting Discord doesn't stall.
+		let prepTimer: any
+		const queue: string[] = []
+		const prepNext = () => {
+			prepTimer = undefined
+			for (const id of queue.splice(0, 6)) tidy(id)
+			if (queue.length) prepTimer = setTimeout(prepNext, 80)
+		}
+		const prepare = (ids: string[]) => {
+			queue.push(...ids)
+			if (!prepTimer) prepTimer = setTimeout(prepNext, 300)
+		}
+		try {
+			const guilds = S().GuildStore?.getGuilds?.() ?? {}
+			prepare(Object.keys(guilds))
+		} catch {}
+		const onJoin = (e: any) => {
+			const id = e?.guild?.id
+			if (typeof id === 'string') prepare([id])
+		}
+		;(Dispatcher as any).subscribe('GUILD_CREATE', onJoin)
+
 		cleanup(
 			() => store?.removeChangeListener?.(onChange),
-			() => clearTimeout(timer),
+			() => (Dispatcher as any).unsubscribe('GUILD_CREATE', onJoin),
+			() => {
+				clearTimeout(prepTimer)
+				queue.length = 0
+			},
+			patchLoose({
+				enabled: () => settings().hideLoose,
+				hasNew: (guildId, channelId) => hasNew(guildId, channelId, settings()),
+			}),
 			() => {
 				actions = {}
 				seen.clear()

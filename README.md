@@ -185,6 +185,11 @@ those visible under a collapsed category). Settings:
 - **Hide every read channel** (on): collapses all categories. Off: only the categories where everything is read.
 - **Open categories with new messages** (on, used when the first is off): expands a category with something unread.
 - **Muted channels count as read** (on): mentions still count as new.
+- **Hide read channels outside categories** (off): the loose channels at the top are hidden while read. Ones with
+  new messages, the one you're in and voice channels with people in them stay.
+
+Servers are collapsed ahead of time (every server shortly after Discord starts, a few at a time, and each server again
+when you leave it), so a server is already tidy when you open it.
 - **Only once per server** (off): just the first time you open each server after starting Discord.
 
 It uses Discord's own collapse actions, so it's the same as tapping the category headers, and you can open any of
