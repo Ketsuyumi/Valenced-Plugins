@@ -1,5 +1,7 @@
 import { getAssetIdByName } from '@valenced/assets'
+import { Design } from '@valenced/discord/design'
 import { after } from '@valenced/patcher'
+import { afterJSX } from '@valenced/react/jsx-runtime'
 import { cloneElement, isValidElement } from 'react'
 import { channelType, selectedChannelId } from './api'
 import { findModule } from './find'
@@ -140,5 +142,59 @@ export function patchHeaderAddButton(enabled: () => boolean): () => void {
 			try {
 				u()
 			} catch {}
+	}
+}
+
+/**
+ * The "New Group — Create a new group with …" row on a 1-on-1 DM's details screen. Hooking
+ * Discord's member-list action didn't reach it on every build, so the row itself is left out
+ * wherever it's made, from Discord's row components, matched by its text (English).
+ */
+const NEW_GROUP = /^new group$/i
+const NEW_GROUP_SUB = /^create a new group with/i
+export const rowStatus = { hooked: [] as string[], removed: 0 }
+
+const textIn = (v: unknown, depth = 0): string => {
+	if (depth > 4 || v == null || typeof v === 'boolean') return ''
+	if (typeof v === 'string' || typeof v === 'number') return String(v)
+	if (Array.isArray(v)) return v.map(x => textIn(x, depth + 1)).join('')
+	if (typeof v === 'object')
+		return textIn((v as any).props?.children, depth + 1)
+	return ''
+}
+
+export function hideNewGroupRow(enabled: () => boolean): () => void {
+	const undo: Array<() => void> = []
+	const D = Design as any
+	for (const name of [
+		'TableRow',
+		'RowButton',
+		'ActionSheetRow',
+		'TableRowArrow',
+		'FormRow',
+	]) {
+		const C = D[name]
+		if (!C) continue
+		rowStatus.hooked.push(name)
+		undo.push(
+			afterJSX(C, (el: any) => {
+				if (!enabled()) return el
+				const p = el?.props ?? {}
+				const label = textIn(p.label ?? p.title)
+				const sub = textIn(p.subLabel ?? p.subtitle ?? p.description)
+				if (!NEW_GROUP.test(label.trim()) && !NEW_GROUP_SUB.test(sub.trim()))
+					return el
+				if (channelType(selectedChannelId()) !== DM) return el
+				rowStatus.removed++
+				return null
+			}) as any,
+		)
+	}
+	return () => {
+		for (const u of undo.splice(0))
+			try {
+				u()
+			} catch {}
+		rowStatus.hooked = []
 	}
 }

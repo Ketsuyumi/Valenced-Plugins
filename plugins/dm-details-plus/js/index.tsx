@@ -1,7 +1,7 @@
 import { Design } from '@valenced/discord/design'
 import { ScrollView } from 'react-native'
 import { setStillPreviews } from './pages'
-import { patchHeaderAddButton } from './header'
+import { hideNewGroupRow, patchHeaderAddButton } from './header'
 import { DEFAULT_SETTINGS, patchNewGroup, patchTabs } from './patches'
 import type { PluginApi } from '@valenced/plugins/types'
 import type { Settings } from './patches'
@@ -81,6 +81,7 @@ export default plugin<{ jsonStorage: Settings }>({
 			...patchTabs(getSettings, logger),
 			...patchNewGroup(getSettings, logger),
 			patchHeaderAddButton(() => getSettings().hideNewGroup),
+			hideNewGroupRow(() => getSettings().hideNewGroup),
 		)
 	},
 	SettingsComponent: SettingsPage,
