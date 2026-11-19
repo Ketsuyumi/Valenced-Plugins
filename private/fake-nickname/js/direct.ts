@@ -22,6 +22,80 @@ interface Member {
 
 /** Touched member record -> the nick Discord gave it. */
 const originals = new Map<Member, unknown>()
+
+/**
+ * Display names, the same way (1.2.0): UserUtils' getName / getGlobalName / getFormattedName read
+ * the user record's `globalName`, so writing the fake nickname there lets those three go unhooked.
+ * Touched record -> its real globalName.
+ */
+interface UserRecord {
+	id?: unknown
+	globalName?: unknown
+}
+const userOriginals = new Map<UserRecord, unknown>()
+let users: any
+/** Whether display names are written into user records (else names.ts hooks UserUtils). */
+let usersDirect = false
+export const usersAreDirect = () => usersDirect
+
+function setGlobalName(user: UserRecord, nick: string): boolean {
+	if (user.globalName === nick) return false
+	if (!userOriginals.has(user)) userOriginals.set(user, user.globalName)
+	user.globalName = nick
+	if (user.globalName !== nick) throw new Error('user record is read-only')
+	return true
+}
+
+function restoreUser(user: UserRecord) {
+	try {
+		user.globalName = userOriginals.get(user)
+	} catch {}
+	userOriginals.delete(user)
+}
+
+function restoreUsers() {
+	for (const user of [...userOriginals.keys()]) restoreUser(user)
+}
+
+/** Writes every fake nickname into its user record. True when something changed. */
+function applyUsers(): boolean {
+	if (!usersDirect) return false
+	let changed = false
+	for (const [id, nick] of nicknameEntries()) {
+		const user: UserRecord | undefined = users?.getUser?.(id)
+		if (user && typeof user === 'object' && setGlobalName(user, nick)) changed = true
+	}
+	if (userOriginals.size > MAX_TOUCHED) {
+		restoreUsers()
+		applyUsers()
+	}
+	return changed
+}
+
+function onUsersChange() {
+	if (!running || !usersDirect) return
+	try {
+		if (applyUsers()) announceUsers()
+	} catch {
+		// Read-only records: put back what was written and let names.ts hook UserUtils instead.
+		usersDirect = false
+		restoreUsers()
+		onUsersFailure?.()
+	}
+}
+
+let usersTimer: ReturnType<typeof setTimeout> | undefined
+function announceUsers() {
+	if (usersTimer !== undefined) return
+	usersTimer = setTimeout(() => {
+		usersTimer = undefined
+		try {
+			users?.emitChange?.()
+		} catch {}
+	}, 0)
+}
+
+let onUsersFailure: (() => void) | undefined
 const MAX_TOUCHED = 400
 
 let members: any
@@ -95,7 +169,7 @@ function onChange() {
 }
 
 /** Starts fast mode. False when it cannot be used here (the caller falls back to the hook). */
-export function startDirect(failed: () => void): boolean {
+export function startDirect(failed: () => void, usersFailed?: () => void): boolean {
 	if (running) return true
 	members = store('GuildMemberStore')
 	selectedGuild = store('SelectedGuildStore')
@@ -118,6 +192,20 @@ export function startDirect(failed: () => void): boolean {
 	members.addChangeListener(onChange)
 	selectedGuild.addChangeListener?.(onChange)
 	announce()
+
+	users = store('UserStore')
+	usersDirect = typeof users?.getUser === 'function' && typeof users?.addChangeListener === 'function'
+	onUsersFailure = usersFailed
+	if (usersDirect) {
+		try {
+			applyUsers()
+			users.addChangeListener(onUsersChange)
+			announceUsers()
+		} catch {
+			usersDirect = false
+			restoreUsers()
+		}
+	}
 	return true
 }
 
@@ -132,8 +220,14 @@ export function refreshDirect() {
 					: undefined
 			if (want === undefined) restore(member)
 		}
+		for (const user of [...userOriginals.keys()]) {
+			const want = typeof user.id === 'string' ? fastNickname(user.id) : undefined
+			if (want === undefined) restoreUser(user)
+		}
 		apply()
 		announce()
+		if (usersDirect && applyUsers()) announceUsers()
+		else if (usersDirect) announceUsers()
 	} catch {
 		fail()
 	}
@@ -150,7 +244,20 @@ export function stopDirect() {
 	try {
 		members?.removeChangeListener?.(onChange)
 		selectedGuild?.removeChangeListener?.(onChange)
+		users?.removeChangeListener?.(onUsersChange)
 	} catch {}
+	if (usersTimer !== undefined) {
+		clearTimeout(usersTimer)
+		usersTimer = undefined
+	}
+	const hadUsers = userOriginals.size > 0
+	restoreUsers()
+	usersDirect = false
+	onUsersFailure = undefined
+	if (hadUsers)
+		try {
+			users?.emitChange?.()
+		} catch {}
 	restoreAll()
 	try {
 		members?.emitChange?.()

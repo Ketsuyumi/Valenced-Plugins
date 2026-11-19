@@ -1,6 +1,6 @@
 import { getModuleWithImportedPath } from '@valenced/discord/utils/modules/finders'
 import { instead } from '@valenced/patcher'
-import { refreshDirect, startDirect, stopDirect } from './direct'
+import { refreshDirect, startDirect, stopDirect, usersAreDirect } from './direct'
 import {
 	fastMode,
 	fastNickname,
@@ -67,7 +67,12 @@ function patch(target: any, method: string, hook: Hook) {
 	} catch {}
 }
 
+let userUtilsPatched = false
 function patchUserUtils() {
+	// Fast mode writes display names into the user records, so these three stay unhooked.
+	if (mode === 'direct' && usersAreDirect()) return
+	if (userUtilsPatched) return
+	userUtilsPatched = true
 	for (const target of userUtils)
 		for (const method of USER_NAME_METHODS) patch(target, method, byUser)
 }
@@ -86,17 +91,22 @@ function install(next: Exclude<Mode, 'off'>) {
 	// the most-called of these, is not hooked at all. Otherwise it is hooked as before.
 	if (
 		next === 'direct' &&
-		!startDirect(() => {
-			directUnusable = true
-			sync()
-		})
+		!startDirect(
+			() => {
+				// Member records turned out read-only: back to the getMember hook.
+				directUnusable = true
+				sync()
+			},
+			// User records turned out read-only: hook the display-name functions instead.
+			() => patchUserUtils(),
+		)
 	) {
 		directUnusable = true
 		next = 'hook'
 	}
 	if (next === 'hook') patch(guildMembers, 'getMember', memberHook)
-	patchUserUtils()
 	mode = next
+	patchUserUtils()
 }
 
 function uninstall() {
@@ -104,6 +114,7 @@ function uninstall() {
 	const list = unpatches
 	unpatches = undefined
 	mode = 'off'
+	userUtilsPatched = false
 	if (list) for (const unpatch of list) unpatch()
 }
 
