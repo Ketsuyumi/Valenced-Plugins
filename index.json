@@ -781,6 +781,33 @@
         }
       }
     },
+    "dev.ketsuyumi.meow-picker": {
+      "name": "Meow Picker",
+      "description": "A cat button by the emoji button in chat. It opens a picker like the emoji one, full of meows, mrrps, purrs, hisses, cat actions and cat kaomoji. Tap one to add it to your message, long-press to send it.",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+      "contributors": [
+        "bleelblep (chat box handle, GPL-3.0)"
+      ],
+      "icon": "ChatIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.meow-picker@1.0.0.zip",
+          "sha256": "5ddcff4c92f3c5def433b5fca47054c29b336468cf7696a66d8cd5dfb5564728",
+          "size": 8169,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.no-blackout": {
       "name": "No Blackout",
       "description": "Stops the screen going black during calls when the proximity sensor is covered (for example by a finger near the top of the screen). Android only.",
