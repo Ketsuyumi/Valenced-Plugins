@@ -24,6 +24,7 @@ export interface PickerOptions {
 	remember: (text: string) => void
 	tapSends: () => boolean
 	keepOpen: () => boolean
+	size: () => 'small' | 'medium' | 'large'
 }
 
 function toast(text: string) {
@@ -57,9 +58,9 @@ function Chip({
 			accessibilityRole="button"
 			accessibilityLabel={text}
 			style={({ pressed }: { pressed: boolean }) => ({
-				paddingHorizontal: 10,
-				paddingVertical: 7,
-				margin: 3,
+				paddingHorizontal: 8,
+				paddingVertical: 4,
+				margin: 2,
 				borderRadius: 14,
 				maxWidth: '100%',
 				backgroundColor: pressed
@@ -67,7 +68,7 @@ function Chip({
 					: 'rgba(255,255,255,0.06)',
 			})}
 		>
-			<Text variant="text-sm/medium" style={{ color }} numberOfLines={2}>
+			<Text variant="text-xs/medium" style={{ color }} numberOfLines={2}>
 				{text}
 			</Text>
 		</Pressable>
@@ -101,31 +102,26 @@ function MeowPanel({ opts }: { opts: PickerOptions }) {
 		: tabs[tab][2]
 	return (
 		<View style={{ flex: 1 }}>
-			<View style={{ paddingHorizontal: 12, paddingTop: 4 }}>
-				<View
-					style={{
-						flexDirection: 'row',
-						alignItems: 'center',
-						marginBottom: 8,
-					}}
-				>
-					<Text variant="heading-md/bold" style={{ color, flex: 1 }}>
-						{q ? `${shown.length} found` : tabs[tab][0]}
-					</Text>
-					<Text variant="text-xs/medium" color="text-muted">
-						tap adds · hold sends
-					</Text>
-				</View>
+			<View style={{ paddingHorizontal: 8, paddingTop: 2 }}>
 				{TextInput ? (
 					<TextInput
-						placeholder="Search meows"
+						placeholder={
+							q
+								? `${shown.length} found`
+								: `Search meows · tap adds, hold sends`
+						}
 						value={query}
 						onChange={setQuery}
 						isClearable
 						size="sm"
 					/>
 				) : null}
-				<View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
+				<ScrollView
+					horizontal
+					showsHorizontalScrollIndicator={false}
+					style={{ marginTop: 6, flexGrow: 0 }}
+					keyboardShouldPersistTaps="handled"
+				>
 					{tabs.map(([name, icon], i) => {
 						const on = i === tab && !q
 						return (
@@ -139,8 +135,8 @@ function MeowPanel({ opts }: { opts: PickerOptions }) {
 								accessibilityLabel={name}
 								accessibilityState={{ selected: on }}
 								style={{
-									width: 38,
-									height: 34,
+									width: 32,
+									height: 28,
 									margin: 2,
 									borderRadius: 10,
 									alignItems: 'center',
@@ -150,20 +146,20 @@ function MeowPanel({ opts }: { opts: PickerOptions }) {
 										: 'rgba(255,255,255,0.05)',
 								}}
 							>
-								<Text variant="text-md/bold" style={{ color }}>
+								<Text variant="text-sm/bold" style={{ color }}>
 									{icon}
 								</Text>
 							</Pressable>
 						)
 					})}
-				</View>
+				</ScrollView>
 			</View>
 			<ScrollView
 				style={{ flex: 1 }}
 				contentContainerStyle={{
 					flexDirection: 'row',
 					flexWrap: 'wrap',
-					padding: 9,
+					padding: 6,
 					paddingBottom: 32,
 				}}
 				keyboardShouldPersistTaps="handled"
@@ -254,7 +250,9 @@ export function PickerHost() {
 	}, [open])
 	if (!open || !openWith) return null
 	const screen = Dimensions.get('window').height
-	const height = Math.min(Math.round(screen * 0.62), screen - keyboard - 80)
+	const share =
+		{ small: 0.38, medium: 0.5, large: 0.62 }[openWith.size()] ?? 0.38
+	const height = Math.min(Math.round(screen * share), screen - keyboard - 80)
 	return (
 		<Modal
 			visible
@@ -283,20 +281,20 @@ export function PickerHost() {
 						left: 0,
 						right: 0,
 						bottom: 0,
-						backgroundColor: 'rgba(0,0,0,0.45)',
+						backgroundColor: 'rgba(0,0,0,0.15)',
 					}}
 				/>
 				<AnimatedView
 					style={{
 						position: 'absolute',
-						left: 0,
-						right: 0,
-						bottom: keyboard,
+						left: 8,
+						right: 8,
+						bottom: keyboard ? keyboard + 4 : 12,
 						height,
-						paddingTop: 8,
-						paddingBottom: keyboard ? 0 : 24,
-						borderTopLeftRadius: 20,
-						borderTopRightRadius: 20,
+						paddingTop: 4,
+						paddingBottom: 4,
+						borderRadius: 18,
+						overflow: 'hidden',
 						backgroundColor: panelColor(),
 						borderWidth: 1,
 						borderColor: 'rgba(255,255,255,0.08)',

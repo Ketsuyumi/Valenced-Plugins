@@ -10,12 +10,14 @@ interface Settings {
 	button: boolean
 	tapSends: boolean
 	keepOpen: boolean
+	size: 'small' | 'medium' | 'large'
 	recent: string[]
 }
 const DEFAULTS: Settings = {
 	button: true,
 	tapSends: false,
 	keepOpen: false,
+	size: 'small',
 	recent: [],
 }
 let storage: any
@@ -31,6 +33,7 @@ const options: PickerOptions = {
 		}),
 	tapSends: () => settings().tapSends,
 	keepOpen: () => settings().keepOpen,
+	size: () => settings().size,
 }
 
 function SettingsPage() {
@@ -66,6 +69,27 @@ function SettingsPage() {
 						subLabel="To pick several in a row"
 						value={s.keepOpen}
 						onValueChange={(keepOpen: boolean) => set({ keepOpen })}
+					/>
+					<TableRow
+						label="Picker size"
+						subLabel={
+							{
+								small: 'Small (like the keyboard)',
+								medium: 'Medium',
+								large: 'Large',
+							}[s.size]
+						}
+						arrow
+						onPress={() =>
+							set({
+								size:
+									s.size === 'small'
+										? 'medium'
+										: s.size === 'medium'
+											? 'large'
+											: 'small',
+							})
+						}
 					/>
 					<TableRow
 						label="Clear recent"
