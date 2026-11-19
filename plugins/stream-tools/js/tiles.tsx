@@ -217,7 +217,13 @@ export function patchTiles(): () => void {
 									id !== focused
 								)
 									return null
-								if (s.showBar && id && id === focused && isStreamKey(id))
+								// In clean view the 👁 (the way back out) shows even with the bar switched off.
+								if (
+									(s.showBar || s.clean) &&
+									id &&
+									id === focused &&
+									isStreamKey(id)
+								)
 									return addChild(
 										out,
 										<StreamBar key="stream-tools-bar" streamKey={id} />,
