@@ -516,6 +516,33 @@
         }
       }
     },
+    "dev.ketsuyumi.floating-browser": {
+      "name": "Floating Browser",
+      "description": "A browser window that floats over Discord, so videos keep playing while you chat: drag, resize, presets, bookmarks, and extensions (pop-up blocker, ad hider, dark pages, video focus, desktop site, your own user scripts).",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+      "contributors": [
+        "dxckie (finding the web view, Spotify Preview, GPL-3.0)"
+      ],
+      "icon": "LinkIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.floating-browser@1.0.0.zip",
+          "sha256": "27aa6e21ca0986e5c50e11a21bc2148c2ffd14971b29ea361bf514f687a9a094",
+          "size": 8743,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.forum-grid": {
       "name": "Forum Grid",
       "description": "See forum posts as a grid of cards with images, and filter them by tags, unread, followed, images, your posts, date and reactions, with more ways to sort.",
