@@ -143,6 +143,16 @@ Uploads are drawn in Discord's image grid, which fills the message's width whate
 the grid is the only way uploads are drawn (switching it off makes them disappear). So for a message with uploads the
 plugin leaves the grid on and scales the width it fills, the row's `constrainedWidth`.
 
+### Bulk Mute (`dev.ketsuyumi.bulk-mute`)
+
+Mute lots of channels at once, like selecting messages on WhatsApp. Tap the bell next to a server's search bar (or
+long-press the server and choose **Mute channels**), tap channels to tick them, then **Mute** mutes them all forever.
+**All** ticks every channel that isn't muted yet, **Unmute** undoes it, ✕ stops selecting.
+
+Muting goes through Discord's own channel-settings actions (the same as muting from a channel's menu), with Discord's
+"until I turn it back on" setting. The server header has no documented hook, so the bell is placed at run time
+beside whatever the header's search bar is; the settings page shows where it went.
+
 ### Default Typing Indicator (`dev.ketsuyumi.default-typing`)
 
 Shows everyone's typing indicator as Discord's plain "• • •", without custom animated emoji wiggling around. When someone

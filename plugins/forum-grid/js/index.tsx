@@ -34,7 +34,9 @@ let settings: () => Settings = () => DEFAULTS
 function open(channel: any) {
 	if (!gridAvailable()) {
 		try {
-			ToastActionCreators.open('forum-grid', { text: "The grid couldn't be shown on this Discord version" } as never)
+			ToastActionCreators.open('forum-grid', {
+				text: "The grid couldn't be shown on this Discord version",
+			} as never)
 		} catch {}
 		return
 	}
@@ -48,9 +50,18 @@ const selected = () => {
 }
 
 function SettingsPage({ api }: { api: Api }) {
-	const { Stack, Text, TableRowGroup, TableRow, TableSwitchRow, TableRadioGroup, TableRadioRow } = Design as any
+	const {
+		Stack,
+		Text,
+		TableRowGroup,
+		TableRow,
+		TableSwitchRow,
+		TableRadioGroup,
+		TableRadioRow,
+	} = Design as any
 	const s = { ...DEFAULTS, ...api.jsonStorage.use() }
-	const set = (patch: Partial<Settings>) => api.jsonStorage.set({ ...s, ...patch }, true)
+	const set = (patch: Partial<Settings>) =>
+		api.jsonStorage.set({ ...s, ...patch }, true)
 	return (
 		<ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
 			<Stack spacing={24}>
@@ -96,12 +107,20 @@ function SettingsPage({ api }: { api: Api }) {
 					<TableRadioRow label="Hide" value="hidden" />
 				</TableRadioGroup>
 				<TableRowGroup title="Status">
-					<TableRow label="Grid" subLabel={gridAvailable() ? 'Ready' : 'Not attached yet (open any screen once)'} />
+					<TableRow
+						label="Grid"
+						subLabel={
+							gridAvailable()
+								? 'Ready'
+								: 'Not attached yet (open any screen once)'
+						}
+					/>
 					<TableRow label="Top bar button" subLabel={headerStatus()} />
 				</TableRowGroup>
 				<Text variant="text-sm/medium" color="text-muted">
-					In the grid: search, sort and Filters (tags, unread, followed, has image, my posts, date,
-					reactions, pinned). Tap a post to open it. Mark read marks every loaded unread post read.
+					In the grid: search, sort and Filters (tags, unread, followed, has
+					image, my posts, date, reactions, pinned). Tap a post to open it. Mark
+					read marks every loaded unread post read.
 				</Text>
 			</Stack>
 		</ScrollView>
@@ -112,11 +131,15 @@ export default plugin<{ jsonStorage: Settings }>({
 	jsonStorage: { load: true, default: DEFAULTS },
 	start({ cleanup, jsonStorage }) {
 		settings = () => ({ ...DEFAULTS, ...jsonStorage.cache })
-		const write = (patch: Partial<Settings>) => jsonStorage.set({ ...settings(), ...patch }, true)
+		const write = (patch: Partial<Settings>) =>
+			jsonStorage.set({ ...settings(), ...patch }, true)
 
 		cleanup(
 			installGrid({
-				read: () => ({ columns: settings().columns, pinned: settings().pinned }),
+				read: () => ({
+					columns: settings().columns,
+					pinned: settings().pinned,
+				}),
 				write,
 			}),
 			installSheet({ enabled: () => settings().longPress, open }),

@@ -25,6 +25,7 @@ import {
 	searchPosts,
 	serverSort,
 } from './data'
+import { ReactNativeSafeAreaContext } from '@valenced/externals/react-native-safe-area-context'
 import { findModule } from './find'
 import type { Filters, PinnedMode, Post, Tag } from './data'
 
@@ -488,7 +489,8 @@ function Grid({ id, name }: { id: string; name: string }) {
 				<Pressable
 					onPress={hideGrid}
 					accessibilityLabel="Close grid"
-					style={{ padding: 8 }}
+					hitSlop={12}
+					style={{ padding: 10 }}
 				>
 					<Text variant="heading-md/bold" style={{ color: textColor() }}>
 						✕
@@ -591,7 +593,26 @@ function Grid({ id, name }: { id: string; name: string }) {
 	)
 }
 
+/**
+ * Room above the grid's top bar: the status bar / notch inset, so ✕ and Mark read aren't under
+ * the clock. The overlay floats over the whole app, where the hook can read 0, so the window's own
+ * inset is the floor, and 50 (an iPhone status bar) when neither is known.
+ */
+function useTopPadding(): number {
+	let top = 0
+	try {
+		const { useSafeAreaInsets, initialWindowMetrics } =
+			ReactNativeSafeAreaContext as any
+		top = Math.max(
+			useSafeAreaInsets?.()?.top ?? 0,
+			initialWindowMetrics?.insets?.top ?? 0,
+		)
+	} catch {}
+	return (top > 0 ? top : 50) + 10
+}
+
 function Overlay() {
+	const top = useTopPadding()
 	const [, tick] = useState(0)
 	useEffect(() => {
 		mounted = true
@@ -619,7 +640,7 @@ function Overlay() {
 				left: 0,
 				right: 0,
 				bottom: 0,
-				paddingTop: 36,
+				paddingTop: top,
 				backgroundColor: color('BACKGROUND_BASE_LOWER', '#1e1f22'),
 				zIndex: 1000,
 				elevation: 1000,

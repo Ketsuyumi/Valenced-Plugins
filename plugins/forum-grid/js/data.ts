@@ -23,11 +23,15 @@ function http(): Http {
 
 export function errorText(error: unknown): string {
 	const e = error as { body?: any; status?: number; message?: string }
-	return e?.body?.message ?? (e?.status ? `HTTP ${e.status}` : (e?.message ?? String(error)))
+	return (
+		e?.body?.message ??
+		(e?.status ? `HTTP ${e.status}` : (e?.message ?? String(error)))
+	)
 }
 
 const S = () => Stores as any
-export const myId = (): string | undefined => S().UserStore?.getCurrentUser?.()?.id
+export const myId = (): string | undefined =>
+	S().UserStore?.getCurrentUser?.()?.id
 
 export interface Tag {
 	id: string
@@ -67,13 +71,20 @@ const IMAGE = /\.(png|jpe?g|gif|webp|avif)(\?|$)/i
 function imageOf(message: any): string | undefined {
 	for (const a of message?.attachments ?? []) {
 		const type = String(a?.content_type ?? '')
-		if (type.startsWith('image/') || IMAGE.test(String(a?.filename ?? a?.url ?? '')))
+		if (
+			type.startsWith('image/') ||
+			IMAGE.test(String(a?.filename ?? a?.url ?? ''))
+		)
 			return a.proxy_url ?? a.url
 		if (type.startsWith('video/') && a?.proxy_url)
 			return `${a.proxy_url}${a.proxy_url.includes('?') ? '&' : '?'}format=webp`
 	}
 	for (const e of message?.embeds ?? []) {
-		const img = e?.image?.proxy_url ?? e?.image?.url ?? e?.thumbnail?.proxy_url ?? e?.thumbnail?.url
+		const img =
+			e?.image?.proxy_url ??
+			e?.image?.url ??
+			e?.thumbnail?.proxy_url ??
+			e?.thumbnail?.url
 		if (img) return img
 	}
 	return undefined
@@ -94,8 +105,11 @@ export function forumTags(forumId: string): Tag[] {
 export function toPost(thread: any, first: any, joined: Set<string>): Post {
 	const id = String(thread.id)
 	const meta = thread.thread_metadata ?? thread.threadMetadata ?? {}
-	const created = Date.parse(meta.create_timestamp ?? meta.createTimestamp ?? '') || idTime(id)
-	const lastMessageId = thread.last_message_id ?? thread.lastMessageId ?? undefined
+	const created =
+		Date.parse(meta.create_timestamp ?? meta.createTimestamp ?? '') ||
+		idTime(id)
+	const lastMessageId =
+		thread.last_message_id ?? thread.lastMessageId ?? undefined
 	const reactions = (first?.reactions ?? []).reduce(
 		(sum: number, r: any) => sum + (Number(r?.count) || 0),
 		0,
@@ -130,7 +144,13 @@ const wait = (ms: number) => new Promise(r => setTimeout(r, ms))
 
 export async function searchPosts(
 	forumId: string,
-	opts: { sort: ServerSort; order: 'asc' | 'desc'; offset: number; name?: string; tags?: string[] },
+	opts: {
+		sort: ServerSort
+		order: 'asc' | 'desc'
+		offset: number
+		name?: string
+		tags?: string[]
+	},
 ): Promise<Page> {
 	const q = [
 		`sort_by=${opts.sort}`,
@@ -138,7 +158,8 @@ export async function searchPosts(
 		'limit=25',
 		`offset=${opts.offset}`,
 	]
-	if (opts.name?.trim()) q.push(`name=${encodeURIComponent(opts.name.trim().slice(0, 100))}`)
+	if (opts.name?.trim())
+		q.push(`name=${encodeURIComponent(opts.name.trim().slice(0, 100))}`)
 	for (const tag of opts.tags ?? []) q.push(`tag=${tag}`)
 	if ((opts.tags?.length ?? 0) > 1) q.push('tag_setting=match_some')
 	const url = `/channels/${forumId}/threads/search?${q.join('&')}`
@@ -149,11 +170,20 @@ export async function searchPosts(
 			await wait(Math.max(1, Number(body.retry_after) || 1) * 1000)
 			continue
 		}
-		const joined = new Set<string>((body.members ?? []).map((m: any) => String(m?.id ?? m?.thread_id)))
+		const joined = new Set<string>(
+			(body.members ?? []).map((m: any) => String(m?.id ?? m?.thread_id)),
+		)
 		const firsts = new Map<string, any>()
-		for (const m of body.first_messages ?? []) firsts.set(String(m?.channel_id ?? m?.id), m)
-		const posts = (body.threads ?? []).map((t: any) => toPost(t, firsts.get(String(t.id)), joined))
-		return { posts, hasMore: !!body.has_more, total: Number(body.total_results) || posts.length }
+		for (const m of body.first_messages ?? [])
+			firsts.set(String(m?.channel_id ?? m?.id), m)
+		const posts = (body.threads ?? []).map((t: any) =>
+			toPost(t, firsts.get(String(t.id)), joined),
+		)
+		return {
+			posts,
+			hasMore: !!body.has_more,
+			total: Number(body.total_results) || posts.length,
+		}
 	}
 	throw new Error('Discord is still indexing this forum, try again in a moment')
 }
@@ -170,15 +200,24 @@ export const isUnread = (post: Post): boolean => {
 export async function markRead(posts: Post[]): Promise<number> {
 	const states = posts
 		.filter(p => p.lastMessageId)
-		.map(p => ({ channel_id: p.id, message_id: p.lastMessageId, read_state_type: 0 }))
+		.map(p => ({
+			channel_id: p.id,
+			message_id: p.lastMessageId,
+			read_state_type: 0,
+		}))
 	for (let i = 0; i < states.length; i += 100)
-		await http().post({ url: '/read-states/ack-bulk', body: { read_states: states.slice(i, i + 100) } })
+		await http().post({
+			url: '/read-states/ack-bulk',
+			body: { read_states: states.slice(i, i + 100) },
+		})
 	return states.length
 }
 
 /** Opens a post the way Discord's own links do (an in-app route push). */
 export function openPost(post: Post): boolean {
-	const [routing] = lookupModule((withProps as any)('transitionToGuild')) as unknown as [any]
+	const [routing] = lookupModule(
+		(withProps as any)('transitionToGuild'),
+	) as unknown as [any]
 	const path = `/channels/${post.guildId || '@me'}/${post.id}`
 	try {
 		if (typeof routing?.transitionTo === 'function') {
@@ -187,7 +226,9 @@ export function openPost(post: Post): boolean {
 		}
 	} catch {}
 	try {
-		const [actions] = lookupModule((withProps as any)('selectChannel')) as unknown as [any]
+		const [actions] = lookupModule(
+			(withProps as any)('selectChannel'),
+		) as unknown as [any]
 		if (typeof actions?.selectChannel === 'function') {
 			actions.selectChannel({ guildId: post.guildId, channelId: post.id })
 			return true
@@ -226,7 +267,10 @@ export type PinnedMode = 'first' | 'normal' | 'hidden'
 
 const SINCE = { day: 864e5, week: 7 * 864e5, month: 30 * 864e5 }
 
-export function serverSort(f: Filters): { sort: ServerSort; order: 'asc' | 'desc' } {
+export function serverSort(f: Filters): {
+	sort: ServerSort
+	order: 'asc' | 'desc'
+} {
 	if (f.sort === 'newest') return { sort: 'creation_time', order: 'desc' }
 	if (f.sort === 'oldest') return { sort: 'creation_time', order: 'asc' }
 	return { sort: 'last_message_time', order: 'desc' }
@@ -243,7 +287,12 @@ export function applyFilters(
 	const q = f.query.trim().toLowerCase()
 	const out = posts.filter(p => {
 		if (pinned === 'hidden' && p.pinned) return false
-		if (q && !p.name.toLowerCase().includes(q) && !p.preview.toLowerCase().includes(q)) return false
+		if (
+			q &&
+			!p.name.toLowerCase().includes(q) &&
+			!p.preview.toLowerCase().includes(q)
+		)
+			return false
 		if (f.tags.length && !f.tags.some(t => p.tags.includes(t))) return false
 		if (f.followed && !p.followed) return false
 		if (f.images && !p.image) return false
@@ -261,6 +310,7 @@ export function applyFilters(
 		reactions: (a, b) => b.reactions - a.reactions,
 	}
 	out.sort(by[f.sort])
-	if (pinned === 'first') out.sort((a, b) => Number(b.pinned) - Number(a.pinned))
+	if (pinned === 'first')
+		out.sort((a, b) => Number(b.pinned) - Number(a.pinned))
 	return out
 }

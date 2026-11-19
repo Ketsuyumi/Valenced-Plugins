@@ -149,9 +149,7 @@ function fallbackButton(options: Options): ReactElement | null {
 			icon={id}
 			variant={options.active() ? 'primary' : 'tertiary'}
 			size="sm"
-			accessibilityLabel={
-				'Open as grid'
-			}
+			accessibilityLabel={'Open as grid'}
 			onPress={options.onPress}
 		/>
 	)

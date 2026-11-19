@@ -1,0 +1,20 @@
+{
+	"format": 1,
+	"id": "dev.ketsuyumi.bulk-mute",
+	"name": "Bulk Mute",
+	"description": "A bell next to a server's search bar: tap channels to select them, like selecting messages on WhatsApp, then mute them all forever at once (or unmute).",
+	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+	"icon": "BellIcon",
+	"version": "1.0.0",
+	"dependencies": {
+		"valenced.api": {
+			"version": ">=1 <2"
+		},
+		"discord": {
+			"version": "*"
+		}
+	},
+	"dist": {
+		"script": "index.js"
+	}
+}
