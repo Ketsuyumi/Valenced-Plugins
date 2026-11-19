@@ -39,7 +39,6 @@ const MIN_H = 120
 
 let open = false
 let win: Win | undefined
-let startUrl = ''
 let mounted = false
 const listeners = new Set<() => void>()
 const emit = () => {
@@ -93,11 +92,91 @@ const isBig = () =>
 	!!win && win.w >= screen().width * 0.9 && win.h > screen().height * 0.5
 
 let saveTimer: any
-function setWin(next: Win) {
+/** Moves / resizes the window; saved right away when [now] (a drag ended, a preset), else shortly. */
+function setWin(next: Win, now = false) {
 	win = clamp(next)
 	emit()
 	clearTimeout(saveTimer)
-	saveTimer = setTimeout(() => save({ win }), 800)
+	if (now) save({ win })
+	else saveTimer = setTimeout(() => save({ win }), 600)
+}
+/** ⤢: big, remembering the size you had. ▁: back to that size. */
+function grow() {
+	if (win && !isBig()) save({ winSmall: win })
+	setWin(presets.big(), true)
+}
+function shrink() {
+	const back = settings().winSmall
+	setWin(back ? back : presets.corner(), true)
+}
+
+// ── Tabs ─────────────────────────────────────────────────────────────
+
+const MAX_TABS = 6
+interface TabInfo {
+	id: number
+	/** What the tab was told to load (changing it, or `load`, reloads it). */
+	url: string
+	load: number
+	page: Page
+}
+let tabs: TabInfo[] = []
+let activeId = 0
+let nextTabId = 1
+const tabListeners = new Set<() => void>()
+const onTabs = (fn: () => void): (() => void) => {
+	tabListeners.add(fn)
+	return () => {
+		tabListeners.delete(fn)
+	}
+}
+let tabsSaveTimer: any
+function tabsChanged() {
+	for (const fn of tabListeners) fn()
+	clearTimeout(tabsSaveTimer)
+	tabsSaveTimer = setTimeout(() => {
+		const urls = tabs.map(t => t.page.url || t.url)
+		save({
+			tabs: urls,
+			activeTab: Math.max(
+				0,
+				tabs.findIndex(t => t.id === activeId),
+			),
+			lastUrl: activeTab()?.page.url || activeTab()?.url || '',
+		})
+	}, 500)
+}
+const activeTab = () => tabs.find(t => t.id === activeId) ?? tabs[0]
+function newTab(url: string) {
+	const t: TabInfo = { id: nextTabId++, url, load: 0, page: blankPage(url) }
+	tabs = [...tabs, t]
+	activeId = t.id
+	tabsChanged()
+}
+function switchTab(id: number) {
+	activeId = id
+	tabsChanged()
+}
+function closeTab(id: number) {
+	const at = tabs.findIndex(t => t.id === id)
+	tabs = tabs.filter(t => t.id !== id)
+	if (!tabs.length) newTab('')
+	else if (activeId === id) activeId = tabs[Math.max(0, at - 1)].id
+	tabsChanged()
+}
+function loadInActive(url: string) {
+	const t = activeTab()
+	if (!t) return newTab(url)
+	tabs = tabs.map(x =>
+		x.id === t.id ? { ...x, url, load: x.load + 1, page: blankPage(url) } : x,
+	)
+	tabsChanged()
+}
+function updatePage(id: number, patch: Partial<Page>) {
+	tabs = tabs.map(t =>
+		t.id === id ? { ...t, page: { ...t.page, ...patch } } : t,
+	)
+	tabsChanged()
 }
 
 export function openBrowser(url?: string) {
@@ -106,19 +185,30 @@ export function openBrowser(url?: string) {
 			'Restart Discord once to finish setting up the floating browser',
 		)
 	const s = settings()
-	startUrl = url ? toUrl(url) : s.lastUrl || s.home
+	if (!tabs.length) {
+		const saved = s.tabs.length ? s.tabs : [s.lastUrl || s.home]
+		for (const u of saved.slice(0, MAX_TABS)) newTab(u)
+		activeId = tabs[Math.min(s.activeTab, tabs.length - 1)]?.id ?? activeId
+	}
+	if (url) {
+		// A link: its own tab, unless the one showing is empty or there's no room.
+		const target = toUrl(url)
+		if (activeTab()?.url && tabs.length < MAX_TABS) newTab(target)
+		else loadInActive(target)
+	}
 	win = win ?? (s.win ? clamp(s.win) : presets.big())
 	open = true
 	emit()
-	if (url) loadHook?.(startUrl)
 }
 export function closeBrowser() {
+	if (win) save({ win })
+	// Reopening picks each tab up where it was, not at the address it first opened.
+	tabs = tabs.map(t => ({ ...t, url: t.page.url || t.url }))
 	open = false
 	videoFull = false
 	beforeFullscreen = undefined
 	emit()
 }
-let loadHook: ((url: string) => void) | undefined
 
 /** The window before a video went fullscreen in it, to go back to afterwards. */
 let beforeFullscreen: Win | undefined
@@ -149,6 +239,7 @@ const dragger = PanResponder.create({
 	},
 	onPanResponderMove: (_, g) =>
 		setWin({ ...dragStart, x: dragStart.x + g.dx, y: dragStart.y + g.dy }),
+	onPanResponderRelease: () => win && setWin(win, true),
 })
 const resizer = PanResponder.create({
 	onStartShouldSetPanResponder: () => true,
@@ -158,6 +249,11 @@ const resizer = PanResponder.create({
 	},
 	onPanResponderMove: (_, g) =>
 		setWin({ ...dragStart, w: dragStart.w + g.dx, h: dragStart.h + g.dy }),
+	onPanResponderRelease: () => {
+		if (!win) return
+		setWin(win, true)
+		if (!isBig()) save({ winSmall: win })
+	},
 })
 
 function Btn({
@@ -165,11 +261,13 @@ function Btn({
 	onPress,
 	hint,
 	off,
+	on,
 }: {
 	label: string
 	onPress: () => void
 	hint: string
 	off?: boolean
+	on?: boolean
 }) {
 	return (
 		<Pressable
@@ -184,7 +282,13 @@ function Btn({
 				opacity: off ? 0.35 : 1,
 			}}
 		>
-			<Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '700' }}>
+			<Text
+				style={{
+					color: on ? '#8ea1ff' : '#ffffff',
+					fontSize: 16,
+					fontWeight: '700',
+				}}
+			>
 				{label}
 			</Text>
 		</Pressable>
@@ -224,62 +328,184 @@ function Toggle({
 	)
 }
 
-function Browser({ box }: { box: Win }) {
+interface Page {
+	url: string
+	title: string
+	back: boolean
+	forward: boolean
+	blocked: number
+}
+const blankPage = (url = ''): Page => ({
+	url,
+	title: '',
+	back: false,
+	forward: false,
+	blocked: 0,
+})
+
+/** One tab: its own web view, kept loaded (and playing) while another tab shows. */
+function TabView({
+	tab,
+	active,
+	startScript,
+	register,
+	onPage,
+	onGo,
+}: {
+	tab: TabInfo
+	active: boolean
+	startScript: string
+	register: (id: number, ref: any) => void
+	onPage: (id: number, patch: Partial<Page>) => void
+	onGo: (text: string) => void
+}) {
 	const s = useSettings()
 	const WebView = findWebView()
 	const ref = useRef<any>(null)
-	const [url, setUrl] = useState(startUrl)
-	const [page, setPage] = useState({
-		url: startUrl,
-		title: '',
-		back: false,
-		forward: false,
-	})
-	const [address, setAddress] = useState<string | undefined>(
-		startUrl ? undefined : '',
-	)
-	const [panel, setPanel] = useState(false)
-	const big = isBig()
-
+	const pageUrl = useRef(tab.url)
 	useEffect(() => {
-		loadHook = next => {
-			setUrl(next)
-			setAddress(undefined)
-		}
-		return () => {
-			loadHook = undefined
-		}
+		register(tab.id, ref)
+		return () => register(tab.id, undefined)
 	}, [])
 	// A switch changed: apply it to the page that's open, no reload.
 	useEffect(() => {
-		if (page.url) ref.current?.injectJavaScript?.(afterLoad(s, page.url))
+		if (pageUrl.current)
+			ref.current?.injectJavaScript?.(afterLoad(s, pageUrl.current))
 	}, [s.adHide, s.dark, s.videoFocus, s.scripts])
-	// Back: the page's history first, then shrink a big window.
-	useEffect(() => {
-		const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-			if (page.back) {
-				ref.current?.goBack?.()
-				return true
-			}
-			if (big) {
-				setWin(presets.corner())
-				return true
-			}
-			return false
-		})
-		return () => sub.remove()
-	}, [page.back, big])
+	const style = active ? { flex: 1 } : { display: 'none' as const }
+	if (!tab.url)
+		return (
+			<View style={style}>
+				<Home onGo={onGo} />
+			</View>
+		)
+	if (!WebView)
+		return (
+			<View style={[style, { alignItems: 'center', justifyContent: 'center' }]}>
+				<Text style={{ color: '#ffffff' }}>
+					Couldn't start a web view on this Discord version.
+				</Text>
+			</View>
+		)
+	return (
+		<View style={style}>
+			<WebView
+				ref={ref}
+				key={`${tab.load}:${s.desktop ? 'desktop' : 'mobile'}:${s.inWindowFullscreen ? 'win' : 'os'}`}
+				source={{ uri: tab.url }}
+				userAgent={s.desktop ? DESKTOP_UA : undefined}
+				originWhitelist={['*']}
+				javaScriptEnabled
+				domStorageEnabled
+				allowsInlineMediaPlayback
+				// Left on: with it off, players inside frames (where the in-window script may not reach)
+				// decide fullscreen is impossible and hide their button.
+				allowsFullscreenVideo
+				injectedJavaScriptForMainFrameOnly={false}
+				injectedJavaScriptBeforeContentLoadedForMainFrameOnly={false}
+				mediaPlaybackRequiresUserAction={false}
+				setSupportMultipleWindows={false}
+				javaScriptCanOpenWindowsAutomatically={!s.popupBlock}
+				injectedJavaScriptBeforeContentLoaded={startScript}
+				injectedJavaScript={afterLoad(s, tab.url)}
+				onLoadStart={(e: any) => {
+					const u = e?.nativeEvent?.url
+					onPage(tab.id, { blocked: 0 })
+					if (u && settings().uBlock && compiled())
+						ref.current?.injectJavaScript?.(
+							`(function(){${pageFilters(u)}})();true;`,
+						)
+				}}
+				onMessage={(e: any) => {
+					let data: any
+					try {
+						data = JSON.parse(e?.nativeEvent?.data ?? '')
+					} catch {
+						return
+					}
+					if (data?.fb === 'fs') return sideways(!!data.on)
+					if (data?.fb === 'blocked' && typeof data.n === 'number')
+						onPage(tab.id, { blocked: data.n })
+					else if (
+						data?.fb === 'tokens' &&
+						Array.isArray(data.t) &&
+						settings().uBlock
+					) {
+						const css = cosmeticForTokens(
+							data.t.slice(0, 4000),
+							String(data.h ?? ''),
+						)
+						if (css.length) ref.current?.injectJavaScript?.(tokensCss(css))
+					}
+				}}
+				onLoadEnd={(e: any) => {
+					const u = e?.nativeEvent?.url ?? pageUrl.current
+					ref.current?.injectJavaScript?.(afterLoad(settings(), u))
+				}}
+				onShouldStartLoadWithRequest={(req: any) => {
+					const next = String(req?.url ?? '')
+					if (settings().popupBlock && blockedNav(next)) return false
+					// uBlock's lists: don't leave the page for an ad or malware host (the usual pop-under trick).
+					if (
+						settings().uBlock &&
+						/^https?:/i.test(next) &&
+						hostOf(next) !== hostOf(pageUrl.current) &&
+						blocksDocument(hostOf(next))
+					) {
+						onPage(tab.id, { blocked: (tab.page.blocked ?? 0) + 1 })
+						return false
+					}
+					if (!/^(https?|about|data|blob):/i.test(next)) return false
+					return true
+				}}
+				onNavigationStateChange={(n: any) => {
+					if (n?.url) pageUrl.current = n.url
+					onPage(tab.id, {
+						url: n?.url ?? '',
+						title: n?.title ?? '',
+						back: !!n?.canGoBack,
+						forward: !!n?.canGoForward,
+					})
+				}}
+				style={{ flex: 1, backgroundColor: '#ffffff' }}
+			/>
+		</View>
+	)
+}
 
-	const go = (text: string) => {
-		const next = toUrl(text)
-		if (!next) return
-		setUrl(next)
-		setAddress(undefined)
-		setPanel(false)
+function Label({ children }: { children: string }) {
+	return (
+		<Text
+			style={{
+				color: '#80848e',
+				fontSize: 11,
+				marginLeft: 4,
+				marginTop: 8,
+				marginBottom: 2,
+			}}
+		>
+			{children}
+		</Text>
+	)
+}
+
+function Browser({ box }: { box: Win }) {
+	const s = useSettings()
+	const [, tick] = useState(0)
+	useEffect(() => onTabs(() => tick(n => n + 1)), [])
+	const refs = useRef(new Map<number, any>())
+	const register = (id: number, ref: any) => {
+		if (ref) refs.current.set(id, ref)
+		else refs.current.delete(id)
 	}
-	const bookmarked = s.bookmarks.some(b => b.url === page.url)
-	// Requests and pages stopped by the filters on this page.
-	const [blocked, setBlocked] = useState({ inPage: 0, pages: 0 })
+	const tab = activeTab()
+	const page = tab?.page ?? blankPage()
+	const view = () => refs.current.get(tab?.id ?? -1)?.current
+	const [address, setAddress] = useState<string | undefined>(
+		tab?.url ? undefined : '',
+	)
+	const [panel, setPanel] = useState<'none' | 'menu' | 'tabs'>('none')
+	const big = isBig()
 	const [filtersVersion, setFiltersVersion] = useState(0)
 	useEffect(() => onFilters(() => setFiltersVersion(v => v + 1)), [])
 	// The start-of-page script only changes with these, so it isn't rebuilt (and resent) every render.
@@ -287,7 +513,33 @@ function Browser({ box }: { box: Win }) {
 		() => beforeLoad(s),
 		[s.popupBlock, s.uBlock, s.inWindowFullscreen, filtersVersion],
 	)
+
+	// Back: the page's history first, then shrink a big window.
+	useEffect(() => {
+		const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+			if (page.back) {
+				view()?.goBack?.()
+				return true
+			}
+			if (big) {
+				shrink()
+				return true
+			}
+			return false
+		})
+		return () => sub.remove()
+	}, [page.back, big, tab?.id])
+
+	const go = (text: string) => {
+		const next = toUrl(text)
+		if (!next) return
+		loadInActive(next)
+		setAddress(undefined)
+		setPanel('none')
+	}
+	const bookmarked = !!page.url && s.bookmarks.some(b => b.url === page.url)
 	const h = box.h - BAR
+	const narrow = box.w < 300
 
 	return (
 		<View
@@ -319,7 +571,7 @@ function Browser({ box }: { box: Win }) {
 					label="‹"
 					hint="Back"
 					off={!page.back}
-					onPress={() => ref.current?.goBack?.()}
+					onPress={() => view()?.goBack?.()}
 				/>
 				<Pressable
 					style={{ flex: 1, height: BAR, justifyContent: 'center' }}
@@ -330,123 +582,54 @@ function Browser({ box }: { box: Win }) {
 						⠿ {page.title || hostOf(page.url) || 'Floating Browser'}
 					</Text>
 				</Pressable>
-				{box.w >= 240 ? (
-					<Btn
-						label="↻"
-						hint="Reload"
-						onPress={() => ref.current?.reload?.()}
-					/>
-				) : null}
-				{videoFull ? (
+				{page.url && s.inWindowFullscreen ? (
 					<Btn
 						label="⛶"
-						hint="Leave fullscreen"
+						hint={videoFull ? 'Leave fullscreen' : 'Video fills the window'}
+						on={videoFull}
 						onPress={() => {
-							ref.current?.injectJavaScript?.(
-								'(function(){try{window.__fbExitFs&&window.__fbExitFs()}catch(e){}})();true;',
+							view()?.injectJavaScript?.(
+								'(function(){try{window.__fbToggleFs&&window.__fbToggleFs()}catch(e){}})();true;',
 							)
-							sideways(false)
+							if (videoFull) sideways(false)
 						}}
 					/>
 				) : null}
 				<Btn
+					label={`❐${tabs.length > 1 ? tabs.length : ''}`}
+					hint="Tabs"
+					on={panel === 'tabs'}
+					onPress={() => setPanel(p => (p === 'tabs' ? 'none' : 'tabs'))}
+				/>
+				{!narrow ? (
+					<Btn label="↻" hint="Reload" onPress={() => view()?.reload?.()} />
+				) : null}
+				<Btn
 					label="☰"
 					hint="Extensions and bookmarks"
-					onPress={() => setPanel(p => !p)}
+					on={panel === 'menu'}
+					onPress={() => setPanel(p => (p === 'menu' ? 'none' : 'menu'))}
 				/>
 				<Btn
 					label={big ? '▁' : '⤢'}
-					hint={big ? 'Small window' : 'Big window'}
-					onPress={() => setWin(big ? presets.corner() : presets.big())}
+					hint={big ? 'Back to your size' : 'Big window'}
+					onPress={() => (big ? shrink() : grow())}
 				/>
 				<Btn label="✕" hint="Close" onPress={closeBrowser} />
 			</View>
 
 			<View style={{ width: box.w, height: h }}>
-				{url && WebView ? (
-					<WebView
-						ref={ref}
-						key={`${s.desktop ? 'desktop' : 'mobile'}:${s.inWindowFullscreen ? 'win' : 'os'}`}
-						source={{ uri: url }}
-						userAgent={s.desktop ? DESKTOP_UA : undefined}
-						originWhitelist={['*']}
-						javaScriptEnabled
-						domStorageEnabled
-						allowsInlineMediaPlayback
-						// Left on: with it off, players inside frames (where the in-window script may not reach)
-						// decide fullscreen is impossible and hide their button.
-						allowsFullscreenVideo
-						injectedJavaScriptForMainFrameOnly={false}
-						injectedJavaScriptBeforeContentLoadedForMainFrameOnly={false}
-						mediaPlaybackRequiresUserAction={false}
-						setSupportMultipleWindows={false}
-						javaScriptCanOpenWindowsAutomatically={!s.popupBlock}
-						injectedJavaScriptBeforeContentLoaded={startScript}
-						injectedJavaScript={afterLoad(s, url)}
-						onLoadStart={(e: any) => {
-							const u = e?.nativeEvent?.url
-							setBlocked({ inPage: 0, pages: 0 })
-							if (u && settings().uBlock && compiled())
-								ref.current?.injectJavaScript?.(
-									`(function(){${pageFilters(u)}})();true;`,
-								)
-						}}
-						onMessage={(e: any) => {
-							let data: any
-							try {
-								data = JSON.parse(e?.nativeEvent?.data ?? '')
-							} catch {
-								return
-							}
-							if (data?.fb === 'fs') return sideways(!!data.on)
-							if (data?.fb === 'blocked' && typeof data.n === 'number')
-								setBlocked(b => ({ ...b, inPage: data.n }))
-							else if (
-								data?.fb === 'tokens' &&
-								Array.isArray(data.t) &&
-								settings().uBlock
-							) {
-								const css = cosmeticForTokens(
-									data.t.slice(0, 4000),
-									String(data.h ?? ''),
-								)
-								if (css.length) ref.current?.injectJavaScript?.(tokensCss(css))
-							}
-						}}
-						onLoadEnd={(e: any) => {
-							const u = e?.nativeEvent?.url ?? page.url
-							ref.current?.injectJavaScript?.(afterLoad(settings(), u))
-						}}
-						onShouldStartLoadWithRequest={(req: any) => {
-							const next = String(req?.url ?? '')
-							if (settings().popupBlock && blockedNav(next)) return false
-							// uBlock's lists: don't leave the page for an ad or malware host (the usual pop-under trick).
-							if (
-								settings().uBlock &&
-								/^https?:/i.test(next) &&
-								hostOf(next) !== hostOf(page.url) &&
-								blocksDocument(hostOf(next))
-							) {
-								setBlocked(b => ({ ...b, pages: b.pages + 1 }))
-								return false
-							}
-							if (!/^(https?|about|data|blob):/i.test(next)) return false
-							return true
-						}}
-						onNavigationStateChange={(n: any) => {
-							setPage({
-								url: n?.url ?? '',
-								title: n?.title ?? '',
-								back: !!n?.canGoBack,
-								forward: !!n?.canGoForward,
-							})
-							if (n?.url && /^https?:/i.test(n.url)) save({ lastUrl: n.url })
-						}}
-						style={{ flex: 1, backgroundColor: '#ffffff' }}
+				{tabs.map(t => (
+					<TabView
+						key={t.id}
+						tab={t}
+						active={t.id === tab?.id}
+						startScript={startScript}
+						register={register}
+						onPage={updatePage}
+						onGo={go}
 					/>
-				) : (
-					<Home onGo={go} />
-				)}
+				))}
 
 				{address !== undefined ? (
 					<View
@@ -491,7 +674,95 @@ function Browser({ box }: { box: Win }) {
 					</View>
 				) : null}
 
-				{panel ? (
+				{panel === 'tabs' ? (
+					<ScrollView
+						style={{
+							position: 'absolute',
+							top: 0,
+							left: 0,
+							right: 0,
+							maxHeight: h,
+							backgroundColor: 'rgba(24,25,28,0.98)',
+						}}
+						contentContainerStyle={{ padding: 6 }}
+					>
+						{tabs.map(t => (
+							<View
+								key={t.id}
+								style={{
+									flexDirection: 'row',
+									alignItems: 'center',
+									borderRadius: 8,
+									marginBottom: 3,
+									backgroundColor:
+										t.id === tab?.id
+											? 'rgba(88,101,242,0.35)'
+											: 'rgba(255,255,255,0.05)',
+								}}
+							>
+								<Pressable
+									style={{ flex: 1, paddingHorizontal: 10, paddingVertical: 9 }}
+									onPress={() => {
+										switchTab(t.id)
+										setPanel('none')
+										setAddress(t.url ? undefined : '')
+									}}
+								>
+									<Text
+										numberOfLines={1}
+										style={{
+											color: '#ffffff',
+											fontSize: 13,
+											fontWeight: '600',
+										}}
+									>
+										{t.page.title || hostOf(t.page.url || t.url) || 'New tab'}
+									</Text>
+									{t.page.url || t.url ? (
+										<Text
+											numberOfLines={1}
+											style={{ color: '#80848e', fontSize: 11 }}
+										>
+											{hostOf(t.page.url || t.url)}
+										</Text>
+									) : null}
+								</Pressable>
+								<Btn
+									label="✕"
+									hint="Close tab"
+									onPress={() => closeTab(t.id)}
+								/>
+							</View>
+						))}
+						{tabs.length < MAX_TABS ? (
+							<Pressable
+								onPress={() => {
+									newTab('')
+									setPanel('none')
+									setAddress('')
+								}}
+								style={{
+									paddingHorizontal: 10,
+									paddingVertical: 10,
+									borderRadius: 8,
+									backgroundColor: 'rgba(255,255,255,0.05)',
+								}}
+							>
+								<Text
+									style={{ color: '#ffffff', fontSize: 13, fontWeight: '600' }}
+								>
+									＋ New tab
+								</Text>
+							</Pressable>
+						) : (
+							<Text style={{ color: '#80848e', fontSize: 11, padding: 6 }}>
+								Up to {MAX_TABS} tabs.
+							</Text>
+						)}
+					</ScrollView>
+				) : null}
+
+				{panel === 'menu' ? (
 					<ScrollView
 						style={{
 							position: 'absolute',
@@ -503,16 +774,7 @@ function Browser({ box }: { box: Win }) {
 						}}
 						contentContainerStyle={{ padding: 8 }}
 					>
-						<Text
-							style={{
-								color: '#80848e',
-								fontSize: 11,
-								marginLeft: 4,
-								marginBottom: 2,
-							}}
-						>
-							EXTENSIONS
-						</Text>
+						<Label>EXTENSIONS</Label>
 						<View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
 							<Toggle
 								label="Pop-up blocker"
@@ -520,7 +782,7 @@ function Browser({ box }: { box: Win }) {
 								onPress={() => save({ popupBlock: !s.popupBlock })}
 							/>
 							<Toggle
-								label={`uBlock${s.uBlock && (blocked.inPage || blocked.pages) ? ` · ${blocked.inPage + blocked.pages} blocked` : ''}`}
+								label={`uBlock${s.uBlock && page.blocked ? ` · ${page.blocked} blocked` : ''}`}
 								on={s.uBlock}
 								onPress={() => save({ uBlock: !s.uBlock })}
 							/>
@@ -566,45 +828,21 @@ function Browser({ box }: { box: Win }) {
 								/>
 							))}
 						</View>
-						<Text
-							style={{
-								color: '#80848e',
-								fontSize: 11,
-								marginLeft: 4,
-								marginTop: 8,
-								marginBottom: 2,
-							}}
-						>
-							WINDOW
-						</Text>
+						<Label>WINDOW</Label>
 						<View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-							<Toggle
-								label="Big"
-								on={false}
-								onPress={() => setWin(presets.big())}
-							/>
+							<Toggle label="Big" on={false} onPress={() => grow()} />
 							<Toggle
 								label="Corner"
 								on={false}
-								onPress={() => setWin(presets.corner())}
+								onPress={() => setWin(presets.corner(), true)}
 							/>
 							<Toggle
 								label="16:9"
 								on={false}
-								onPress={() => setWin(presets.video())}
+								onPress={() => setWin(presets.video(), true)}
 							/>
 						</View>
-						<Text
-							style={{
-								color: '#80848e',
-								fontSize: 11,
-								marginLeft: 4,
-								marginTop: 8,
-								marginBottom: 2,
-							}}
-						>
-							PAGE
-						</Text>
+						<Label>PAGE</Label>
 						<View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
 							{page.url ? (
 								<Toggle
@@ -629,15 +867,15 @@ function Browser({ box }: { box: Win }) {
 								label="⌂ Home"
 								on={false}
 								onPress={() => {
-									setUrl('')
-									setPanel(false)
+									loadInActive('')
+									setPanel('none')
 								}}
 							/>
 							{page.forward ? (
 								<Toggle
 									label="Forward ›"
 									on={false}
-									onPress={() => ref.current?.goForward?.()}
+									onPress={() => view()?.goForward?.()}
 								/>
 							) : null}
 							{page.url ? (
@@ -679,23 +917,6 @@ function Browser({ box }: { box: Win }) {
 						◢
 					</Text>
 				</View>
-				{!WebView && url ? (
-					<View
-						style={{
-							position: 'absolute',
-							top: 0,
-							left: 0,
-							right: 0,
-							bottom: 0,
-							alignItems: 'center',
-							justifyContent: 'center',
-						}}
-					>
-						<Text style={{ color: '#ffffff' }}>
-							Couldn't start a web view on this Discord version.
-						</Text>
-					</View>
-				) : null}
 			</View>
 		</View>
 	)

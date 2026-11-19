@@ -46,6 +46,12 @@ var nExit=Document.prototype.exitFullscreen||Document.prototype.webkitExitFullsc
 var onNative=function(){var el=null;try{el=nFs&&nFs.get?nFs.get.call(document):null}catch(e){}if(!el||el.tagName!=='IFRAME')return;try{nExit&&nExit.call(document)}catch(e){}stretch(el,!frames.has(el))};
 if(top){document.addEventListener('fullscreenchange',onNative,true);document.addEventListener('webkitfullscreenchange',onNative,true)}
 window.__fbExitFs=function(){Array.from(frames.keys()).forEach(function(f){stretch(f,false)});if(cur)exit()};
+// The bar's fullscreen button: fill the window with the page's main video (or the player frame), or leave.
+window.__fbToggleFs=function(){if(frames.size||cur){window.__fbExitFs();return}
+var best=null,area=0;document.querySelectorAll('video').forEach(function(v){var r=v.getBoundingClientRect();if(r.width*r.height>area){area=r.width*r.height;best=v}});
+if(!best)best=document.querySelector('video');if(best){var box=best.closest('.plyr,.video-js,.jwplayer,.vjs-player,[class*="player"]')||best;enter(box);return}
+document.querySelectorAll('iframe').forEach(function(f){var r=f.getBoundingClientRect();var a=r.width*r.height;if(a>area&&r.width>120){area=a;best=f}});
+if(!best)best=document.querySelector('iframe');if(best)stretch(best,true)};
 var fire=function(el){['fullscreenchange','webkitfullscreenchange'].forEach(function(t){try{(el||document).dispatchEvent(new Event(t,{bubbles:true}))}catch(e){}})};
 var enter=function(el){if(cur&&cur!==el)exit();if(cur===el)return Promise.resolve();cur=last=el;saved=el.getAttribute('style')||'';
 el.style.cssText+=FILL;

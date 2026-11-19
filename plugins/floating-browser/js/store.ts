@@ -40,6 +40,11 @@ export interface Settings {
 	scripts: UserScript[]
 	lastUrl: string
 	win?: Win
+	/** The size you gave the window last time it wasn't big, for ▁ to go back to. */
+	winSmall?: Win
+	/** Open tabs (addresses) and which one is showing. */
+	tabs: string[]
+	activeTab: number
 }
 export const DEFAULTS: Settings = {
 	popupBlock: true,
@@ -60,6 +65,8 @@ export const DEFAULTS: Settings = {
 	bookmarks: [],
 	scripts: [],
 	lastUrl: '',
+	tabs: [],
+	activeTab: 0,
 }
 
 let storage: any
