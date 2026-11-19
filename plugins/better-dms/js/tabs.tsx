@@ -36,14 +36,25 @@ function TabBar() {
 		...(on('groupTab') ? ([['groups', 'Groups']] as [Tab, string][]) : []),
 		['unread', 'Unread'],
 		['friends', 'Friends'],
-		...(on('pins') && pinnedAny ? ([['pinned', '📌 Pinned']] as [Tab, string][]) : []),
+		...(on('pins') && pinnedAny
+			? ([['pinned', '📌 Pinned']] as [Tab, string][])
+			: []),
 		...labels().map(l => [`label:${l}`, l] as [Tab, string]),
 	]
 	return (
 		<View style={{ paddingVertical: 6 }}>
-			<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12 }}>
+			<ScrollView
+				horizontal
+				showsHorizontalScrollIndicator={false}
+				contentContainerStyle={{ paddingHorizontal: 12 }}
+			>
 				{tabs.map(([t, label]) => (
-					<Chip key={t} label={label} on={active === t} onPress={() => setTab(t)} />
+					<Chip
+						key={t}
+						label={label}
+						on={active === t}
+						onPress={() => setTab(t)}
+					/>
 				))}
 			</ScrollView>
 		</View>
@@ -55,7 +66,12 @@ export function installTabs(): () => void {
 	undo.push(
 		findModule(HEADER, [], (mod: any) => {
 			const target = mod?.default
-			const host = typeof target?.type === 'function' ? { o: target, k: 'type' } : typeof target === 'function' ? { o: mod, k: 'default' } : null
+			const host =
+				typeof target?.type === 'function'
+					? { o: target, k: 'type' }
+					: typeof target === 'function'
+						? { o: mod, k: 'default' }
+						: null
 			if (!host) return
 			undo.push(
 				after(host.o, host.k, ((out: any) => (

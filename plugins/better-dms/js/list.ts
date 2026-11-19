@@ -16,7 +16,14 @@ import {
  * pinned DMs move to the top, and the active tab filters what's shown.
  */
 
-export type Tab = 'all' | 'dms' | 'groups' | 'unread' | 'friends' | 'pinned' | `label:${string}`
+export type Tab =
+	| 'all'
+	| 'dms'
+	| 'groups'
+	| 'unread'
+	| 'friends'
+	| 'pinned'
+	| `label:${string}`
 
 let tab: Tab = 'all'
 const tabListeners = new Set<() => void>()
@@ -33,7 +40,8 @@ export function onTab(fn: () => void) {
 }
 
 /** The first tab: everything, or only 1-on-1 DMs when groups have their own tab. */
-export const firstTab = (): Tab => (on('tabs') && on('groupTab') ? 'dms' : 'all')
+export const firstTab = (): Tab =>
+	on('tabs') && on('groupTab') ? 'dms' : 'all'
 
 const TARGETS: Record<string, string[]> = {
 	PrivateChannelSortStore: ['getPrivateChannelIds', 'getSortedChannels'],
@@ -98,7 +106,8 @@ export function arrange(list: unknown[]): unknown[] {
 	return pinned.length ? [...pinned, ...rest] : kept
 }
 
-const same = (a: unknown[], b: unknown[]) => a.length === b.length && a.every((x, i) => x === b[i])
+const same = (a: unknown[], b: unknown[]) =>
+	a.length === b.length && a.every((x, i) => x === b[i])
 
 export function patchLists(): () => void {
 	const undo: Array<() => void> = []

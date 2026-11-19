@@ -1,6 +1,7 @@
 import { instead } from '@valenced/patcher'
 import { cloneElement } from 'react'
-import { Text } from 'react-native'
+import { Image, Text } from 'react-native'
+import { type CustomEmoji, emojiUrl } from './emoji'
 import { findModule } from './find'
 import {
 	ago,
@@ -25,11 +26,14 @@ import {
  * is added around Discord's own output; nothing of it is changed.
  */
 
-const PREVIEW = 'modules/main_tabs_v2/native/shared_components/ChannelRowPreview.tsx'
+const PREVIEW =
+	'modules/main_tabs_v2/native/shared_components/ChannelRowPreview.tsx'
 
 /** One coloured piece of hint text. */
 interface Piece {
 	text: string
+	/** Drawn as the emoji's picture, inline in the text. */
+	emoji?: CustomEmoji
 	color?: string
 	bold?: boolean
 }
@@ -46,15 +50,29 @@ function pieces(id: string): { lead: Piece[]; info: Piece[]; fade: boolean } {
 	const info: Piece[] = []
 
 	if (on('colors') && d.color) lead.push({ text: '● ', color: d.color })
-	if (on('emoji') && d.emoji) lead.push({ text: `${d.emoji} ` })
-	if (on('labels') && d.label) lead.push({ text: `${d.label} · `, color: on('colors') ? d.color : undefined, bold: true })
-	if (on('groupLook') && c.type === GROUP_DM) lead.push({ text: `👥${(c.recipients?.length ?? 0) + 1} · ` })
+	if (on('emoji') && d.customEmoji)
+		lead.push({ text: ' ', emoji: d.customEmoji })
+	else if (on('emoji') && d.emoji) lead.push({ text: `${d.emoji} ` })
+	if (on('labels') && d.label)
+		lead.push({
+			text: `${d.label} · `,
+			color: on('colors') ? d.color : undefined,
+			bold: true,
+		})
+	if (on('groupLook') && c.type === GROUP_DM)
+		lead.push({ text: `👥${(c.recipients?.length ?? 0) + 1} · ` })
 	if (on('botLook') && u?.bot) lead.push({ text: '🤖 bot · ' })
-	else if (on('friendMarker') && c.type !== GROUP_DM && recipient && !isFriend(recipient))
+	else if (
+		on('friendMarker') &&
+		c.type !== GROUP_DM &&
+		recipient &&
+		!isFriend(recipient)
+	)
 		lead.push({ text: 'not a friend · ' })
 	if (on('unread')) {
 		const mentions = mentionCount(id)
-		if (mentions) lead.push({ text: `(${mentions}) `, color: s.unreadColor, bold: true })
+		if (mentions)
+			lead.push({ text: `(${mentions}) `, color: s.unreadColor, bold: true })
 		else if (isUnread(id)) lead.push({ text: '● ', color: s.unreadColor })
 	}
 
@@ -68,11 +86,15 @@ function pieces(id: string): { lead: Piece[]; info: Piece[]; fade: boolean } {
 	}
 	// Discord already shows the time on the row; this only adds it on the second line.
 	const active = lastActive(c)
-	if (on('lastActive') && active && s.extraLine) info.push({ text: ` · ${ago(active)}` })
+	if (on('lastActive') && active && s.extraLine)
+		info.push({ text: ` · ${ago(active)}` })
 
 	const days = s.fadeAfterDays
 	const fade =
-		(on('lastActive') && days > 0 && active > 0 && Date.now() - active > days * 864e5) ||
+		(on('lastActive') &&
+			days > 0 &&
+			active > 0 &&
+			Date.now() - active > days * 864e5) ||
 		(on('botLook') && !!u?.bot)
 	return { lead, info, fade }
 }
@@ -80,17 +102,35 @@ function pieces(id: string): { lead: Piece[]; info: Piece[]; fade: boolean } {
 /** How the last preview was decorated, for Settings → Status. */
 export let previewStatus = 'No DM row drawn yet'
 
-const textOf = (p: Piece, key: string) => (
-	<Text key={key} style={{ color: p.color, fontWeight: p.bold ? '700' : undefined }}>
-		{p.text}
-	</Text>
-)
+const textOf = (p: Piece, key: string) =>
+	p.emoji ? (
+		<Text key={key}>
+			<Image
+				source={{ uri: emojiUrl(p.emoji, 48) }}
+				style={{ width: 16, height: 16 }}
+			/>
+			{p.text}
+		</Text>
+	) : (
+		<Text
+			key={key}
+			style={{ color: p.color, fontWeight: p.bold ? '700' : undefined }}
+		>
+			{p.text}
+		</Text>
+	)
 
 /**
  * The element holding the preview's text: the first one with a string among its children. Hints
  * go inside it as nested text, so they take the preview's own line and font and change no layout.
  */
-function addToText(node: any, lead: Piece[], info: Piece[], fade: boolean, depth = 0): any {
+function addToText(
+	node: any,
+	lead: Piece[],
+	info: Piece[],
+	fade: boolean,
+	depth = 0,
+): any {
 	if (!node || typeof node !== 'object' || depth > 10) return undefined
 	if (Array.isArray(node)) {
 		for (let i = 0; i < node.length; i++) {
@@ -107,7 +147,9 @@ function addToText(node: any, lead: Piece[], info: Piece[], fade: boolean, depth
 	if (kids == null) return undefined
 	const list = Array.isArray(kids) ? kids : [kids]
 	if (list.some(k => typeof k === 'string' || typeof k === 'number')) {
-		const style = fade ? [node.props.style, { opacity: 0.55 }] : node.props.style
+		const style = fade
+			? [node.props.style, { opacity: 0.55 }]
+			: node.props.style
 		return cloneElement(
 			node,
 			{ style },
@@ -117,7 +159,9 @@ function addToText(node: any, lead: Piece[], info: Piece[], fade: boolean, depth
 		)
 	}
 	const next = addToText(kids, lead, info, fade, depth + 1)
-	return next === undefined ? undefined : cloneElement(node, undefined, ...(Array.isArray(next) ? next : [next]))
+	return next === undefined
+		? undefined
+		: cloneElement(node, undefined, ...(Array.isArray(next) ? next : [next]))
 }
 
 function decorate(output: any, id: string | undefined) {
@@ -141,7 +185,8 @@ function decorate(output: any, id: string | undefined) {
 		return inline
 	}
 	// The preview isn't plain text on this version: leave it alone rather than move it.
-	previewStatus = "Hints can't be shown here: the preview isn't plain text (try Hints on a second line)"
+	previewStatus =
+		"Hints can't be shown here: the preview isn't plain text (try Hints on a second line)"
 	return output
 }
 
@@ -159,17 +204,24 @@ export function installPreview(): () => void {
 							: null
 				if (!host) continue
 				undo.push(
-					instead(host.o, host.k, function (this: unknown, args: any[], orig: (...a: any[]) => any) {
-						const out = orig.apply(this, args)
-						try {
-							const p = args[0]
-							const id = p?.channel?.id ?? p?.message?.channel_id ?? p?.channelId
-							const c = typeof id === 'string' ? channel(id) : undefined
-							return c && (c.type === 1 || c.type === 3) ? decorate(out, id) : out
-						} catch {
-							return out
-						}
-					}),
+					instead(
+						host.o,
+						host.k,
+						function (this: unknown, args: any[], orig: (...a: any[]) => any) {
+							const out = orig.apply(this, args)
+							try {
+								const p = args[0]
+								const id =
+									p?.channel?.id ?? p?.message?.channel_id ?? p?.channelId
+								const c = typeof id === 'string' ? channel(id) : undefined
+								return c && (c.type === 1 || c.type === 3)
+									? decorate(out, id)
+									: out
+							} catch {
+								return out
+							}
+						},
+					),
 				)
 				break
 			}

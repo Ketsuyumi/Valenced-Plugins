@@ -22,6 +22,9 @@ colour, label, emoji, pin, **careful** mode or a private nickname. Every feature
 Pins and tabs filter the same list Hide DMs does; the row hints hook `ChannelRowPreview` like Chat Lock; the long-press
 row follows Yumistra's Better Channel List (GPL-3.0).
 
+The emoji badge can be a server emoji too, animated ones included and with no Nitro needed (the badge is only drawn
+for you): search your servers' emoji in the DM options, or paste `<:name:id>`, `<a:name:id>` or an emoji link.
+
 ### Block by ID (`dev.ketsuyumi.block-by-id`)
 
 Block any Discord user by their user ID, even when you share no server or DM with them.

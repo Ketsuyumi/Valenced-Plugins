@@ -8,6 +8,8 @@ export interface DmData {
 	color?: string
 	label?: string
 	emoji?: string
+	/** A server emoji instead of [emoji] (any server's, animated too; only drawn for you). */
+	customEmoji?: { id: string; name: string; animated?: boolean }
 	pinned?: boolean
 	/** Ask before sending here. */
 	careful?: boolean
@@ -99,7 +101,12 @@ export const settings = (): Settings => {
 	const s = read()
 	if (s === lastRaw) return lastMerged
 	lastRaw = s
-	lastMerged = { ...DEFAULTS, ...s, features: { ...DEFAULTS.features, ...s?.features }, dms: s?.dms ?? {} }
+	lastMerged = {
+		...DEFAULTS,
+		...s,
+		features: { ...DEFAULTS.features, ...s?.features },
+		dms: s?.dms ?? {},
+	}
 	return lastMerged
 }
 export const on = (f: keyof Features) => settings().features[f]
@@ -108,7 +115,8 @@ export function setDm(id: string, patch: Partial<DmData>) {
 	const s = settings()
 	const next = { ...s.dms[id], ...patch }
 	for (const k of Object.keys(next) as (keyof DmData)[])
-		if (next[k] === undefined || next[k] === '' || next[k] === false) delete next[k]
+		if (next[k] === undefined || next[k] === '' || next[k] === false)
+			delete next[k]
 	const dms = { ...s.dms }
 	if (Object.keys(next).length) dms[id] = next
 	else delete dms[id]
@@ -143,8 +151,10 @@ export const channel = (id: string): any => S().ChannelStore?.getChannel?.(id)
 export const isDmChannel = (c: any) => c?.type === DM || c?.type === GROUP_DM
 export const recipientOf = (c: any): string | undefined =>
 	c?.type === DM ? (c.getRecipientId?.() ?? c.recipients?.[0]) : undefined
-export const user = (id?: string): any => (id ? S().UserStore?.getUser?.(id) : undefined)
-export const myId = (): string | undefined => S().UserStore?.getCurrentUser?.()?.id
+export const user = (id?: string): any =>
+	id ? S().UserStore?.getUser?.(id) : undefined
+export const myId = (): string | undefined =>
+	S().UserStore?.getCurrentUser?.()?.id
 
 export function nameOf(c: any): string {
 	if (!c) return ''
@@ -179,7 +189,8 @@ export function ago(ms: number): string {
 	return `${Math.round(m / 525600)}y`
 }
 
-export const lastActive = (c: any) => idTime(c?.lastMessageId ?? c?.last_message_id)
+export const lastActive = (c: any) =>
+	idTime(c?.lastMessageId ?? c?.last_message_id)
 
 export const isUnread = (id: string): boolean => {
 	try {
@@ -206,7 +217,9 @@ export function mutualServers(userId?: string): number {
 		if (Array.isArray(fromProfile)) return fromProfile.length
 		const guilds = Object.keys(S().GuildStore?.getGuilds?.() ?? {})
 		const members = S().GuildMemberStore
-		return guilds.filter(g => members?.isMember?.(g, userId) ?? !!members?.getMember?.(g, userId)).length
+		return guilds.filter(
+			g => members?.isMember?.(g, userId) ?? !!members?.getMember?.(g, userId),
+		).length
 	} catch {
 		return 0
 	}
@@ -225,4 +238,10 @@ export function noteOf(userId?: string): string {
 
 /** Labels in use, for the tabs. */
 export const labels = (): string[] =>
-	[...new Set(Object.values(settings().dms).map(d => d.label?.trim()).filter(Boolean) as string[])].sort()
+	[
+		...new Set(
+			Object.values(settings().dms)
+				.map(d => d.label?.trim())
+				.filter(Boolean) as string[],
+		),
+	].sort()

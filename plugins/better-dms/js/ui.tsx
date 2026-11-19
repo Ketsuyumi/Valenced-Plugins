@@ -8,7 +8,12 @@ export function textColor(): string {
 	try {
 		const T = (Tokens as any).default
 		const theme = (Stores as any).ThemeStore?.theme
-		for (const name of ['TEXT_DEFAULT', 'TEXT_NORMAL', 'HEADER_PRIMARY', 'TEXT_PRIMARY']) {
+		for (const name of [
+			'TEXT_DEFAULT',
+			'TEXT_NORMAL',
+			'HEADER_PRIMARY',
+			'TEXT_PRIMARY',
+		]) {
 			const token = T?.colors?.[name]
 			if (!token) continue
 			const value = T.internal.resolveSemanticColor(theme, token)
@@ -47,7 +52,10 @@ export function Chip({
 				backgroundColor: on ? (color ?? ACCENT) : 'rgba(127,127,127,0.18)',
 			}}
 		>
-			<Text variant="text-xs/semibold" style={{ color: on ? '#ffffff' : textColor() }}>
+			<Text
+				variant="text-xs/semibold"
+				style={{ color: on ? '#ffffff' : textColor() }}
+			>
 				{label}
 			</Text>
 		</Pressable>

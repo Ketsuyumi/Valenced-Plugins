@@ -21,7 +21,12 @@ const KEY = 'better-dms-row'
 export const isDm = (channel: any) => channel?.type === 1 || channel?.type === 3
 
 const nameOf = (t: any): string =>
-	t?.name || t?.displayName || t?.type?.name || t?.type?.displayName || t?.render?.name || ''
+	t?.name ||
+	t?.displayName ||
+	t?.type?.name ||
+	t?.type?.displayName ||
+	t?.render?.name ||
+	''
 const flat = (c: any): any[] => (Array.isArray(c) ? c.flatMap(flat) : [c])
 function isGroup(n: any) {
 	if (!n || typeof n !== 'object' || Array.isArray(n)) return false
@@ -42,10 +47,15 @@ function addRow(node: any, channel: any, open: () => void, depth = 0): any {
 	}
 	const props = node.props
 	if (!props) return node
-	if ((props.showGradient !== undefined && 'header' in props) || flat(props.children).some(isGroup)) {
+	if (
+		(props.showGradient !== undefined && 'header' in props) ||
+		flat(props.children).some(isGroup)
+	) {
 		const { ActionSheetRow } = Design as any
 		if (!ActionSheetRow?.Group) return node
-		const kids = Array.isArray(props.children) ? props.children : [props.children]
+		const kids = Array.isArray(props.children)
+			? props.children
+			: [props.children]
 		if (kids.some((k: any) => k?.key === KEY)) return node
 		const Icon: any =
 			lookupGeneratedIconComponent('PaintPaletteIcon' as any) ??
@@ -63,7 +73,9 @@ function addRow(node: any, channel: any, open: () => void, depth = 0): any {
 	}
 	if (props.children == null || typeof props.children !== 'object') return node
 	const kids = addRow(props.children, channel, open, depth + 1)
-	return kids === props.children ? node : { ...node, props: { ...props, children: kids } }
+	return kids === props.children
+		? node
+		: { ...node, props: { ...props, children: kids } }
 }
 
 export function installSheet(options: {
@@ -79,7 +91,9 @@ export function installSheet(options: {
 	const decorate = (out: any, props: any) => {
 		const channel =
 			props?.channel ??
-			(props?.channelId ? (Stores as any).ChannelStore?.getChannel?.(props.channelId) : undefined)
+			(props?.channelId
+				? (Stores as any).ChannelStore?.getChannel?.(props.channelId)
+				: undefined)
 		if (!options.enabled() || !isDm(channel)) return out
 		const open = () => {
 			try {
@@ -91,7 +105,8 @@ export function installSheet(options: {
 		const direct = addRow(out, channel, open)
 		if (direct !== out) return direct
 		const type = out?.type
-		const render = type?.$$typeof === Symbol.for('react.memo') ? type.type : type
+		const render =
+			type?.$$typeof === Symbol.for('react.memo') ? type.type : type
 		if (typeof render !== 'function') return out
 		// The wrapper is made once per component and reused, so it reads the sheet it's drawing now
 		// from here, not from the first sheet it was made for (1.0.2 fix: every sheet showed the
@@ -102,7 +117,9 @@ export function installSheet(options: {
 			inner = function BetterDmsSheet(p: any) {
 				const o = render(p)
 				try {
-					return options.enabled() && current ? addRow(o, current.channel, current.open) : o
+					return options.enabled() && current
+						? addRow(o, current.channel, current.open)
+						: o
 				} catch {
 					return o
 				}
@@ -113,17 +130,22 @@ export function installSheet(options: {
 	}
 
 	const patchMod = (mod: any) => {
-		if (!mod || typeof mod.default !== 'function' || patched.has(mod)) return mod
+		if (!mod || typeof mod.default !== 'function' || patched.has(mod))
+			return mod
 		try {
 			undo.push(
-				instead(mod, 'default', function (this: unknown, args: any[], orig: (...a: any[]) => any) {
-					const out = orig.apply(this, args)
-					try {
-						return decorate(out, args[0])
-					} catch {
-						return out
-					}
-				}),
+				instead(
+					mod,
+					'default',
+					function (this: unknown, args: any[], orig: (...a: any[]) => any) {
+						const out = orig.apply(this, args)
+						try {
+							return decorate(out, args[0])
+						} catch {
+							return out
+						}
+					},
+				),
 			)
 			patched.add(mod)
 		} catch {}
@@ -132,14 +154,24 @@ export function installSheet(options: {
 
 	try {
 		undo.push(
-			instead(ActionSheetActionCreators as any, 'openLazy', function (this: unknown, args: any[], orig: (...a: any[]) => any) {
-				try {
-					const [sheet, key] = args
-					if (typeof key === 'string' && /ChannelLongPress|PrivateChannel|DMLongPress|DmLongPress/i.test(key) && typeof sheet?.then === 'function')
-						args[0] = sheet.then((m: any) => patchMod(m))
-				} catch {}
-				return orig.apply(this, args)
-			}),
+			instead(
+				ActionSheetActionCreators as any,
+				'openLazy',
+				function (this: unknown, args: any[], orig: (...a: any[]) => any) {
+					try {
+						const [sheet, key] = args
+						if (
+							typeof key === 'string' &&
+							/ChannelLongPress|PrivateChannel|DMLongPress|DmLongPress/i.test(
+								key,
+							) &&
+							typeof sheet?.then === 'function'
+						)
+							args[0] = sheet.then((m: any) => patchMod(m))
+					} catch {}
+					return orig.apply(this, args)
+				},
+			),
 		)
 	} catch {}
 	undo.push(findModule(SHEET, [], (mod: any) => void patchMod(mod)))

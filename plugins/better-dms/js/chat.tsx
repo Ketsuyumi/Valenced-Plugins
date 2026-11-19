@@ -1,4 +1,7 @@
-import { AlertActionCreators, ToastActionCreators } from '@valenced/discord/actions'
+import {
+	AlertActionCreators,
+	ToastActionCreators,
+} from '@valenced/discord/actions'
 import { Design } from '@valenced/discord/design'
 import { Stores } from '@valenced/discord/flux'
 import { Clipboard } from '@valenced/externals/react-native-clipboard'
@@ -6,9 +9,19 @@ import { lookupModule } from '@valenced/modules/finders'
 import { withProps } from '@valenced/modules/finders/filters'
 import { after, instead } from '@valenced/patcher'
 import { cloneElement, isValidElement, useEffect, useState } from 'react'
-import { View } from 'react-native'
+import { Image, View } from 'react-native'
+import { emojiUrl } from './emoji'
 import { findModule } from './find'
-import { channel, dmData, isDmChannel, nameOf, on, onChange, recipientOf, settings } from './state'
+import {
+	channel,
+	dmData,
+	isDmChannel,
+	nameOf,
+	on,
+	onChange,
+	recipientOf,
+	settings,
+} from './state'
 
 const S = () => Stores as any
 const selected = () => {
@@ -36,10 +49,18 @@ function Banner() {
 	const c = selected()
 	if (!isDmChannel(c)) return null
 	const d = dmData(c.id)
-	if (!d.color && !d.label && !d.emoji && !d.careful && !d.nickname) return null
+	if (
+		!d.color &&
+		!d.label &&
+		!d.emoji &&
+		!d.customEmoji &&
+		!d.careful &&
+		!d.nickname
+	)
+		return null
 	const color = (on('colors') && d.color) || '#4E5058'
 	const parts = [
-		on('emoji') && d.emoji,
+		on('emoji') && !d.customEmoji && d.emoji,
 		nameOf(c),
 		on('labels') && d.label && `· ${d.label}`,
 		on('guard') && d.careful && '· careful',
@@ -58,7 +79,15 @@ function Banner() {
 			}}
 		>
 			<Text variant="text-xs/semibold" style={{ color }} numberOfLines={1}>
-				To: {parts.join(' ')}
+				To:{' '}
+				{on('emoji') && d.customEmoji ? (
+					<Image
+						source={{ uri: emojiUrl(d.customEmoji, 48) }}
+						style={{ width: 14, height: 14 }}
+					/>
+				) : null}
+				{on('emoji') && d.customEmoji ? ' ' : ''}
+				{parts.join(' ')}
 			</Text>
 		</View>
 	)
@@ -68,7 +97,12 @@ const banner = <Banner key="better-dms-banner" />
 
 function isContainer(node: any) {
 	const p = node?.props
-	return !!p && p.collapsable === false && typeof p.onLayout === 'function' && Array.isArray(p.children)
+	return (
+		!!p &&
+		p.collapsable === false &&
+		typeof p.onLayout === 'function' &&
+		Array.isArray(p.children)
+	)
 }
 
 function addBanner(tree: any, depth = 0): any {
@@ -99,14 +133,21 @@ export function installBanner(): () => void {
 	undo.push(
 		findModule('modules/chat_input/native/ChatInput.tsx', [], (mod: any) => {
 			const target = mod?.default
-			const host = typeof target?.type === 'function' ? { o: target, k: 'type' } : typeof target === 'function' ? { o: mod, k: 'default' } : null
+			const host =
+				typeof target?.type === 'function'
+					? { o: target, k: 'type' }
+					: typeof target === 'function'
+						? { o: mod, k: 'default' }
+						: null
 			if (!host) return
 			undo.push(
 				after(host.o, host.k, ((tree: any) => {
 					try {
 						if (!on('banner') || !isValidElement(tree)) return tree
 						const placed = addBanner(tree)
-						return placed !== tree ? placed : (
+						return placed !== tree ? (
+							placed
+						) : (
 							<>
 								{banner}
 								{tree}
@@ -131,52 +172,67 @@ export function installBanner(): () => void {
 // "Send to …?" before sending in a DM marked careful.
 
 export function installGuard(): () => void {
-	const [mod] = lookupModule((withProps as any)('sendMessage', 'receiveMessage')) as unknown as [any]
+	const [mod] = lookupModule(
+		(withProps as any)('sendMessage', 'receiveMessage'),
+	) as unknown as [any]
 	const host = typeof mod?.sendMessage === 'function' ? mod : mod?.default
 	if (typeof host?.sendMessage !== 'function') return () => {}
-	return instead(host, 'sendMessage', function (this: unknown, args: any[], orig: (...a: any[]) => any) {
-		const channelId = args[0]
-		const c = typeof channelId === 'string' ? channel(channelId) : undefined
-		if (!on('guard') || !isDmChannel(c) || !dmData(c.id).careful) return orig.apply(this, args)
-		const text = String(args[1]?.content ?? '')
-		return new Promise(resolve => {
-			const { AlertModal, AlertActionButton } = Design as any
-			const key = `better-dms-guard-${Date.now()}`
-			const close = () => (AlertActionCreators as any).dismissAlert(key)
-			;(AlertActionCreators as any).openAlert(
-				key,
-				<AlertModal
-					title={`Send to ${nameOf(c)}?`}
-					content={text ? (text.length > 200 ? `${text.slice(0, 200)}…` : text) : 'This chat is marked careful.'}
-					actions={
-						<>
-							<AlertActionButton
-								text="Send"
-								variant="primary"
-								onPress={() => {
-									close()
-									resolve(orig.apply(this, args))
-								}}
-							/>
-							<AlertActionButton
-								text="Don't send"
-								variant="secondary"
-								onPress={() => {
-									close()
-									// Discord already cleared the box, so the text goes to the clipboard.
-									if (text) void Clipboard.setString(text)
-									try {
-										ToastActionCreators.open('better-dms', { text: text ? 'Not sent · text copied' : 'Not sent' } as never)
-									} catch {}
-									resolve(undefined)
-								}}
-							/>
-						</>
-					}
-				/>,
-			)
-		})
-	})
+	return instead(
+		host,
+		'sendMessage',
+		function (this: unknown, args: any[], orig: (...a: any[]) => any) {
+			const channelId = args[0]
+			const c = typeof channelId === 'string' ? channel(channelId) : undefined
+			if (!on('guard') || !isDmChannel(c) || !dmData(c.id).careful)
+				return orig.apply(this, args)
+			const text = String(args[1]?.content ?? '')
+			return new Promise(resolve => {
+				const { AlertModal, AlertActionButton } = Design as any
+				const key = `better-dms-guard-${Date.now()}`
+				const close = () => (AlertActionCreators as any).dismissAlert(key)
+				;(AlertActionCreators as any).openAlert(
+					key,
+					<AlertModal
+						title={`Send to ${nameOf(c)}?`}
+						content={
+							text
+								? text.length > 200
+									? `${text.slice(0, 200)}…`
+									: text
+								: 'This chat is marked careful.'
+						}
+						actions={
+							<>
+								<AlertActionButton
+									text="Send"
+									variant="primary"
+									onPress={() => {
+										close()
+										resolve(orig.apply(this, args))
+									}}
+								/>
+								<AlertActionButton
+									text="Don't send"
+									variant="secondary"
+									onPress={() => {
+										close()
+										// Discord already cleared the box, so the text goes to the clipboard.
+										if (text) void Clipboard.setString(text)
+										try {
+											ToastActionCreators.open('better-dms', {
+												text: text ? 'Not sent · text copied' : 'Not sent',
+											} as never)
+										} catch {}
+										resolve(undefined)
+									}}
+								/>
+							</>
+						}
+					/>,
+				)
+			})
+		},
+	)
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -185,13 +241,18 @@ export function installGuard(): () => void {
 export function installNicknames(): () => void {
 	const store = S().RelationshipStore
 	if (typeof store?.getNickname !== 'function') return () => {}
-	return instead(store, 'getNickname', function (this: unknown, args: any[], orig: (...a: any[]) => any) {
-		try {
-			const mine = typeof args[0] === 'string' ? nicknameFor(args[0]) : undefined
-			if (mine) return mine
-		} catch {}
-		return orig.apply(this, args)
-	})
+	return instead(
+		store,
+		'getNickname',
+		function (this: unknown, args: any[], orig: (...a: any[]) => any) {
+			try {
+				const mine =
+					typeof args[0] === 'string' ? nicknameFor(args[0]) : undefined
+				if (mine) return mine
+			} catch {}
+			return orig.apply(this, args)
+		},
+	)
 }
 
 /**
