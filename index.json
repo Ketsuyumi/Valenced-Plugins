@@ -3,6 +3,30 @@
   "name": "Valenced Plugins by Satou",
   "description": "Plugins for Valenced.",
   "plugins": {
+    "dev.ketsuyumi.ao3-reader": {
+      "name": "AO3 Reader",
+      "description": "Read AO3 works inside Discord, made for phones: AO3 links open in a clean reader with text size, spacing, serif/sans and themes (sepia, dark, AMOLED black), a chapter list, and your place saved in a library.",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+      "icon": "ChatIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.ao3-reader@1.0.0.zip",
+          "sha256": "4280cf15770502d4ecbca5b016ddf57ec5a25ef45d4b76ef0904d1f99f815f4d",
+          "size": 8911,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.auto-collapse": {
       "name": "Auto Collapse",
       "description": "Collapses the categories with nothing new when you open a server, new or old, and opens the ones with new messages.",
