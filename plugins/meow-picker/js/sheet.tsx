@@ -197,6 +197,8 @@ const notify = () => {
 	for (const fn of listeners) fn()
 }
 let mounted = false
+/** Read by key: the build tool rewrote `Animated.View` into `Animated.<the View import>`. */
+const AnimatedView: any = (Animated as any)['View']
 
 export function closePicker() {
 	openWith = undefined
@@ -272,7 +274,7 @@ function Overlay() {
 					backgroundColor: 'rgba(0,0,0,0.45)',
 				}}
 			/>
-			<Animated.View
+			<AnimatedView
 				style={{
 					position: 'absolute',
 					left: 0,
@@ -311,7 +313,7 @@ function Overlay() {
 					/>
 				</Pressable>
 				{Text ? <MeowPanel opts={openWith} /> : null}
-			</Animated.View>
+			</AnimatedView>
 		</View>
 	)
 }
