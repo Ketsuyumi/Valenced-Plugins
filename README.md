@@ -298,6 +298,23 @@ player over the thumbnail rather than inside the message, and it stays put when 
 thumbnail's position to its viewer; if it doesn't, the player opens big, and **Copy debug info** in settings copies what
 Discord passed.
 
+### Floating Browser (`dev.ketsuyumi.floating-browser`)
+
+A browser window that floats over Discord, so a video keeps playing while you chat, scroll and switch channels. Open
+it with the 🌐 button in the chat bar (or the plugin's page). Drag it by its bar, resize from ◢, or pick Big, Corner or
+16:9 from ☰. Tap the title to type an address or a search; your window, last page and bookmarks are remembered.
+
+Extensions (scripts put into pages, each a switch in ☰ and in settings):
+
+- **Pop-up blocker**: no new windows, no jumps to app stores or `intent://` links.
+- **Hide ads**: hides common ad boxes.
+- **Dark pages**, **Video focus** (the page's main video fills the window) and **Desktop site**.
+- **User scripts**: your own JavaScript for the sites you choose, like a small Tampermonkey. A script with a mistake only
+  stops itself.
+
+Optional: open web links from chats in it. Sites with DRM video (Netflix, Crunchyroll…) usually won't play in an
+app's web view. Finding the web view is from dxckie's Spotify Preview (GPL-3.0).
+
 ### Forum Grid (`dev.ketsuyumi.forum-grid`)
 
 See a forum's posts as a grid of cards: the first image (or a text preview), title, tags, replies, reactions, how long

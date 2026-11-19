@@ -1,0 +1,77 @@
+export interface UserScript {
+	id: string
+	name: string
+	/** Sites it runs on: part of the address ("example.com"), several separated by commas, or * for all. */
+	match: string
+	code: string
+	on: boolean
+}
+export interface Bookmark {
+	title: string
+	url: string
+}
+export interface Win {
+	x: number
+	y: number
+	w: number
+	h: number
+}
+export interface Settings {
+	popupBlock: boolean
+	adHide: boolean
+	dark: boolean
+	desktop: boolean
+	videoFocus: boolean
+	chatButton: boolean
+	linksInBrowser: boolean
+	home: string
+	search: string
+	bookmarks: Bookmark[]
+	scripts: UserScript[]
+	lastUrl: string
+	win?: Win
+}
+export const DEFAULTS: Settings = {
+	popupBlock: true,
+	adHide: true,
+	dark: false,
+	desktop: false,
+	videoFocus: false,
+	chatButton: true,
+	linksInBrowser: false,
+	home: '',
+	search: 'https://duckduckgo.com/?q=',
+	bookmarks: [],
+	scripts: [],
+	lastUrl: '',
+}
+
+let storage: any
+export const bindStorage = (s: any) => {
+	storage = s
+}
+export const settings = (): Settings => ({
+	...DEFAULTS,
+	...(storage?.cache ?? {}),
+})
+export function save(patch: Partial<Settings>) {
+	void storage?.set?.({ ...settings(), ...patch })
+}
+export function useSettings(): Settings {
+	try {
+		storage?.use?.()
+	} catch {}
+	return settings()
+}
+
+/** What's typed in the address bar → an address (a search when it isn't one). */
+export function toUrl(text: string): string {
+	const t = text.trim()
+	if (!t) return ''
+	if (/^https?:\/\//i.test(t)) return t
+	if (/^[\w-]+(\.[\w-]+)+(:\d+)?(\/\S*)?$/.test(t) && !/\s/.test(t))
+		return `https://${t}`
+	return `${settings().search}${encodeURIComponent(t)}`
+}
+export const hostOf = (url: string) =>
+	/^https?:\/\/([^/?#]+)/i.exec(url)?.[1]?.replace(/^www\./, '') ?? ''

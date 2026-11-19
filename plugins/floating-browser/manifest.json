@@ -1,0 +1,21 @@
+{
+	"format": 1,
+	"id": "dev.ketsuyumi.floating-browser",
+	"name": "Floating Browser",
+	"description": "A browser window that floats over Discord, so videos keep playing while you chat: drag, resize, presets, bookmarks, and extensions (pop-up blocker, ad hider, dark pages, video focus, desktop site, your own user scripts).",
+	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+	"contributors": ["dxckie (finding the web view, Spotify Preview, GPL-3.0)"],
+	"icon": "LinkIcon",
+	"version": "1.0.0",
+	"dependencies": {
+		"valenced.api": {
+			"version": ">=1 <2"
+		},
+		"discord": {
+			"version": "*"
+		}
+	},
+	"dist": {
+		"script": "index.js"
+	}
+}
