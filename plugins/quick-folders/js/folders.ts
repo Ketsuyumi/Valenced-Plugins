@@ -137,3 +137,33 @@ export async function removeFromFolder(guildId: string) {
 	list.splice(still === -1 ? index : still + 1, 0, { guildIds: [guildId] })
 	await save(list)
 }
+
+/** Moves every server in folder [fromId] to the end of folder [toId]; the emptied folder goes away. */
+export async function mergeFolder(
+	fromId: number | string,
+	toId: number | string,
+) {
+	const list = layout()
+	const from = list.find(
+		e => isFolder(e) && String(e.folderId) === String(fromId),
+	)
+	const to = list.find(e => isFolder(e) && String(e.folderId) === String(toId))
+	if (!from || !to) throw new Error('That folder is gone')
+	if (from === to) return
+	to.guildIds = [
+		...to.guildIds,
+		...from.guildIds.filter(id => !to.guildIds.includes(id)),
+	]
+	await save(list.filter(e => e !== from))
+}
+
+/** Takes every server out of folder [folderId], leaving them where the folder was. */
+export async function unfolderAll(folderId: number | string) {
+	const list = layout()
+	const index = list.findIndex(
+		e => isFolder(e) && String(e.folderId) === String(folderId),
+	)
+	if (index === -1) throw new Error('That folder is gone')
+	list.splice(index, 1, ...list[index].guildIds.map(id => ({ guildIds: [id] })))
+	await save(list)
+}

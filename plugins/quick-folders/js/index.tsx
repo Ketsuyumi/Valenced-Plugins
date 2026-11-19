@@ -16,10 +16,12 @@ import {
 	folders,
 	guildName,
 	isGuild,
+	mergeFolder,
 	moveToFolder,
 	newFolder,
 	removeFromFolder,
 	setSaver,
+	unfolderAll,
 } from './folders'
 
 /**
@@ -42,8 +44,10 @@ interface Settings {
 	popup: boolean
 	/** In the More Options sheet. */
 	sheet: boolean
+	/** "Move all to" for servers in a folder. */
+	moveAll: boolean
 }
-const DEFAULTS: Settings = { popup: true, sheet: false }
+const DEFAULTS: Settings = { popup: true, sheet: false, moveAll: true }
 let storage: any
 const settings = (): Settings => ({ ...DEFAULTS, ...(storage?.cache ?? {}) })
 function setSettings(patch: Partial<Settings>) {
@@ -71,6 +75,72 @@ async function run(task: () => Promise<void>, done: string) {
 	} catch (e: any) {
 		toast(`Couldn't move it: ${e?.message ?? e}`)
 	}
+}
+
+function row(
+	key: string,
+	label: string,
+	onPress: () => void,
+	opts: {
+		dot?: string
+		note?: string
+		disabled?: boolean
+		danger?: boolean
+	} = {},
+) {
+	const { Text } = Design as any
+	return (
+		<Pressable
+			key={key}
+			disabled={opts.disabled}
+			onPress={onPress}
+			accessibilityRole="button"
+			accessibilityLabel={label}
+			style={({ pressed }: { pressed: boolean }) => ({
+				flexDirection: 'row',
+				alignItems: 'center',
+				minHeight: 40,
+				paddingHorizontal: 10,
+				paddingVertical: 6,
+				marginBottom: 4,
+				borderRadius: 8,
+				backgroundColor: pressed
+					? 'rgba(255,255,255,0.12)'
+					: 'rgba(255,255,255,0.05)',
+				opacity: opts.disabled ? 0.5 : 1,
+			})}
+		>
+			{opts.dot ? (
+				<View
+					style={{
+						width: 10,
+						height: 10,
+						borderRadius: 3,
+						marginRight: 10,
+						backgroundColor: opts.dot,
+					}}
+				/>
+			) : null}
+			<View style={{ flex: 1 }}>
+				<Text
+					variant="text-md/medium"
+					style={{ color: opts.danger ? '#F23F42' : textColor() }}
+					numberOfLines={1}
+				>
+					{label}
+				</Text>
+			</View>
+			{opts.note ? (
+				<Text
+					variant="text-xs/medium"
+					color="text-muted"
+					style={{ marginLeft: 8 }}
+				>
+					{opts.note}
+				</Text>
+			) : null}
+		</Pressable>
+	)
 }
 
 function Picker({ guildId, close }: { guildId: string; close: () => void }) {
@@ -131,69 +201,6 @@ function Picker({ guildId, close }: { guildId: string; close: () => void }) {
 			</Stack>
 		)
 
-	const row = (
-		key: string,
-		label: string,
-		onPress: () => void,
-		opts: {
-			dot?: string
-			note?: string
-			disabled?: boolean
-			danger?: boolean
-		} = {},
-	) => (
-		<Pressable
-			key={key}
-			disabled={opts.disabled}
-			onPress={onPress}
-			accessibilityRole="button"
-			accessibilityLabel={label}
-			style={({ pressed }: { pressed: boolean }) => ({
-				flexDirection: 'row',
-				alignItems: 'center',
-				minHeight: 40,
-				paddingHorizontal: 10,
-				paddingVertical: 6,
-				marginBottom: 4,
-				borderRadius: 8,
-				backgroundColor: pressed
-					? 'rgba(255,255,255,0.12)'
-					: 'rgba(255,255,255,0.05)',
-				opacity: opts.disabled ? 0.5 : 1,
-			})}
-		>
-			{opts.dot ? (
-				<View
-					style={{
-						width: 10,
-						height: 10,
-						borderRadius: 3,
-						marginRight: 10,
-						backgroundColor: opts.dot,
-					}}
-				/>
-			) : null}
-			<View style={{ flex: 1 }}>
-				<Text
-					variant="text-md/medium"
-					style={{ color: opts.danger ? '#F23F42' : textColor() }}
-					numberOfLines={1}
-				>
-					{label}
-				</Text>
-			</View>
-			{opts.note ? (
-				<Text
-					variant="text-xs/medium"
-					color="text-muted"
-					style={{ marginLeft: 8 }}
-				>
-					{opts.note}
-				</Text>
-			) : null}
-		</Pressable>
-	)
-
 	return (
 		<View style={{ maxHeight: 380 }}>
 			<ScrollView keyboardShouldPersistTaps="handled">
@@ -242,6 +249,79 @@ function Picker({ guildId, close }: { guildId: string; close: () => void }) {
 	)
 }
 
+/** Every server in [folderId] into another folder, or out of folders. */
+function AllPicker({
+	folderId,
+	close,
+}: {
+	folderId: number | string
+	close: () => void
+}) {
+	const { Text } = Design as any
+	const source = folders().find(f => String(f.id) === String(folderId))
+	if (!source) return null
+	const others = folders().filter(f => String(f.id) !== String(folderId))
+	const count = `${source.guildIds.length} server${source.guildIds.length === 1 ? '' : 's'}`
+	return (
+		<View style={{ maxHeight: 380 }}>
+			<ScrollView keyboardShouldPersistTaps="handled">
+				{others.length ? (
+					others.map(f =>
+						row(
+							String(f.id),
+							f.name,
+							() => {
+								close()
+								void run(
+									() => mergeFolder(source.id, f.id),
+									`${count} from ${source.name} → ${f.name}`,
+								)
+							},
+							{ dot: f.color ?? '#5865f2', note: String(f.guildIds.length) },
+						),
+					)
+				) : (
+					<Text variant="text-sm/medium" color="text-muted">
+						No other folders yet.
+					</Text>
+				)}
+				{row(
+					'out',
+					'Take all out of folders',
+					() => {
+						close()
+						void run(
+							() => unfolderAll(source.id),
+							`${count} out of ${source.name}`,
+						)
+					},
+					{ danger: true },
+				)}
+			</ScrollView>
+		</View>
+	)
+}
+
+export function openAllPicker(guildId: string) {
+	if (!canSave())
+		return toast("Couldn't find Discord's folder saving on this version")
+	const source = folderOf(guildId)
+	if (!source) return toast('This server is not in a folder')
+	const { AlertModal, AlertActionButton } = Design as any
+	const key = `quick-folders-all-${source.id}`
+	const close = () => (AlertActionCreators as any).dismissAlert(key)
+	;(AlertActionCreators as any).openAlert(
+		key,
+		<AlertModal
+			title={`Move all of ${source.name} to`}
+			extraContent={<AllPicker folderId={source.id} close={close} />}
+			actions={
+				<AlertActionButton text="Cancel" variant="secondary" onPress={close} />
+			}
+		/>,
+	)
+}
+
 export function openPicker(guildId: string) {
 	if (!canSave())
 		return toast("Couldn't find Discord's folder saving on this version")
@@ -281,6 +361,19 @@ function MoveGroup({ guildId }: { guildId: string }) {
 					setTimeout(() => openPicker(guildId), 250)
 				}}
 			/>
+			{settings().moveAll && current ? (
+				<ActionSheetRow
+					label="Move all to"
+					subLabel={`Everything in ${current.name}`}
+					icon={Icon ? <ActionSheetRow.Icon IconComponent={Icon} /> : undefined}
+					onPress={() => {
+						try {
+							;(ActionSheetActionCreators as any).hideActionSheet?.()
+						} catch {}
+						setTimeout(() => openAllPicker(guildId), 250)
+					}}
+				/>
+			) : null}
 		</ActionSheetRow.Group>
 	)
 }
@@ -313,6 +406,12 @@ function SettingsPage() {
 						value={s.sheet}
 						onValueChange={(sheet: boolean) => set({ sheet })}
 					/>
+					<TableSwitchRow
+						label="Move all to"
+						subLabel="For a server in a folder: moves the whole folder's servers into another folder, or out of folders"
+						value={s.moveAll}
+						onValueChange={(moveAll: boolean) => set({ moveAll })}
+					/>
 				</TableRowGroup>
 				<TableRowGroup title="Status">
 					<TableRow
@@ -342,25 +441,34 @@ export default plugin({
 							try {
 								const menu = args[0]
 								const id = menu?.key
+								const s = settings()
 								if (
-									settings().popup &&
+									(s.popup || s.moveAll) &&
 									Array.isArray(menu?.items) &&
 									typeof id === 'string' &&
 									/^\d{5,}$/.test(id) &&
 									isGuild(id) &&
 									!menu.items.some((i: any) => i?.quickFolders)
-								)
-									menu.items.push({
-										quickFolders: true,
-										IconComponent:
-											lookupGeneratedIconComponent('FolderIcon' as any) ??
-											lookupGeneratedIconComponent('FolderPlusIcon' as any),
-										label: 'Move to',
-										action() {
-											// Opened once the menu has closed, so the two don't fight over the screen.
-											setTimeout(() => openPicker(id), 300)
-										},
-									})
+								) {
+									const icon =
+										lookupGeneratedIconComponent('FolderIcon' as any) ??
+										lookupGeneratedIconComponent('FolderPlusIcon' as any)
+									// Opened once the menu has closed, so the two don't fight over the screen.
+									if (s.popup)
+										menu.items.push({
+											quickFolders: true,
+											IconComponent: icon,
+											label: 'Move to',
+											action: () => setTimeout(() => openPicker(id), 300),
+										})
+									if (s.moveAll && folderOf(id))
+										menu.items.push({
+											quickFolders: true,
+											IconComponent: icon,
+											label: 'Move all to',
+											action: () => setTimeout(() => openAllPicker(id), 300),
+										})
+								}
 							} catch {}
 							return orig.apply(this, args)
 						},

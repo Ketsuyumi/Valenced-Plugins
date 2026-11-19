@@ -5,7 +5,7 @@
 	"description": "Long-press a server and choose Move to folder: pick a folder, make a new one, or take it out of its folder. No dragging.",
 	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
 	"icon": "FolderIcon",
-	"version": "1.1.1",
+	"version": "1.2.0",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"
