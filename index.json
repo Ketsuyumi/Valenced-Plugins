@@ -525,7 +525,7 @@
       ],
       "icon": "LinkIcon",
       "channels": {
-        "latest": "1.5.0"
+        "latest": "1.5.1"
       },
       "versions": {
         "1.0.0": {
@@ -597,6 +597,19 @@
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.floating-browser@1.5.0.zip",
           "sha256": "105cbf6d8ab140e05036472d83e7ce9d56673c0190b6567c0dd4cdcbc9652a20",
           "size": 17730,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.5.1": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.floating-browser@1.5.1.zip",
+          "sha256": "246cfe8df210d05ce77551210ead25690d2ddbe3e1efd7b121b1d64768ce66cf",
+          "size": 18278,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
