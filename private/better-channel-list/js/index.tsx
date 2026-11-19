@@ -116,7 +116,19 @@ function request(
 
 /** 채널 목록을 다시 그리게 한다 (마지막 메시지가 바뀌었을 때) */
 let redrawTimer: any
+/**
+ * Better Channel List+: Discord measures a row (getChannelListItemSize) and then draws it
+ * (renderChannelListItem) right after, and both looked the preview up from scratch. A row's
+ * result is kept for a moment and reused until anything that could change it happens.
+ */
+let rowVersion = 0
+const ROW_MEMO_MS = 1000
+const rowMemo = new WeakMap<
+	object,
+	{ v: number; sv: number; at: number; rec: any }
+>()
 function redraw() {
+	rowVersion++
 	clearTimeout(redrawTimer)
 	redrawTimer = setTimeout(() => {
 		try {
@@ -754,6 +766,7 @@ function watchChannel(channelId: string, f: () => void): () => void {
 
 /** A message event for [channelId]. Deferred, so the stores have handled the event first. */
 function channelChanged(channelId: unknown) {
+	rowVersion++
 	if (typeof channelId !== 'string' || !channelWatchers.has(channelId)) return
 	changedChannels.add(channelId)
 	if (changedTimer) return
@@ -919,6 +932,7 @@ const previews = new Map<string, { sig: string; pv: Preview | undefined }>()
 let dataVersion = 0
 function dropPreviews() {
 	dataVersion++
+	rowVersion++
 	previews.clear()
 }
 
@@ -1028,6 +1042,18 @@ function fillPreviews(args: any[]): any {
 	const forum =
 		rec?.type === ChannelTypes.FORUM || rec?.type === ChannelTypes.MEDIA
 	if (!ch || !rec || (!TEXTUAL.has(rec.type) && !forum)) return rec
+	const now = Date.now()
+	const sv = settingsVersion()
+	const memo = rowMemo.get(ch)
+	if (
+		memo &&
+		memo.v === rowVersion &&
+		memo.sv === sv &&
+		memo.rec === rec &&
+		now - memo.at < ROW_MEMO_MS
+	)
+		return rec
+	rowMemo.set(ch, { v: rowVersion, sv, at: now, rec })
 	const ours = touched.has(ch)
 	// 디스코드가 원래 넣은 subtitle 은 건드리지 않는다
 	if (!ours && ch.subtitle != null) return rec
@@ -1351,8 +1377,10 @@ export default plugin({
 		])
 			subs.push([type, dropSoon])
 		// Unread-only previews and the muted switch follow read and mute state.
-		const onReadState = () =>
-			(settings().mode === 'unreads' || settings().hideMuted) && redraw()
+		const onReadState = () => {
+			rowVersion++
+			if (settings().mode === 'unreads' || settings().hideMuted) redraw()
+		}
 		for (const type of [
 			'CHANNEL_ACK',
 			'MESSAGE_ACK',
@@ -1392,6 +1420,7 @@ export default plugin({
 					delete ch.subtitle
 				} catch {}
 			touched.clear()
+			rowVersion++
 			previews.clear()
 			shownIds.clear()
 			relayoutAt.clear()
