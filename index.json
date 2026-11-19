@@ -3,6 +3,30 @@
   "name": "Valenced Plugins by Satou",
   "description": "Plugins for Valenced.",
   "plugins": {
+    "dev.ketsuyumi.auto-collapse": {
+      "name": "Auto Collapse",
+      "description": "Collapses the categories with nothing new when you open a server, new or old, and opens the ones with new messages.",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+      "icon": "FolderIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.auto-collapse@1.0.0.zip",
+          "sha256": "5fa446edb5fd46a3366d17028a0a9fcd9f60c8733b5b999aa244f4a0282e5551",
+          "size": 2278,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.better-dms": {
       "name": "Better DMs",
       "description": "Make DMs easier to tell apart: colours, labels, emoji, pins, tabs (with a Groups tab), unread, last-active and mutual-server hints, a name banner, a send check for careful chats, private nicknames and more. Every part can be turned off.",
