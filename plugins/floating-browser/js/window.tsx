@@ -197,11 +197,23 @@ function updatePage(id: number, patch: Partial<Page>) {
 	tabsChanged()
 }
 
+/** Minimized: the window is out of sight but still loaded (a video keeps playing). */
+let minimized = false
+
+/** The chat bar's 🌐: opens the browser, minimizes it when it's showing, brings it back when minimized. */
+export function toggleBrowser() {
+	if (!open) return openBrowser()
+	minimized = !minimized
+	if (minimized) moving = false
+	emit()
+}
+
 export function openBrowser(url?: string) {
 	if (!mounted)
 		return toast(
 			'Restart Discord once to finish setting up the floating browser',
 		)
+	minimized = false
 	const s = settings()
 	if (!tabs.length) {
 		const saved = s.tabs.length ? s.tabs : [s.lastUrl || s.home]
@@ -219,6 +231,7 @@ export function openBrowser(url?: string) {
 	emit()
 }
 export function closeBrowser() {
+	minimized = false
 	if (beforePageBig) {
 		win = beforePageBig
 		beforePageBig = undefined
@@ -584,6 +597,8 @@ function Browser({ box }: { box: Win }) {
 	// Back: the page's history first, then shrink a big window.
 	useEffect(() => {
 		const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+			// Minimized: back belongs to Discord.
+			if (minimized) return false
 			if (page.back) {
 				view()?.goBack?.()
 				return true
@@ -610,9 +625,12 @@ function Browser({ box }: { box: Win }) {
 
 	return (
 		<View
+			pointerEvents={minimized ? 'none' : 'auto'}
 			style={{
 				position: 'absolute',
-				left: box.x,
+				// Minimized: moved off screen rather than unmounted, so the pages keep running.
+				left: minimized ? -10000 : box.x,
+				opacity: minimized ? 0 : 1,
 				top: box.y,
 				width: box.w,
 				height: box.h,

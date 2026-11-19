@@ -17,7 +17,13 @@ import {
 import { counts, LISTS } from './filters'
 import { filterStatus, loadFilters, onFilters, updateFilters } from './updater'
 import { findWebView } from './webview'
-import { browserReady, external, installWindow, openBrowser } from './window'
+import {
+	browserReady,
+	external,
+	installWindow,
+	openBrowser,
+	toggleBrowser,
+} from './window'
 
 /**
  * A floating browser that stays over Discord while you chat, with "extensions" (scripts put into
@@ -308,7 +314,7 @@ export default plugin<{ jsonStorage: Settings }>({
 		cleanup(
 			installWindow(),
 			installChatbar({
-				onPress: () => openBrowser(),
+				onPress: () => toggleBrowser(),
 				enabled: () => settings().chatButton,
 			}),
 			getModules((withProps as any)('handleClick'), (mod: any) => {

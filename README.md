@@ -301,7 +301,8 @@ Discord passed.
 ### Floating Browser (`dev.ketsuyumi.floating-browser`)
 
 A browser window that floats over Discord, so a video keeps playing while you chat, scroll and switch channels. Open
-it with the 🌐 button in the chat bar (or the plugin's page). Drag it by its bar, resize from ◢, or pick Big, Corner or
+it with the 🌐 button in the chat bar (or the plugin's page). Pressing 🌐 while it's open minimizes it (a video keeps playing);
+press again to bring it back. Drag it by its bar, resize from ◢, or pick Big, Corner or
 16:9 from ☰. Tap the title to type an address or a search. ❐ shows your tabs (up to 6, each keeps playing in the
 background); ⛶ makes the page's video fill the window (on a page with no video it makes the window a big floating page, ¾ of the
 screen, and back). Your window size and position, tabs and bookmarks are
