@@ -8,6 +8,7 @@ import { instead } from '@valenced/patcher'
 import { lookupGeneratedIconComponent } from '@valenced/utils/discord'
 import { useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
+import { textColor } from './color'
 import { findModule } from './find'
 import {
 	canSave,
@@ -73,8 +74,7 @@ async function run(task: () => Promise<void>, done: string) {
 }
 
 function Picker({ guildId, close }: { guildId: string; close: () => void }) {
-	const { Stack, Text, TextInput, TableRowGroup, TableRow, Button } =
-		Design as any
+	const { Stack, Text, TextInput, Button } = Design as any
 	const [naming, setNaming] = useState(false)
 	const [name, setName] = useState('')
 	const [color, setColor] = useState(COLORS[0])
@@ -84,7 +84,7 @@ function Picker({ guildId, close }: { guildId: string; close: () => void }) {
 
 	if (naming)
 		return (
-			<Stack spacing={12}>
+			<Stack spacing={8}>
 				<TextInput
 					label="Folder name"
 					placeholder="Friends, Games…"
@@ -100,9 +100,9 @@ function Picker({ guildId, close }: { guildId: string; close: () => void }) {
 							onPress={() => setColor(c)}
 							accessibilityLabel={`Colour ${c.toString(16)}`}
 							style={{
-								width: 30,
-								height: 30,
-								borderRadius: 15,
+								width: 24,
+								height: 24,
+								borderRadius: 12,
 								marginRight: 8,
 								backgroundColor: `#${c.toString(16).padStart(6, '0')}`,
 								borderWidth: color === c ? 3 : 0,
@@ -113,6 +113,7 @@ function Picker({ guildId, close }: { guildId: string; close: () => void }) {
 				</ScrollView>
 				<Button
 					text="Create folder"
+					size="sm"
 					onPress={() => {
 						close()
 						void run(
@@ -123,73 +124,119 @@ function Picker({ guildId, close }: { guildId: string; close: () => void }) {
 				/>
 				<Button
 					text="Back"
+					size="sm"
 					variant="secondary"
 					onPress={() => setNaming(false)}
 				/>
 			</Stack>
 		)
 
+	const row = (
+		key: string,
+		label: string,
+		onPress: () => void,
+		opts: {
+			dot?: string
+			note?: string
+			disabled?: boolean
+			danger?: boolean
+		} = {},
+	) => (
+		<Pressable
+			key={key}
+			disabled={opts.disabled}
+			onPress={onPress}
+			accessibilityRole="button"
+			accessibilityLabel={label}
+			style={({ pressed }: { pressed: boolean }) => ({
+				flexDirection: 'row',
+				alignItems: 'center',
+				minHeight: 40,
+				paddingHorizontal: 10,
+				paddingVertical: 6,
+				marginBottom: 4,
+				borderRadius: 8,
+				backgroundColor: pressed
+					? 'rgba(255,255,255,0.12)'
+					: 'rgba(255,255,255,0.05)',
+				opacity: opts.disabled ? 0.5 : 1,
+			})}
+		>
+			{opts.dot ? (
+				<View
+					style={{
+						width: 10,
+						height: 10,
+						borderRadius: 3,
+						marginRight: 10,
+						backgroundColor: opts.dot,
+					}}
+				/>
+			) : null}
+			<View style={{ flex: 1 }}>
+				<Text
+					variant="text-md/medium"
+					style={{ color: opts.danger ? '#F23F42' : textColor() }}
+					numberOfLines={1}
+				>
+					{label}
+				</Text>
+			</View>
+			{opts.note ? (
+				<Text
+					variant="text-xs/medium"
+					color="text-muted"
+					style={{ marginLeft: 8 }}
+				>
+					{opts.note}
+				</Text>
+			) : null}
+		</Pressable>
+	)
+
 	return (
-		<View style={{ maxHeight: 460 }}>
+		<View style={{ maxHeight: 380 }}>
 			<ScrollView keyboardShouldPersistTaps="handled">
-				<Stack spacing={12}>
-					<TableRowGroup>
-						<TableRow
-							label="New folder…"
-							arrow
-							onPress={() => setNaming(true)}
-						/>
-						{current ? (
-							<TableRow
-								label="Remove from folder"
-								subLabel={`Out of ${current.name}`}
-								onPress={() => {
-									close()
-									void run(
-										() => removeFromFolder(guildId),
-										`${server} is out of ${current.name}`,
-									)
-								}}
-							/>
-						) : null}
-					</TableRowGroup>
-					{list.length ? (
-						<TableRowGroup title="Your folders">
-							{list.map(f => {
-								const here = current?.id === f.id
-								return (
-									<TableRow
-										key={String(f.id)}
-										label={f.name}
-										subLabel={`${f.guildIds.length} server${f.guildIds.length === 1 ? '' : 's'}${here ? ' · already here' : ''}`}
-										icon={
-											<View
-												style={{
-													width: 14,
-													height: 14,
-													borderRadius: 4,
-													backgroundColor: f.color ?? '#5865f2',
-												}}
-											/>
-										}
-										disabled={here}
-										onPress={() => {
-											close()
-											void run(
-												() => moveToFolder(guildId, f.id),
-												`${server} → ${f.name}`,
-											)
-										}}
-									/>
+				{row('new', 'New folder…', () => setNaming(true), { note: '+' })}
+				{current
+					? row(
+							'out',
+							`Remove from ${current.name}`,
+							() => {
+								close()
+								void run(
+									() => removeFromFolder(guildId),
+									`${server} is out of ${current.name}`,
 								)
-							})}
-						</TableRowGroup>
-					) : (
-						<Text variant="text-sm/medium" color="text-muted">
-							You don't have any folders yet. Make one with New folder.
-						</Text>
-					)}
-				</Stack>
+							},
+							{ danger: true },
+						)
+					: null}
+				{list.length ? (
+					list.map(f => {
+						const here = current?.id === f.id
+						return row(
+							String(f.id),
+							f.name,
+							() => {
+								close()
+								void run(
+									() => moveToFolder(guildId, f.id),
+									`${server} → ${f.name}`,
+								)
+							},
+							{
+								dot: f.color ?? '#5865f2',
+								note: here ? 'here' : String(f.guildIds.length),
+								disabled: here,
+							},
+						)
+					})
+				) : (
+					<Text variant="text-sm/medium" color="text-muted">
+						No folders yet. Make one with New folder.
+					</Text>
+				)}
 			</ScrollView>
 		</View>
 	)
@@ -204,7 +251,7 @@ export function openPicker(guildId: string) {
 	;(AlertActionCreators as any).openAlert(
 		key,
 		<AlertModal
-			title={`Move ${guildName(guildId)} to…`}
+			title={`Move ${guildName(guildId)} to`}
 			extraContent={<Picker guildId={guildId} close={close} />}
 			actions={
 				<AlertActionButton text="Cancel" variant="secondary" onPress={close} />
@@ -223,7 +270,7 @@ function MoveGroup({ guildId }: { guildId: string }) {
 	return (
 		<ActionSheetRow.Group hasIcons={!!Icon}>
 			<ActionSheetRow
-				label="Move to folder"
+				label="Move to"
 				subLabel={current ? `In ${current.name}` : undefined}
 				icon={Icon ? <ActionSheetRow.Icon IconComponent={Icon} /> : undefined}
 				onPress={() => {
@@ -249,10 +296,9 @@ function SettingsPage() {
 		<ScrollView contentContainerStyle={{ padding: 16 }}>
 			<Stack spacing={16}>
 				<Text variant="text-md/normal">
-					Long-press a server and choose Move to folder. Pick a folder, make a
-					new one (with a name and colour), or take the server out of its
-					folder. It saves the same way dragging does, so it syncs to your other
-					devices.
+					Long-press a server and choose Move to. Pick a folder, make a new one
+					(with a name and colour), or take the server out of its folder. It
+					saves the same way dragging does, so it syncs to your other devices.
 				</Text>
 				<TableRowGroup title="Where it shows">
 					<TableSwitchRow
@@ -309,7 +355,7 @@ export default plugin({
 										IconComponent:
 											lookupGeneratedIconComponent('FolderIcon' as any) ??
 											lookupGeneratedIconComponent('FolderPlusIcon' as any),
-										label: 'Move to folder',
+										label: 'Move to',
 										action() {
 											// Opened once the menu has closed, so the two don't fight over the screen.
 											setTimeout(() => openPicker(id), 300)
