@@ -1,7 +1,7 @@
 import { Tokens } from '@valenced/discord/common/tokens'
 import { Design } from '@valenced/discord/design'
 import { Stores } from '@valenced/discord/flux'
-import { Pressable } from 'react-native'
+import { Pressable, View } from 'react-native'
 
 /** The theme's main text colour (some colour names don't exist on every version and fall back to black). */
 export function textColor(): string {
@@ -32,11 +32,14 @@ export function Chip({
 	on,
 	onPress,
 	color,
+	badge,
 }: {
 	label: string
 	on: boolean
 	onPress: () => void
 	color?: string
+	/** Unread conversations in this tab. */
+	badge?: number
 }) {
 	const { Text } = Design as any
 	return (
@@ -48,6 +51,8 @@ export function Chip({
 				paddingHorizontal: 11,
 				paddingVertical: 5,
 				borderRadius: 14,
+				flexDirection: 'row',
+				alignItems: 'center',
 				marginRight: 6,
 				backgroundColor: on ? (color ?? ACCENT) : 'rgba(127,127,127,0.18)',
 			}}
@@ -58,6 +63,27 @@ export function Chip({
 			>
 				{label}
 			</Text>
+			{badge ? (
+				<View
+					style={{
+						marginLeft: 5,
+						minWidth: 16,
+						height: 16,
+						paddingHorizontal: 4,
+						borderRadius: 8,
+						alignItems: 'center',
+						justifyContent: 'center',
+						backgroundColor: '#F23F42',
+					}}
+				>
+					<Text
+						variant="text-xxs/bold"
+						style={{ color: '#ffffff', fontSize: 10, lineHeight: 12 }}
+					>
+						{badge > 99 ? '99+' : String(badge)}
+					</Text>
+				</View>
+			) : null}
 		</Pressable>
 	)
 }

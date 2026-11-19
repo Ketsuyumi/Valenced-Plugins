@@ -1,6 +1,7 @@
 import { Design } from '@valenced/discord/design'
 import { ScrollView } from 'react-native'
 import { setStillPreviews } from './pages'
+import { patchHeaderAddButton } from './header'
 import { DEFAULT_SETTINGS, patchNewGroup, patchTabs } from './patches'
 import type { PluginApi } from '@valenced/plugins/types'
 import type { Settings } from './patches'
@@ -33,7 +34,11 @@ function SettingsPage({ api }: { api: Api }) {
 		>
 			<Stack spacing={24}>
 				<TableRowGroup title="DM details screen">
-					{row('hideNewGroup', 'Hide "New Group" button', 'In one-to-one DMs')}
+					{row(
+						'hideNewGroup',
+						'Hide "New Group" button',
+						'In one-to-one DMs: on the details screen and the add-people button in the top bar',
+					)}
 					{row('hideMembers', 'Hide Members tab', 'In one-to-one DMs')}
 					{row('hideFiles', 'Hide Files tab', 'In DMs and group DMs')}
 					{row('pinsGrid', 'Pins as grid', '3 columns, like Media')}
@@ -75,6 +80,7 @@ export default plugin<{ jsonStorage: Settings }>({
 		cleanup(
 			...patchTabs(getSettings, logger),
 			...patchNewGroup(getSettings, logger),
+			patchHeaderAddButton(() => getSettings().hideNewGroup),
 		)
 	},
 	SettingsComponent: SettingsPage,

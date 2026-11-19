@@ -230,7 +230,8 @@ export function patchNewGroup(
 						after(module, 'useMemberListAction', (result: unknown) =>
 							getSettings().hideNewGroup &&
 							isValidElement(result) &&
-							nameOf(result.type) === 'RowButton' &&
+							// In a 1-on-1 DM this action is only ever the New Group button; checking its
+							// component's name ('RowButton') missed it on builds where the name differs.
 							channelType(selectedChannelId()) === DM
 								? null
 								: result,

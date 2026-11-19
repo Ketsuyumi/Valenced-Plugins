@@ -24,6 +24,7 @@ import {
 	user,
 } from './state'
 import { installTabs } from './tabs'
+import { installEmptyText } from './empty'
 import { Chip } from './ui'
 import type { Features, Settings } from './state'
 
@@ -284,6 +285,7 @@ export default plugin<{ jsonStorage: Settings }>({
 		cleanup(
 			patchLists(),
 			installTabs(),
+			installEmptyText(),
 			installPreview(),
 			installBanner(),
 			installGuard(),
