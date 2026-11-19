@@ -219,6 +219,10 @@ export function openBrowser(url?: string) {
 	emit()
 }
 export function closeBrowser() {
+	if (beforePageBig) {
+		win = beforePageBig
+		beforePageBig = undefined
+	}
 	if (win) save({ win })
 	moving = false
 	// Reopening picks each tab up where it was, not at the address it first opened.
@@ -233,6 +237,29 @@ export function closeBrowser() {
 let beforeFullscreen: Win | undefined
 /** A video is filling the window (shows ⛶ in the bar to leave). */
 let videoFull = false
+/** ⛶ on a page with no video: the window is a big floating page; this is the size to go back to. */
+let beforePageBig: Win | undefined
+function togglePageBig() {
+	if (beforePageBig) {
+		setWin(beforePageBig, true)
+		beforePageBig = undefined
+		return
+	}
+	if (!win) return
+	beforePageBig = { ...win }
+	const { width, height } = screen()
+	const top = topInset()
+	const h = Math.round(height * 0.75)
+	setWin(
+		{
+			x: 8,
+			y: Math.max(top, Math.round(top + (height - top - h) / 2)),
+			w: width - 16,
+			h,
+		},
+		true,
+	)
+}
 /** A video went fullscreen in the window: turn the window into a full-width landscape box, and back. */
 function sideways(on: boolean) {
 	videoFull = on
@@ -463,6 +490,7 @@ function TabView({
 					}
 					if (data?.fb === 'fs') return sideways(!!data.on)
 					if (data?.fb === 'hold') return setMoving(true)
+					if (data?.fb === 'fsnone') return togglePageBig()
 					if (data?.fb === 'blocked' && typeof data.n === 'number')
 						onPage(tab.id, { blocked: data.n })
 					else if (
@@ -626,8 +654,9 @@ function Browser({ box }: { box: Win }) {
 					<Btn
 						label="⛶"
 						hint={videoFull ? 'Leave fullscreen' : 'Video fills the window'}
-						on={videoFull}
+						on={videoFull || !!beforePageBig}
 						onPress={() => {
+							if (beforePageBig && !videoFull) return togglePageBig()
 							view()?.injectJavaScript?.(
 								'(function(){try{window.__fbToggleFs&&window.__fbToggleFs()}catch(e){}})();true;',
 							)

@@ -58,10 +58,15 @@ if(top){document.addEventListener('fullscreenchange',onNative,true);document.add
 window.__fbExitFs=function(){Array.from(frames.keys()).forEach(function(f){stretch(f,false)});if(cur)exit()};
 // The bar's fullscreen button: fill the window with the page's main video (or the player frame), or leave.
 window.__fbToggleFs=function(){if(frames.size||cur){window.__fbExitFs();return}
-var best=null,area=0;document.querySelectorAll('video').forEach(function(v){var r=v.getBoundingClientRect();if(r.width*r.height>area){area=r.width*r.height;best=v}});
-if(!best)best=document.querySelector('video');if(best){var box=best.closest('.plyr,.video-js,.jwplayer,.vjs-player,[class*="player"]')||best;enter(box);return}
-document.querySelectorAll('iframe').forEach(function(f){var r=f.getBoundingClientRect();var a=r.width*r.height;if(a>area&&r.width>120){area=a;best=f}});
-if(!best)best=document.querySelector('iframe');if(best)stretch(best,true)};
+var vw=window.innerWidth*window.innerHeight,best=null,area=-1;
+document.querySelectorAll('video').forEach(function(v){var r=v.getBoundingClientRect();if(r.width*r.height>area){area=r.width*r.height;best=v}});
+if(best){var box=best.closest('.plyr,.video-js,.jwplayer,.vjs-player,[class*="player"]')||best;enter(box);return}
+// A frame counts as a player when its address or name says so, or it takes a good part of the page.
+var PL=/player|embed|video|stream|watch|vidstream|play/i;area=-1;
+document.querySelectorAll('iframe').forEach(function(f){var r=f.getBoundingClientRect();var a=r.width*r.height;var named=PL.test((f.src||'')+' '+(f.id||'')+' '+(f.className||'')+' '+(f.name||''));if((named||a>=vw*0.2)&&a>area){area=a;best=f}});
+if(best){stretch(best,true);return}
+// No video here: the app makes the window a big floating page instead.
+try{window.ReactNativeWebView.postMessage(JSON.stringify({fb:'fsnone'}))}catch(e){}};
 var fire=function(el){['fullscreenchange','webkitfullscreenchange'].forEach(function(t){try{(el||document).dispatchEvent(new Event(t,{bubbles:true}))}catch(e){}})};
 var enter=function(el){if(cur&&cur!==el)exit();if(cur===el)return Promise.resolve();cur=last=el;saved=el.getAttribute('style')||'';
 el.style.cssText+=FILL;
