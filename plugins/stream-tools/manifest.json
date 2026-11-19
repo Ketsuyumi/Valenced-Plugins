@@ -1,0 +1,24 @@
+{
+	"format": 1,
+	"id": "dev.ketsuyumi.stream-tools",
+	"name": "Stream Tools",
+	"description": "More control when watching streams in a call: auto-watch and auto-focus streams (full video without tapping, great with Only Show Videos), a bar on the stream to switch streams and change its volume, and a clean view that hides other tiles and the call controls. Switches in the call's menu.",
+	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+	"contributors": [
+		"il1ll (stream actions, Stream Button; adding a row to the call menu, Mute Bubble, GPL-3.0)",
+		"bleelblep (call tile components, Pronouns, GPL-3.0)"
+	],
+	"icon": "ScreenIcon",
+	"version": "1.0.0",
+	"dependencies": {
+		"valenced.api": {
+			"version": ">=1 <2"
+		},
+		"discord": {
+			"version": "*"
+		}
+	},
+	"dist": {
+		"script": "index.js"
+	}
+}

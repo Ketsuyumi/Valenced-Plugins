@@ -52,9 +52,23 @@ function HideRow({ Row }: { Row: any }) {
 	)
 }
 
-const isAudioOutputRow = (element: any) =>
-	typeof element?.props?.label === 'string' &&
-	element.props.label.trim().toLowerCase() === 'change audio output'
+/** [element] is the row labelled [label], or a group another plugin made around it. */
+function hasRow(element: any, label: string, depth = 0): boolean {
+	if (!element || typeof element !== 'object' || depth > 3) return false
+	const own = element.props?.label
+	if (typeof own === 'string' && own.trim().toLowerCase() === label) return true
+	const kids = element.props?.children
+	if (element.type !== Fragment || kids == null) return false
+	return (Array.isArray(kids) ? kids : [kids]).some((k: any) =>
+		hasRow(k, label, depth + 1),
+	)
+}
+const rowTypes = () =>
+	new Set(
+		['TableRow', 'ActionSheetRow', 'TableSwitchRow', 'ActionSheetSwitchRow']
+			.map(n => (Design as any)[n])
+			.filter(Boolean),
+	)
 
 function SettingsPage() {
 	const { TableRowGroup, TableRow, TableSwitchRow, Stack, Text } = Design as any
@@ -126,17 +140,20 @@ export default plugin<{ jsonStorage: Settings }>({
 			}),
 		)
 		const SwitchRow = (Design as any).TableSwitchRow
-		for (const Row of new Set(
-			[(Design as any).TableRow, (Design as any).ActionSheetRow].filter(
-				Boolean,
-			),
-		))
+		for (const Row of rowTypes())
 			cleanup(
 				afterJSX(Row, (element: any) => {
-					if (!isAudioOutputRow(element)) return element
+					if (
+						!hasRow(element, 'change audio output') ||
+						element?.props?.__hideStreamPreviews
+					)
+						return element
 					return createElement(
 						Fragment,
-						{ key: element?.key ?? 'hide-stream-previews' },
+						{
+							key: element?.key ?? 'hide-stream-previews',
+							__hideStreamPreviews: true,
+						} as any,
 						element,
 						createElement(HideRow, {
 							key: 'hide-stream-previews-row',

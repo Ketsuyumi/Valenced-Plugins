@@ -9,7 +9,7 @@
 		"il1ll (adding a row to the call menu, Mute Bubble, GPL-3.0)"
 	],
 	"icon": "VideoIcon",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

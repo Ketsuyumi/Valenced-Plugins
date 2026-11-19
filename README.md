@@ -206,6 +206,21 @@ off from the call's own menu (**Hide Stream Previews**, under Change Audio Outpu
 The tile is `voice_panel/native/pip/VoicePanelPIP` (found by Yumistra for Voice Overlay); the menu row is added the way
 il1ll's Mute Bubble adds "Enable Bubble" (GPL-3.0).
 
+### Stream Tools (`dev.ketsuyumi.stream-tools`)
+
+More control when watching streams in a call:
+
+- **Auto-watch** when someone in your call goes live, and **auto-focus** the stream so it's big right away (no tapping,
+  also with Only Show Videos). Each stream is focused once, so tapping out of it yourself sticks.
+- **Next stream when one ends**, a **"went live" toast**, and **ignore my own stream**.
+- A **stream bar** on the focused stream: ◀ ▶ to switch between streams, 🔇 mute, − / + volume (tap the % to reset),
+  👁 clean view.
+- **Clean view**: only the stream; hides other tiles, the stream's own overlays and the call controls (each optional).
+
+Auto-watch, auto-focus and clean view are also in the call's menu, under Only Show Videos. Stream actions are Discord's
+own (as il1ll's Stream Button uses them); the call tiles are the components bleelblep documented for Pronouns. The
+call's control bar has no known module, so it's looked for at run time; the settings page shows what was found.
+
 ### Meow Picker (`dev.ketsuyumi.meow-picker`)
 
 A cat button by the emoji button in the chat bar opens a picker like the emoji one, with 599 meows in 13 tabs:
