@@ -179,6 +179,30 @@
         }
       }
     },
+    "dev.ketsuyumi.bulk-mute": {
+      "name": "Bulk Mute",
+      "description": "A bell next to a server's search bar: tap channels to select them, like selecting messages on WhatsApp, then mute them all forever at once (or unmute).",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+      "icon": "BellIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.bulk-mute@1.0.0.zip",
+          "sha256": "e025ddd230c2916c953bc69407eb6a349a257944073e64de51935c0f48413612",
+          "size": 5207,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.default-typing": {
       "name": "Default Typing Indicator",
       "description": "Shows everyone's typing indicator as Discord's plain dots, without custom animated emoji wiggling around.",
@@ -422,7 +446,7 @@
       "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "ForumIcon",
       "channels": {
-        "latest": "1.1.1"
+        "latest": "1.1.2"
       },
       "versions": {
         "1.0.0": {
@@ -468,6 +492,19 @@
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.forum-grid@1.1.1.zip",
           "sha256": "57f74443d970a7ae65af7884ff2cbab639d7d0da89b37fbd685e98b359edb4b7",
           "size": 9314,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.1.2": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.forum-grid@1.1.2.zip",
+          "sha256": "e9f87eca6b4ff301422633fda751ec2ddb00380cb6b8b0893e65fbb8b305824c",
+          "size": 9420,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
