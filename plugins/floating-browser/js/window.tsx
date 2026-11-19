@@ -118,6 +118,21 @@ export function closeBrowser() {
 }
 let loadHook: ((url: string) => void) | undefined
 
+/** The window before a video went fullscreen in it, to go back to afterwards. */
+let beforeFullscreen: Win | undefined
+/** A video went fullscreen in the window: turn the window into a full-width landscape box, and back. */
+function sideways(on: boolean) {
+	if (on) {
+		if (!beforeFullscreen && win) beforeFullscreen = { ...win }
+		const { width, height } = screen()
+		const h = Math.round((width * 9) / 16) + BAR
+		setWin({ x: 0, y: Math.max(60, Math.round((height - h) / 3)), w: width, h })
+	} else if (beforeFullscreen) {
+		setWin(beforeFullscreen)
+		beforeFullscreen = undefined
+	}
+}
+
 let dragStart: Win = { x: 0, y: 0, w: 0, h: 0 }
 const dragger = PanResponder.create({
 	onStartShouldSetPanResponder: () => false,
@@ -339,7 +354,9 @@ function Browser({ box }: { box: Win }) {
 						javaScriptEnabled
 						domStorageEnabled
 						allowsInlineMediaPlayback
-						allowsFullscreenVideo={!s.inWindowFullscreen}
+						// Left on: with it off, players inside frames (where the in-window script may not reach)
+						// decide fullscreen is impossible and hide their button.
+						allowsFullscreenVideo
 						injectedJavaScriptForMainFrameOnly={false}
 						injectedJavaScriptBeforeContentLoadedForMainFrameOnly={false}
 						mediaPlaybackRequiresUserAction={false}
@@ -362,6 +379,7 @@ function Browser({ box }: { box: Win }) {
 							} catch {
 								return
 							}
+							if (data?.fb === 'fs') return sideways(!!data.on)
 							if (data?.fb === 'blocked' && typeof data.n === 'number')
 								setBlocked(b => ({ ...b, inPage: data.n }))
 							else if (
