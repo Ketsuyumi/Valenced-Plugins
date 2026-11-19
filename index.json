@@ -731,6 +731,34 @@
         }
       }
     },
+    "dev.ketsuyumi.hide-stream-previews": {
+      "name": "Hide Stream Previews",
+      "description": "Hides the floating call / stream preview tile that stays over the chat after you leave the call screen. Switch it on or off from the call's own menu.",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+      "contributors": [
+        "Yumistra (the tile's module, Voice Overlay)",
+        "il1ll (adding a row to the call menu, Mute Bubble, GPL-3.0)"
+      ],
+      "icon": "VideoIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.hide-stream-previews@1.0.0.zip",
+          "sha256": "55c059eecb6cf8adfc034142253511d8ab8bef42a1ea0f75bb203de08ef1e55c",
+          "size": 2069,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.ignore-apps": {
       "name": "Ignore Apps",
       "description": "Hide messages from apps and bots that Discord doesn't let you block or ignore, like MEE6.",
