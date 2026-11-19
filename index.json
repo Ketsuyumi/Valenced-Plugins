@@ -83,7 +83,7 @@
       "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "ChatIcon",
       "channels": {
-        "latest": "1.1.1"
+        "latest": "1.2.0"
       },
       "versions": {
         "1.0.0": {
@@ -155,6 +155,19 @@
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.better-dms@1.1.1.zip",
           "sha256": "0034741be30812a42d7516628d272a9f1019694d4acfec5b157ababd342802ee",
           "size": 10454,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.2.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.better-dms@1.2.0.zip",
+          "sha256": "22c4b3a501b155ba512e497c011bff741213a2157ccc276b48e072985826f827",
+          "size": 11080,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
@@ -309,7 +322,7 @@
       "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "StickerIcon",
       "channels": {
-        "latest": "1.2.4"
+        "latest": "1.3.0"
       },
       "versions": {
         "1.0.0": {
@@ -394,6 +407,19 @@
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.2.4.zip",
           "sha256": "d6ce604516c4420443e746593aa811fe61480a638b41a997c276cf978ee60407",
           "size": 6078,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.3.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.dm-details-plus@1.3.0.zip",
+          "sha256": "66e5f4490d19bc1ff412a2b3293da579dbc503db9727fb4a58f4bdef53417fa7",
+          "size": 6934,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
