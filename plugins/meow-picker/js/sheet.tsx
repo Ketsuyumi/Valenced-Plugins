@@ -143,85 +143,93 @@ function MeowSheet({ opts }: { opts: PickerOptions }) {
 		: tabs[tab][2]
 	return (
 		<ActionSheet startExpanded>
-			<View style={{ paddingHorizontal: 12, paddingTop: 4 }}>
-				<View
-					style={{
-						flexDirection: 'row',
-						alignItems: 'center',
-						marginBottom: 8,
-					}}
-				>
-					<Text variant="heading-md/bold" style={{ color, flex: 1 }}>
-						{q ? `${shown.length} found` : tabs[tab][0]}
-					</Text>
-					<Text variant="text-xs/medium" color="text-muted">
-						tap adds · hold sends
-					</Text>
-				</View>
-				{TextInput ? (
-					<TextInput
-						placeholder="Search meows"
-						value={query}
-						onChange={setQuery}
-						isClearable
-						size="sm"
-					/>
-				) : null}
-				<View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
-					{tabs.map(([name, icon], i) => {
-						const on = i === tab && !q
-						return (
-							<Pressable
-								key={name}
-								onPress={() => {
-									setQuery('')
-									setTab(i)
-								}}
-								accessibilityRole="tab"
-								accessibilityLabel={name}
-								accessibilityState={{ selected: on }}
-								style={{
-									width: 38,
-									height: 34,
-									margin: 2,
-									borderRadius: 10,
-									alignItems: 'center',
-									justifyContent: 'center',
-									backgroundColor: on
-										? 'rgba(88,101,242,0.35)'
-										: 'rgba(255,255,255,0.05)',
-								}}
-							>
-								<Text variant="text-md/bold" style={{ color }}>
-									{icon}
-								</Text>
-							</Pressable>
-						)
-					})}
-				</View>
-			</View>
-			<SheetScrollView
-				style={{ maxHeight: Math.round(Dimensions.get('window').height * 0.5) }}
-				contentContainerStyle={{
-					flexDirection: 'row',
-					flexWrap: 'wrap',
-					padding: 9,
-					paddingBottom: 32,
-				}}
-				keyboardShouldPersistTaps="handled"
+			{/* A fixed height: the sheet sizes itself to what's inside, and a list with only a
+			    maximum height measured as almost nothing, so the sheet opened cut off. */}
+			<View
+				style={{ height: Math.round(Dimensions.get('window').height * 0.62) }}
 			>
-				{shown.length ? (
-					shown.map(m => <Chip key={m} text={m} opts={opts} color={color} />)
-				) : (
-					<Text
-						variant="text-sm/medium"
-						color="text-muted"
-						style={{ padding: 8 }}
+				<View style={{ paddingHorizontal: 12, paddingTop: 4 }}>
+					<View
+						style={{
+							flexDirection: 'row',
+							alignItems: 'center',
+							marginBottom: 8,
+						}}
 					>
-						No meows match that.
-					</Text>
-				)}
-			</SheetScrollView>
+						<Text variant="heading-md/bold" style={{ color, flex: 1 }}>
+							{q ? `${shown.length} found` : tabs[tab][0]}
+						</Text>
+						<Text variant="text-xs/medium" color="text-muted">
+							tap adds · hold sends
+						</Text>
+					</View>
+					{TextInput ? (
+						<TextInput
+							placeholder="Search meows"
+							value={query}
+							onChange={setQuery}
+							isClearable
+							size="sm"
+						/>
+					) : null}
+					<View
+						style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}
+					>
+						{tabs.map(([name, icon], i) => {
+							const on = i === tab && !q
+							return (
+								<Pressable
+									key={name}
+									onPress={() => {
+										setQuery('')
+										setTab(i)
+									}}
+									accessibilityRole="tab"
+									accessibilityLabel={name}
+									accessibilityState={{ selected: on }}
+									style={{
+										width: 38,
+										height: 34,
+										margin: 2,
+										borderRadius: 10,
+										alignItems: 'center',
+										justifyContent: 'center',
+										backgroundColor: on
+											? 'rgba(88,101,242,0.35)'
+											: 'rgba(255,255,255,0.05)',
+									}}
+								>
+									<Text variant="text-md/bold" style={{ color }}>
+										{icon}
+									</Text>
+								</Pressable>
+							)
+						})}
+					</View>
+				</View>
+				<SheetScrollView
+					style={{ flex: 1 }}
+					contentContainerStyle={{
+						flexDirection: 'row',
+						flexWrap: 'wrap',
+						padding: 9,
+						paddingBottom: 32,
+					}}
+					keyboardShouldPersistTaps="handled"
+				>
+					{shown.length ? (
+						shown.map(m => <Chip key={m} text={m} opts={opts} color={color} />)
+					) : (
+						<Text
+							variant="text-sm/medium"
+							color="text-muted"
+							style={{ padding: 8 }}
+						>
+							No meows match that.
+						</Text>
+					)}
+				</SheetScrollView>
+			</View>
 		</ActionSheet>
 	)
 }
