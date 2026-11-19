@@ -155,7 +155,9 @@ work together. Needs a reload when turned on or off, since Discord keeps rows it
 Edit your profile's game widgets on mobile, where Discord says "Widget editing isn't available on mobile yet". Open the
 plugin's settings to see Favorite Game (1), Games in Rotation (5), Games I Like (20) and Want to Play (20):
 
-- **Add a game**: search Discord's game list by name or alias, pick from your suggested games, or paste a game ID.
+- **Add a game**: search by name or alias (word by word, in any order), pick from your suggested games, or paste a game
+  ID. Search covers Discord's PC game list plus games you and your friends are playing right now, so mobile games with
+  Discord activity show up while someone plays them. Discord decides which games a widget accepts.
 - **Edit a game**: comment, skill tag and other tags (shown on Favorite Game and Games in Rotation), move up or down,
   or remove it.
 - **Save to profile**: sends the whole set with `PUT /users/@me/widgets` through Discord's own request helper (the plugin

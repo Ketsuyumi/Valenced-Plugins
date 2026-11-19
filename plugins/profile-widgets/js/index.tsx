@@ -8,6 +8,7 @@ import {
 	GAME_TYPES,
 	gameInfo,
 	iconUrl,
+	knownGames,
 	isSkillTag,
 	loadDetectable,
 	loadInfo,
@@ -289,9 +290,16 @@ function SearchView({
 	const [suggested, setSuggested] = useState<GameInfo[]>([])
 
 	useEffect(() => {
+		const extra = knownGames()
 		loadDetectable()
-			.then(setList)
-			.catch(e => setFailed(errorText(e)))
+			.then(pc => {
+				const ids = new Set(pc.map(g => g.id))
+				setList([...pc, ...extra.filter(g => !ids.has(g.id))])
+			})
+			.catch(e => {
+				setFailed(errorText(e))
+				setList(extra)
+			})
 		suggestedGames().then(async ids => {
 			await loadInfo(ids)
 			setSuggested(ids.map(id => gameInfo(id)!).filter(Boolean))
@@ -347,6 +355,7 @@ function SearchView({
 							<TableRow
 								key={game.id}
 								label={game.name}
+								subLabel={game.source ? `Not in Discord's PC list · ${game.source}` : undefined}
 								icon={<GameIcon game={game} />}
 								arrow
 								onPress={() => onPick(game)}
@@ -355,7 +364,14 @@ function SearchView({
 					</TableRowGroup>
 				) : query.trim() && list && !pasted ? (
 					<Text variant="text-sm/medium" color="text-muted">
-						No games match "{query.trim()}".
+						No games match "{query.trim()}". Search covers Discord's PC game list plus games you and your
+						friends are playing right now, so a mobile-only game shows up once someone is playing it, or paste
+						its game ID.
+					</Text>
+				) : !query.trim() ? (
+					<Text variant="text-sm/medium" color="text-muted">
+						{list ? 'No suggested games. ' : ''}Type a game's name. Mobile games are found when you or a friend
+						is playing them with Discord activity on; you can also paste a game ID.
 					</Text>
 				) : null}
 			</Stack>
