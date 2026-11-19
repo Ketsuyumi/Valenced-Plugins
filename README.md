@@ -306,6 +306,7 @@ it with the 🌐 button in the chat bar (or the plugin's page). Drag it by its b
 
 Extensions (scripts put into pages, each a switch in ☰ and in settings):
 
+- **Fullscreen in the window**: a video's fullscreen button fills the floating window instead of the whole screen.
 - **Pop-up blocker**: no new windows, no jumps to app stores or `intent://` links.
 - **Hide ads**: hides common ad boxes.
 - **Dark pages**, **Video focus** (the page's main video fills the window) and **Desktop site**.

@@ -117,6 +117,11 @@ function SettingsPage() {
 						'Pop-up blocker',
 						'Stops pages opening windows and jumping to app stores',
 					)}
+					{sw(
+						'inWindowFullscreen',
+						'Fullscreen in the window',
+						"A video's fullscreen button fills the floating window, so you can keep chatting",
+					)}
 					{sw('adHide', 'Hide ads', 'Hides common ad boxes')}
 					{sw(
 						'dark',

@@ -14,6 +14,27 @@ window.open=function(){return null};
 document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[target=_blank]');if(a&&a.href&&a.host!==location.host){a.removeAttribute('target')}},true);
 `
 
+/**
+ * Fullscreen inside the window: a page asking for fullscreen gets its element stretched over the
+ * page instead, and is told it's fullscreen (fullscreenElement, the change events), so the
+ * player's own buttons, including "exit fullscreen", keep working.
+ */
+const FULLSCREEN = `
+var cur=null,last=null,saved='',savedOverflow='';
+var fire=function(el){['fullscreenchange','webkitfullscreenchange'].forEach(function(t){try{(el||document).dispatchEvent(new Event(t,{bubbles:true}))}catch(e){}})};
+var enter=function(el){if(cur&&cur!==el)exit();if(cur===el)return Promise.resolve();cur=last=el;saved=el.getAttribute('style')||'';
+el.style.cssText+=';position:fixed!important;left:0!important;top:0!important;right:0!important;bottom:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;z-index:2147483647!important;background:#000!important;margin:0!important;transform:none!important;border-radius:0!important';
+savedOverflow=document.documentElement.style.overflow;document.documentElement.style.overflow='hidden';fire(el);return Promise.resolve()};
+var exit=function(){if(!cur)return Promise.resolve();var el=cur;el.setAttribute('style',saved);document.documentElement.style.overflow=savedOverflow;cur=null;fire(el);return Promise.resolve()};
+var E=Element.prototype;['requestFullscreen','webkitRequestFullscreen','webkitRequestFullScreen','mozRequestFullScreen','msRequestFullscreen'].forEach(function(n){E[n]=function(){return enter(this)}});
+if(window.HTMLVideoElement){HTMLVideoElement.prototype.webkitEnterFullscreen=function(){return enter(this)};HTMLVideoElement.prototype.webkitExitFullscreen=function(){return exit()}}
+var DS=[Document.prototype,document];DS.forEach(function(D){['exitFullscreen','webkitExitFullscreen','webkitCancelFullScreen','mozCancelFullScreen','msExitFullscreen'].forEach(function(n){try{Object.defineProperty(D,n,{configurable:true,writable:true,value:function(){return exit()}})}catch(e){}});
+['fullscreenElement','webkitFullscreenElement','webkitCurrentFullScreenElement','mozFullScreenElement','msFullscreenElement'].forEach(function(n){try{Object.defineProperty(D,n,{configurable:true,get:function(){return cur}})}catch(e){}});
+['fullscreenEnabled','webkitFullscreenEnabled','webkitSupportsFullscreen'].forEach(function(n){try{Object.defineProperty(D,n,{configurable:true,get:function(){return true}})}catch(e){}});
+try{Object.defineProperty(D,'webkitIsFullScreen',{configurable:true,get:function(){return !!cur}})}catch(e){}});
+try{if(screen.orientation){screen.orientation.lock=function(){return Promise.resolve()}}}catch(e){}
+`
+
 const ADS = `
 var s=document.getElementById('__fb_ads')||document.createElement('style');s.id='__fb_ads';
 s.textContent='ins.adsbygoogle,.adsbygoogle,[id^="google_ads"],[id^="div-gpt-ad"],iframe[src*="doubleclick"],iframe[src*="googlesyndication"],iframe[src*="adservice"],iframe[id^="aswift"],[class*="ad-banner"],[class*="banner-ad"],[class*="sponsored-ad"],[id*="ad-container"],[class*="ad-container"],[aria-label="advertisement"],[data-ad-slot]{display:none!important;height:0!important}';
@@ -50,7 +71,10 @@ export function matches(match: string, url: string): boolean {
 }
 
 export function beforeLoad(s: Settings): string {
-	return `(function(){${s.popupBlock ? wrap('pop-ups', POPUPS) : ''}})();true;`
+	const parts: string[] = []
+	if (s.popupBlock) parts.push(wrap('pop-ups', POPUPS))
+	if (s.inWindowFullscreen) parts.push(wrap('fullscreen', FULLSCREEN))
+	return `(function(){${parts.join('\n')}})();true;`
 }
 
 /** Everything that runs once a page has loaded (also re-run when a setting changes). */

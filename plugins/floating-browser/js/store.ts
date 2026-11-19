@@ -18,6 +18,8 @@ export interface Win {
 }
 export interface Settings {
 	popupBlock: boolean
+	/** A page's fullscreen button fills the floating window instead of the whole screen. */
+	inWindowFullscreen: boolean
 	adHide: boolean
 	dark: boolean
 	desktop: boolean
@@ -33,6 +35,7 @@ export interface Settings {
 }
 export const DEFAULTS: Settings = {
 	popupBlock: true,
+	inWindowFullscreen: true,
 	adHide: true,
 	dark: false,
 	desktop: false,

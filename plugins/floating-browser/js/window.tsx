@@ -314,14 +314,16 @@ function Browser({ box }: { box: Win }) {
 				{url && WebView ? (
 					<WebView
 						ref={ref}
-						key={s.desktop ? 'desktop' : 'mobile'}
+						key={`${s.desktop ? 'desktop' : 'mobile'}:${s.inWindowFullscreen ? 'win' : 'os'}`}
 						source={{ uri: url }}
 						userAgent={s.desktop ? DESKTOP_UA : undefined}
 						originWhitelist={['*']}
 						javaScriptEnabled
 						domStorageEnabled
 						allowsInlineMediaPlayback
-						allowsFullscreenVideo
+						allowsFullscreenVideo={!s.inWindowFullscreen}
+						injectedJavaScriptForMainFrameOnly={false}
+						injectedJavaScriptBeforeContentLoadedForMainFrameOnly={false}
 						mediaPlaybackRequiresUserAction={false}
 						setSupportMultipleWindows={false}
 						javaScriptCanOpenWindowsAutomatically={!s.popupBlock}
@@ -422,6 +424,13 @@ function Browser({ box }: { box: Win }) {
 								label="Pop-up blocker"
 								on={s.popupBlock}
 								onPress={() => save({ popupBlock: !s.popupBlock })}
+							/>
+							<Toggle
+								label="Fullscreen in window"
+								on={s.inWindowFullscreen}
+								onPress={() =>
+									save({ inWindowFullscreen: !s.inWindowFullscreen })
+								}
 							/>
 							<Toggle
 								label="Hide ads"
