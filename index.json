@@ -1480,13 +1480,26 @@
       ],
       "icon": "ScreenIcon",
       "channels": {
-        "latest": "1.0.0"
+        "latest": "1.0.1"
       },
       "versions": {
         "1.0.0": {
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.stream-tools@1.0.0.zip",
           "sha256": "ba356729f2df1b1dd19111808d31c7202e53449d35a0ea71ed4f2a94650d2d00",
           "size": 5714,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.1": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.stream-tools@1.0.1.zip",
+          "sha256": "2b492095eb56d86012621e5798b66bd1ea7b54eb5f20a0468f174bb8303518b3",
+          "size": 5719,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
