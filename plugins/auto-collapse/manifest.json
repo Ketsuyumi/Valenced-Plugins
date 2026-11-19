@@ -5,7 +5,7 @@
 	"description": "Collapses the categories with nothing new when you open a server, new or old, and opens the ones with new messages.",
 	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
 	"icon": "FolderIcon",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

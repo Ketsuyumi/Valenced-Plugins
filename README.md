@@ -179,10 +179,11 @@ that experiment).
 
 ### Auto Collapse (`dev.ketsuyumi.auto-collapse`)
 
-Opening a server, new or old, collapses every category whose channels are all read. Channels with new messages
-still show under a collapsed category, as Discord always does. Settings:
+Opening a server, new or old, collapses its categories, so only channels with new messages show (Discord keeps
+those visible under a collapsed category). Settings:
 
-- **Open categories with new messages** (on): expands a collapsed category that has something unread.
+- **Hide every read channel** (on): collapses all categories. Off: only the categories where everything is read.
+- **Open categories with new messages** (on, used when the first is off): expands a category with something unread.
 - **Muted channels count as read** (on): mentions still count as new.
 - **Only once per server** (off): just the first time you open each server after starting Discord.
 

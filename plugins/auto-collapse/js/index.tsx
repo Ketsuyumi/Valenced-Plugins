@@ -16,6 +16,11 @@ import { ScrollView } from 'react-native'
 const CATEGORY = 4
 
 interface Settings {
+	/**
+	 * Collapse every category, unread or not. Discord still shows a collapsed category's unread
+	 * channels, so only the read ones go away.
+	 */
+	collapseAll: boolean
 	/** Open categories that have new messages. */
 	expandUnread: boolean
 	/** Muted channels count as read (Discord doesn't show them as unread either). Mentions still count. */
@@ -24,6 +29,7 @@ interface Settings {
 	oncePerLaunch: boolean
 }
 const DEFAULTS: Settings = {
+	collapseAll: true,
 	expandUnread: true,
 	mutedAsRead: true,
 	oncePerLaunch: false,
@@ -122,7 +128,12 @@ function tidy(guildId: string) {
 		for (const cat of categories) {
 			const id = String(cat.id)
 			const collapsed = isCollapsed(id)
-			if (fresh.has(id)) {
+			if (s.collapseAll) {
+				if (collapsed !== true) {
+					collapse(id)
+					status.collapsed++
+				}
+			} else if (fresh.has(id)) {
 				if (s.expandUnread && collapsed !== false) {
 					expand(id)
 					status.expanded++
@@ -150,14 +161,21 @@ function SettingsPage() {
 		<ScrollView contentContainerStyle={{ padding: 16 }}>
 			<Stack spacing={16}>
 				<Text variant="text-md/normal">
-					When you open a server, categories where everything is read are
-					collapsed. Channels with new messages still show under a collapsed
-					category, as Discord always does.
+					When you open a server, its categories are collapsed, so only channels
+					with new messages show (Discord keeps those visible under a collapsed
+					category).
 				</Text>
 				<TableRowGroup title="Options">
 					<TableSwitchRow
+						label="Hide every read channel"
+						subLabel="Collapses all categories. Channels with new messages still show under them, as Discord always does"
+						value={s.collapseAll}
+						onValueChange={(collapseAll: boolean) => set({ collapseAll })}
+					/>
+					<TableSwitchRow
 						label="Open categories with new messages"
-						subLabel="Expands a collapsed category when something in it is unread"
+						subLabel="When Hide every read channel is off: expands a category when something in it is unread"
+						disabled={s.collapseAll}
 						value={s.expandUnread}
 						onValueChange={(expandUnread: boolean) => set({ expandUnread })}
 					/>
