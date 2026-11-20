@@ -232,7 +232,7 @@ function openDetail(p: Product, owned: boolean) {
 			actions={
 				<>
 					<AlertActionButton
-						text="Preview on my profile"
+						text={owned ? 'Preview on my profile' : 'Preview & Buy'}
 						variant="primary"
 						onPress={() => {
 							close()
@@ -673,13 +673,10 @@ let lastFilters: Filters | undefined
 let appliedPreset = 0
 
 const SORTS: [Filters['sort'], string][] = [
-	['shop', 'Relevance'],
-	['popular', 'Popular'],
-	['newest', 'Newest'],
-	['oldest', 'Oldest'],
+	['newest', 'Recently Added'],
 	['cheap', 'Price: Low to High'],
 	['pricey', 'Price: High to Low'],
-	['name', 'A–Z'],
+	['popular', 'Popular'],
 ]
 
 /** The page's title, like the desktop Shop's ("Nameplates (53)"). */
@@ -717,7 +714,7 @@ function ShopPage({
 	// Coming back to Browse picks up where you were; a section from Browse ▾ starts from it.
 	const [f, setF] = useState<Filters>(() =>
 		presetKey && presetKey !== appliedPreset
-			? { ...DEFAULT_FILTERS, sort: lastFilters?.sort ?? 'shop', ...preset }
+			? { ...DEFAULT_FILTERS, sort: lastFilters?.sort ?? 'newest', ...preset }
 			: (lastFilters ?? { ...DEFAULT_FILTERS, ...preset }),
 	)
 	const [panel, setPanel] = useState(false)
@@ -858,7 +855,7 @@ function ShopPage({
 					}}
 				>
 					<Text variant="text-sm/semibold" style={{ color: textColor() }}>
-						{SORTS.find(([v]) => v === f.sort)?.[1] ?? 'Relevance'}{' '}
+						{SORTS.find(([v]) => v === f.sort)?.[1] ?? 'Recently Added'}{' '}
 						{sortOpen ? '▴' : '▾'}
 					</Text>
 				</Pressable>
@@ -891,6 +888,7 @@ function ShopPage({
 						>
 							<Text variant="text-sm/semibold" style={{ color: textColor() }}>
 								{label}
+								{f.sort === v ? '  ✓' : ''}
 							</Text>
 						</Pressable>
 					))}
@@ -1166,7 +1164,7 @@ function LayerDetail({ p, owned }: { p: Product; owned: boolean }) {
 					</Text>
 				) : null}
 				<Button
-					text="Preview on my profile"
+					text={owned ? 'Preview on my profile' : 'Preview & Buy'}
 					onPress={() => {
 						close()
 						previewOnProfile(p)

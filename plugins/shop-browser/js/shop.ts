@@ -375,7 +375,7 @@ export const DEFAULT_FILTERS: Filters = {
 	collab: 'all',
 	swatches: [],
 	tags: [],
-	sort: 'shop',
+	sort: 'newest',
 }
 
 /** Every theme/tag the shop's items carry, most used first. */
