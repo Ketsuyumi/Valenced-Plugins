@@ -1447,7 +1447,7 @@
       "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "ShopIcon",
       "channels": {
-        "latest": "1.6.2"
+        "latest": "1.7.0"
       },
       "versions": {
         "1.0.0": {
@@ -1571,6 +1571,19 @@
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.shop-browser@1.6.2.zip",
           "sha256": "e5fdeb257af5e31b4b0834fb3bfc456d1879008a0279c3827d373c465c119c1b",
           "size": 11546,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.7.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.shop-browser@1.7.0.zip",
+          "sha256": "fc788de2636add1c55b0b87b28775cc47b85225e8ec7207e781d06d400ce45b2",
+          "size": 11861,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
