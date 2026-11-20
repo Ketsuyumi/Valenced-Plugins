@@ -35,6 +35,7 @@ import { OnMe } from './onme'
 import {
 	canOpenSheet,
 	installLearning,
+	openDiscordSheet,
 	openItemSheet,
 	previewStatus,
 	setRouteStore,
@@ -167,7 +168,12 @@ function previewOnProfile(p: Product) {
 		layerDetail = undefined
 		tabsChanged()
 	}
-	setTimeout(() => openItemSheet(p), 250)
+	setTimeout(() => {
+		// Discord's own call first; what was learned from a tap only if that isn't there.
+		void openDiscordSheet(p).then(done => {
+			if (!done) openItemSheet(p)
+		})
+	}, 250)
 }
 
 function openDetail(p: Product, owned: boolean) {

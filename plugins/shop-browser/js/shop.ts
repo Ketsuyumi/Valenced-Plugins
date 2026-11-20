@@ -48,6 +48,9 @@ export interface Product {
 	tags: string[]
 	/** Popularity, when Discord's data has one (higher is more popular). */
 	popularity?: number
+	/** For colour variants: the group product's SKU and this one's place in it (Discord's sheet opens the group). */
+	groupSku?: string
+	variantIndex?: number
 	/** A profile frame's layers (frames are drawn from these, as Discord does). */
 	frame?: Frame
 	/** Discord's own records, for its item sheet (preview on your profile). */
@@ -362,7 +365,12 @@ export async function loadShop(): Promise<Shop> {
 				if (!item?.sku_id || seen.has(String(item.sku_id))) continue
 				if (Number(item.type) === 3000) continue // Nitro credit and other non-collectibles
 				seen.add(String(item.sku_id))
-				products.push(toProduct(item, category, order++))
+				const made = toProduct(item, category, order++)
+				if (Number(raw?.type) === 2000) {
+					made.groupSku = String(raw.sku_id)
+					made.variantIndex = Math.max(0, list.indexOf(item))
+				}
+				products.push(made)
 			}
 		}
 	let owned = new Set<string>()

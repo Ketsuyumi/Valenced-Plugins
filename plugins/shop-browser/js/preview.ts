@@ -2,7 +2,11 @@ import {
 	ActionSheetActionCreators,
 	ToastActionCreators,
 } from '@valenced/discord/actions'
+import { Stores } from '@valenced/discord/flux'
 import { RootNavigationRef } from '@valenced/discord/modules/main_tabs_v2'
+import * as discordFinders from '@valenced/discord/utils/modules/finders'
+import { lookupModule } from '@valenced/modules/finders'
+import { withProps } from '@valenced/modules/finders/filters'
 import { instead } from '@valenced/patcher'
 
 /**
@@ -183,6 +187,73 @@ function toast(text: string) {
 	} catch {}
 }
 
+/**
+ * Discord's own way (from its mobile code): `openProductDetailsActionSheet({ product,
+ * initialVariantIndex, analyticsLocations })` in modules/collectibles/native/
+ * openProductDetailsActionSheet.tsx, with `product` from CollectiblesCategoryStore.getProduct(sku)
+ * (fetched with CollectiblesActionCreators.fetchCollectiblesProduct when not loaded yet). This is
+ * what Discord's own shop cards call.
+ */
+function sheetOpener(): ((args: any, stack?: string) => unknown) | undefined {
+	try {
+		const found = (discordFinders as any).lookupModuleWithImportedPath?.(
+			'modules/collectibles/native/openProductDetailsActionSheet.tsx',
+		)
+		const mod = Array.isArray(found) ? found[0] : found
+		if (typeof mod?.openProductDetailsActionSheet === 'function')
+			return mod.openProductDetailsActionSheet
+	} catch {}
+	try {
+		const [mod] = lookupModule(
+			(withProps as any)('openProductDetailsActionSheet'),
+		) as any
+		if (typeof mod?.openProductDetailsActionSheet === 'function')
+			return mod.openProductDetailsActionSheet
+	} catch {}
+	return undefined
+}
+
+async function productRecord(sku: string): Promise<any> {
+	const store = (Stores as any).CollectiblesCategoryStore
+	let product = store?.getProduct?.(sku)
+	if (product) return product
+	try {
+		const [actions] = lookupModule(
+			(withProps as any)('fetchCollectiblesProduct'),
+		) as any
+		await actions?.fetchCollectiblesProduct?.(sku)
+	} catch {}
+	product = store?.getProduct?.(sku)
+	return product
+}
+
+export async function openDiscordSheet(p: {
+	sku: string
+	groupSku?: string
+	variantIndex?: number
+}): Promise<boolean> {
+	const open = sheetOpener()
+	if (!open) return false
+	const product =
+		(p.groupSku && (await productRecord(p.groupSku))) ||
+		(await productRecord(p.sku))
+	if (!product) return false
+	const fromGroup = !!p.groupSku && product?.skuId === p.groupSku
+	try {
+		open({
+			product,
+			initialVariantIndex: fromGroup ? (p.variantIndex ?? 0) : 0,
+			analyticsLocations: [],
+			shopAnalyticsContext: undefined,
+		})
+		previewStatus.last = "Discord's openProductDetailsActionSheet"
+		return true
+	} catch (e: any) {
+		previewStatus.last = `openProductDetailsActionSheet failed: ${e?.message ?? e}`
+		return false
+	}
+}
+
 export function openItemSheet(p: {
 	sku: string
 	raw?: any
@@ -227,4 +298,5 @@ export function openItemSheet(p: {
 }
 
 /** Whether Discord's own item sheet (for buying) has been learned yet. */
-export const canOpenSheet = () => !!(learned.sheet || learned.route)
+export const canOpenSheet = () =>
+	!!(sheetOpener() || learned.sheet || learned.route)
