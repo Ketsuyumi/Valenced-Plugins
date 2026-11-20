@@ -225,3 +225,6 @@ export function openItemSheet(p: {
 	)
 	return false
 }
+
+/** Whether Discord's own item sheet (for buying) has been learned yet. */
+export const canOpenSheet = () => !!(learned.sheet || learned.route)

@@ -30,7 +30,9 @@ import { afterJSX } from '@valenced/react/jsx-runtime'
 import { lookupModule } from '@valenced/modules/finders'
 import { withProps } from '@valenced/modules/finders/filters'
 import { findModule } from './find'
+import { OnMe } from './onme'
 import {
+	canOpenSheet,
 	installLearning,
 	openItemSheet,
 	previewStatus,
@@ -1084,6 +1086,7 @@ const SECTIONS: [string, Partial<Filters>][] = [
 /** An item's details inside the Browse layer. */
 function LayerDetail({ p, owned }: { p: Product; owned: boolean }) {
 	const { Text, Button } = Design as any
+	const [hint, setHint] = useState(false)
 	const close = () => {
 		layerDetail = undefined
 		tabsChanged()
@@ -1117,17 +1120,7 @@ function LayerDetail({ p, owned }: { p: Product; owned: boolean }) {
 				<Text variant="heading-lg/bold" style={{ color: textColor() }}>
 					{p.name}
 				</Text>
-				{p.image ? (
-					<Image
-						source={{ uri: p.image }}
-						resizeMode={p.type === 2 ? 'cover' : 'contain'}
-						style={{
-							width: '100%',
-							height: p.type === 2 ? 80 : 200,
-							borderRadius: 12,
-						}}
-					/>
-				) : null}
+				<OnMe p={p} text={textColor()} />
 				<Text variant="text-sm/medium" color="text-muted">
 					{[TYPES[p.type as keyof typeof TYPES] ?? 'Item', p.category]
 						.filter(Boolean)
@@ -1147,13 +1140,23 @@ function LayerDetail({ p, owned }: { p: Product; owned: boolean }) {
 						You own this
 					</Text>
 				) : null}
-				<Button
-					text={owned ? 'Preview on my profile' : 'Preview & Buy'}
-					onPress={() => {
-						close()
-						previewOnProfile(p)
-					}}
-				/>
+				{!owned ? (
+					<Button
+						text="Buy in Discord"
+						onPress={() => {
+							if (!canOpenSheet()) return setHint(true)
+							close()
+							previewOnProfile(p)
+						}}
+					/>
+				) : null}
+				{hint ? (
+					<Text variant="text-xs/medium" color="text-muted">
+						Buying happens in Discord's own sheet, which the plugin learns from
+						one tap: open Featured, wait for the item pictures, and tap any item
+						once. Then Buy in Discord opens it for this item.
+					</Text>
+				) : null}
 				<Button text="Close" variant="secondary" onPress={close} />
 			</Pressable>
 		</Pressable>
