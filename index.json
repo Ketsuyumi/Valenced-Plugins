@@ -1443,11 +1443,11 @@
     },
     "dev.ketsuyumi.shop-browser": {
       "name": "Shop Browser",
-      "description": "Browse the Discord Shop like on desktop: a 3, 4 or 5-column grid with a filter panel (item type, Orbs eligible, collabs, owned, colour, theme, category), search and sorting. Opens from the Shop's Shop All.",
+      "description": "The Discord Shop like on desktop: a Featured | Browse switch in the Shop with Browse sections, Sort by, and a filter panel (item type, Orbs eligible, collabs, owned, colour, theme). Nameplates show as long bars, effects and frames big.",
       "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "ShopIcon",
       "channels": {
-        "latest": "1.4.0"
+        "latest": "1.5.0"
       },
       "versions": {
         "1.0.0": {
@@ -1519,6 +1519,19 @@
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.shop-browser@1.4.0.zip",
           "sha256": "cfdad7416f594a66947b46ea810a85748b9f70da61e849731a5776bb0405892b",
           "size": 8251,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.5.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.shop-browser@1.5.0.zip",
+          "sha256": "8d02ea61797fd5b244e4eba47858c5551dcf4d9399aba95e8669f1758d7d6e9c",
+          "size": 10425,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
