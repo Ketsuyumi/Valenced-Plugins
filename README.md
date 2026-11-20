@@ -261,7 +261,8 @@ other devices.
 
 ### Shop Browser (`dev.ketsuyumi.shop-browser`)
 
-The Discord Shop like on desktop, on your phone. In Discord's Shop, **Shop All** opens it (or open the plugin's page):
+The Discord Shop like on desktop, on your phone, right in Discord's Shop page (under Find your style, where Shop All
+was; or as a pop-up from Shop All, or only on the plugin's page, as you choose):
 a 3 × 3, 4 × 4 or 5 × 5 grid (5 × 5 hides the price line), search, sorting, and a **Filters** panel laid out like the
 desktop Shop's:
 

@@ -273,8 +273,10 @@ interface Settings {
 	collabMarks: Record<string, boolean>
 	/** Grid columns: 3, 4 or 5. */
 	columns?: 3 | 4 | 5
-	/** Discord's Shop → Shop All opens the browser. */
+	/** Discord's Shop → Shop All opens the browser (older setting). */
 	inShop?: boolean
+	/** Where it shows in Discord's Shop: in the page, as a pop-up from Shop All, or not at all. */
+	shopMode?: 'inline' | 'popup' | 'off'
 }
 type Storage = {
 	use(): Partial<Settings> | undefined
@@ -366,6 +368,7 @@ function FilterPanel({
 	cols,
 	setCols,
 	close,
+	inline,
 }: {
 	shop: Shop
 	f: Filters
@@ -375,26 +378,40 @@ function FilterPanel({
 	cols: number
 	setCols: (n: 3 | 4 | 5) => void
 	close: () => void
+	/** In the Shop page itself: laid out in the page instead of sliding over it. */
+	inline?: boolean
 }) {
 	const { Text } = Design as any
 	const tags = useMemo(() => allTags(shop), [shop])
+	const Wrap: any = inline ? View : ScrollView
+	const wrapProps = inline
+		? { style: { padding: 12 } }
+		: { contentContainerStyle: { padding: 14, paddingBottom: 60 } }
 	return (
 		<View
-			style={{
-				position: 'absolute',
-				top: 0,
-				right: 0,
-				bottom: 0,
-				width: '74%',
-				maxWidth: 360,
-				backgroundColor: panelColor(),
-				borderLeftWidth: 1,
-				borderColor: 'rgba(127,127,127,0.25)',
-				elevation: 20,
-				zIndex: 20,
-			}}
+			style={
+				inline
+					? {
+							borderRadius: 12,
+							marginBottom: 8,
+							backgroundColor: 'rgba(127,127,127,0.10)',
+						}
+					: {
+							position: 'absolute',
+							top: 0,
+							right: 0,
+							bottom: 0,
+							width: '74%',
+							maxWidth: 360,
+							backgroundColor: panelColor(),
+							borderLeftWidth: 1,
+							borderColor: 'rgba(127,127,127,0.25)',
+							elevation: 20,
+							zIndex: 20,
+						}
+			}
 		>
-			<ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 60 }}>
+			<Wrap {...wrapProps}>
 				<View style={{ flexDirection: 'row', alignItems: 'center' }}>
 					<Text
 						variant="heading-md/bold"
@@ -577,7 +594,7 @@ function FilterPanel({
 						/>
 					))}
 				</View>
-			</ScrollView>
+			</Wrap>
 		</View>
 	)
 }
@@ -783,7 +800,199 @@ function ShopPage({ onClose }: { onClose?: () => void }) {
 	)
 }
 
-// ── In Discord's own Shop: "Shop All" opens this browser over the shop ──────────
+// ── In Discord's own Shop ────────────────────────────────────────────────────
+
+const PAGE = 30
+
+/**
+ * The browser inside the Shop page itself, where Discord's "Shop All" button was: search, sort,
+ * the desktop-style filters (opened in place) and the grid, scrolling with the rest of the Shop.
+ * The Shop page is already a scrolling list, so the grid isn't one: it shows 30 items, then more.
+ */
+function InlineShop({ discordList }: { discordList?: () => void }) {
+	const stored = storage?.use()
+	const marks = stored?.collabMarks ?? {}
+	const { Text, TextInput, Button } = Design as any
+	const [shop, setShop] = useState<Shop | undefined>(cached)
+	const [error, setError] = useState<string>()
+	const [f, setF] = useState<Filters>(DEFAULT_FILTERS)
+	const [filters, setFilters] = useState(false)
+	const [shown, setShown] = useState(PAGE)
+	const [width, setWidth] = useState(0)
+	const cols = stored?.columns ?? 3
+	const size = width ? Math.floor((width - GAP * (cols - 1)) / cols) : 0
+	const save = (patch: Partial<Settings>) =>
+		storage?.set({ collabMarks: marks, ...stored, ...patch } as Settings, true)
+	const load = () => {
+		setError(undefined)
+		loadShop()
+			.then(s => {
+				cached = s
+				setShop(s)
+			})
+			.catch(e => setError(errorText(e)))
+	}
+	useEffect(() => {
+		if (!cached) load()
+	}, [])
+	useEffect(() => setShown(PAGE), [f])
+	const items = useMemo(
+		() => (shop ? applyFilters(shop, f, marks) : []),
+		[shop, f, marks],
+	)
+	const collabs = useMemo(
+		() => (shop ? collabIds(shop, marks) : new Set<string>()),
+		[shop, marks],
+	)
+	const toggleCollab = (id: string, name: string) => {
+		const now = !collabs.has(id)
+		save({ collabMarks: { ...marks, [id]: now } })
+		toast(now ? `${name} marked as a collab` : `${name} marked as not a collab`)
+	}
+	const set = (patch: Partial<Filters>) => setF(prev => ({ ...prev, ...patch }))
+	const active = activeCount(f)
+	return (
+		<View
+			style={{ marginTop: 8, marginBottom: 16 }}
+			onLayout={(e: any) =>
+				setWidth(Math.floor(e?.nativeEvent?.layout?.width ?? 0))
+			}
+		>
+			<View
+				style={{
+					flexDirection: 'row',
+					alignItems: 'center',
+					gap: 8,
+					marginBottom: 8,
+				}}
+			>
+				<View style={{ flex: 1 }}>
+					<TextInput
+						placeholder="Search the Shop"
+						value={f.query}
+						onChange={(query: string) => set({ query })}
+						isClearable
+					/>
+				</View>
+				<Pressable
+					onPress={() => setFilters(v => !v)}
+					accessibilityLabel="Filters"
+					style={{
+						paddingHorizontal: 12,
+						height: 40,
+						borderRadius: 10,
+						justifyContent: 'center',
+						backgroundColor:
+							filters || active ? ACCENT : 'rgba(127,127,127,0.18)',
+					}}
+				>
+					<Text
+						variant="text-sm/semibold"
+						style={{ color: filters || active ? '#ffffff' : textColor() }}
+					>
+						{filters
+							? 'Hide Filters'
+							: `Filters${active ? ` · ${active}` : ''}`}
+					</Text>
+				</Pressable>
+			</View>
+			<ScrollView
+				horizontal
+				showsHorizontalScrollIndicator={false}
+				style={{ marginBottom: 8 }}
+			>
+				{(
+					[
+						['shop', 'Recently Added'],
+						['cheap', 'Cheapest'],
+						['pricey', 'Priciest'],
+						['name', 'A–Z'],
+					] as [Filters['sort'], string][]
+				).map(([v, label]) => (
+					<Chip
+						key={v}
+						label={label}
+						on={f.sort === v}
+						onPress={() => set({ sort: v })}
+					/>
+				))}
+			</ScrollView>
+			{filters && shop ? (
+				<FilterPanel
+					inline
+					shop={shop}
+					f={f}
+					set={set}
+					collabs={collabs}
+					toggleCollab={toggleCollab}
+					cols={cols}
+					setCols={n => save({ columns: n })}
+					close={() => setFilters(false)}
+				/>
+			) : null}
+			{error ? (
+				<View style={{ gap: 8 }}>
+					<Text variant="text-sm/semibold" color="text-feedback-critical">
+						Couldn't load the shop: {error}
+					</Text>
+					<Button text="Try again" onPress={load} />
+				</View>
+			) : !shop || !size ? (
+				<View style={{ padding: 24, alignItems: 'center' }}>
+					<ActivityIndicator />
+				</View>
+			) : (
+				<>
+					<Text
+						variant="text-xs/medium"
+						color="text-muted"
+						style={{ marginBottom: 6 }}
+					>
+						{items.length} of {shop.products.length} items
+					</Text>
+					<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP }}>
+						{items.slice(0, shown).map(p => (
+							<Card
+								key={p.sku}
+								p={p}
+								size={size}
+								owned={shop.owned.has(p.sku)}
+								compact={cols >= 5}
+							/>
+						))}
+					</View>
+					{!items.length ? (
+						<Text variant="text-sm/medium" color="text-muted">
+							No items match these filters.
+						</Text>
+					) : null}
+					{items.length > shown ? (
+						<View style={{ marginTop: 4 }}>
+							<Button
+								text={`Show more (${items.length - shown} left)`}
+								variant="secondary"
+								onPress={() => setShown(n => n + PAGE * 2)}
+							/>
+						</View>
+					) : null}
+					{discordList ? (
+						<Pressable
+							onPress={discordList}
+							style={{ marginTop: 10, alignSelf: 'center' }}
+							hitSlop={8}
+						>
+							<Text variant="text-xs/semibold" color="text-muted">
+								Discord's own list
+							</Text>
+						</Pressable>
+					) : null}
+				</>
+			)}
+		</View>
+	)
+}
+
+// ── Or: "Shop All" opens this browser over the shop ──────────────────────────
 
 let browsing = false
 const browseListeners = new Set<() => void>()
@@ -870,9 +1079,17 @@ export default plugin<{ jsonStorage: Settings }>({
 			shopStatus.hooked = true
 			cleanup(
 				afterJSX(B, (el: any) => {
-					if ((storage as any)?.cache?.inShop === false) return el
+					const st = (storage as any)?.cache ?? {}
+					const mode: 'inline' | 'popup' | 'off' =
+						st.shopMode ?? (st.inShop === false ? 'off' : 'inline')
+					if (mode === 'off') return el
 					const label = textIn(el?.props?.text ?? el?.props?.children).trim()
 					if (!SHOP_ALL.test(label)) return el
+					if (mode === 'inline')
+						return createElement(InlineShop, {
+							key: el?.key ?? 'shop-browser-inline',
+							discordList: el?.props?.onPress,
+						})
 					return createElement(
 						Fragment,
 						{ key: el?.key ?? 'shop-browser' },
@@ -897,17 +1114,39 @@ function SettingsPage() {
 		<View style={{ flex: 1 }}>
 			<View style={{ paddingHorizontal: PAD, paddingTop: 8 }}>
 				<TableRowGroup>
-					<TableSwitchRow
-						label="Open from the Shop"
-						subLabel="Discord's Shop → Shop All opens this browser, with the desktop-style filters"
-						value={stored?.inShop !== false}
-						onValueChange={(inShop: boolean) =>
-							storage?.set(
-								{ collabMarks: {}, ...stored, inShop } as Settings,
-								true,
-							)
-						}
-					/>
+					{(
+						[
+							[
+								'inline',
+								'In the Shop',
+								"Right in Discord's Shop page, under Find your style (in place of Shop All)",
+							],
+							[
+								'popup',
+								'Pop-up from Shop All',
+								"Discord's Shop → Shop All opens it full screen",
+							],
+							['off', 'Only here', "Leave Discord's Shop as it is"],
+						] as const
+					).map(([mode, label, sub]) => {
+						const current =
+							stored?.shopMode ?? (stored?.inShop === false ? 'off' : 'inline')
+						return (
+							<TableSwitchRow
+								key={mode}
+								label={label}
+								subLabel={sub}
+								value={current === mode}
+								onValueChange={(on: boolean) =>
+									on &&
+									storage?.set(
+										{ collabMarks: {}, ...stored, shopMode: mode } as Settings,
+										true,
+									)
+								}
+							/>
+						)
+					})}
 				</TableRowGroup>
 			</View>
 			<ShopPage />
