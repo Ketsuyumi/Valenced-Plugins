@@ -275,6 +275,8 @@ pop-up from Shop All (setting).
 - Nameplates show as long bars, profile effects and frames big (two a row), decorations and bundles in a 3–5 column
   grid.
 - Tap an item for its details and **Preview & Buy** (or Preview on my profile, if you own it): Discord's own item sheet,
+  learned from one tap on any item in Discord's Featured page (the plugin notes how Discord opens it, then opens it the
+  same way for the item you picked),
   with your profile preview and Redeem / Buy.
   Browse brings you back where you were.
 

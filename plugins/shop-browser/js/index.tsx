@@ -30,7 +30,12 @@ import { afterJSX } from '@valenced/react/jsx-runtime'
 import { lookupModule } from '@valenced/modules/finders'
 import { withProps } from '@valenced/modules/finders/filters'
 import { findModule } from './find'
-import { openItemSheet, previewStatus, watchLinkHandler } from './preview'
+import {
+	installLearning,
+	openItemSheet,
+	previewStatus,
+	setRouteStore,
+} from './preview'
 import {
 	activeCount,
 	applyFilters,
@@ -312,6 +317,8 @@ interface Settings {
 	columns?: 3 | 4 | 5
 	/** Discord's Shop → Shop All opens the browser (older setting). */
 	inShop?: boolean
+	/** How Discord opens an item's screen, learned from a tap in its Shop (for Preview & Buy). */
+	previewRoute?: { name: string; params: any }
 	/** Where it shows in Discord's Shop: a Featured | Browse switch, a pop-up from Shop All, or not at all. */
 	shopMode?: 'tab' | 'inline' | 'popup' | 'off'
 }
@@ -1400,7 +1407,15 @@ export default plugin<{ jsonStorage: Settings }>({
 				}) as any,
 			)
 		}
-		cleanup(watchLinkHandler(), installTabs(), () => {
+		setRouteStore(
+			() => (storage as any)?.cache?.previewRoute,
+			previewRoute =>
+				storage?.set(
+					{ ...((storage as any)?.cache ?? {}), previewRoute } as Settings,
+					true,
+				),
+		)
+		cleanup(installLearning(), installTabs(), () => {
 			setBrowsing(false)
 			storage = undefined
 		})
@@ -1455,6 +1470,14 @@ function SettingsPage() {
 				>
 					Screen now: {tabsStatus.route || 'unknown'} · Shop detected:{' '}
 					{tabsStatus.onShop ? 'yes' : 'no'}
+				</Text>
+				<Text
+					variant="text-xs/medium"
+					color="text-muted"
+					style={{ marginTop: 2 }}
+				>
+					Preview & Buy: learned {previewStatus.learned} · last used{' '}
+					{previewStatus.last}
 				</Text>
 			</View>
 			<ShopPage />

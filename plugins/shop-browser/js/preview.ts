@@ -1,129 +1,192 @@
 import {
-	getModules,
-	lookupModule,
-	lookupModules,
-} from '@valenced/modules/finders'
-import {
-	createFilterGenerator,
-	FilterScopes,
-	withProps,
-} from '@valenced/modules/finders/filters'
-import { Linking } from 'react-native'
+	ActionSheetActionCreators,
+	ToastActionCreators,
+} from '@valenced/discord/actions'
+import { RootNavigationRef } from '@valenced/discord/modules/main_tabs_v2'
+import { instead } from '@valenced/patcher'
 
 /**
- * Opening Discord's own item sheet (your profile with the item, and Redeem / Buy), three ways in
- * turn. Buying always happens in Discord's sheet; this never spends Orbs or money itself.
- *
- * 1. A Discord function that opens a collectible's details: first the names it has had, then any
- *    loaded function whose name says so (open…Collectible/Shop/Product…Detail/Sheet/Modal/Preview).
- * 2. Discord's own link handler (`handleClick`, what tapping a link in chat runs) with the item's
- *    Shop link, so Discord opens it the way it opens a shared Shop link.
- * 3. The system, with the same link.
+ * Opening Discord's own item sheet (your profile with the item, Redeem / Buy) for an item picked
+ * in the browser. How Discord opens it isn't known ahead of time, so it's learned: when you tap an
+ * item in Discord's own Shop, the way Discord opens its sheet is noted (a bottom sheet with its
+ * component and props, or a screen with its name and params), and Preview & Buy does the same
+ * with the item swapped in. A screen's name and params are saved, so that one survives restarts;
+ * a bottom sheet is learned again each time Discord starts (one tap).
+ * Buying always happens in Discord's sheet; this never spends Orbs or money itself.
  */
 
+const WANTED = /collectible|shop|product|sku/i
+
+interface Learned {
+	sheet?: { importer: unknown; key: string; props: any }
+	route?: { name: string; params: any }
+}
+const learned: Learned = {}
 export const previewStatus = {
 	last: 'Not tried yet',
-	candidates: [] as string[],
+	learned: 'Nothing yet: tap any item in the Shop’s Featured page once',
 }
 
-const KNOWN = [
-	'openCollectiblesShopProductDetailsModal',
-	'openCollectiblesShopProductDetails',
-	'openCollectibleProductDetails',
-	'openProductDetailsSheet',
-	'openCollectiblesProductDetails',
-]
-const NAME =
-	/^(open|show|present)\w*(collectible|shop|product)\w*(detail|sheet|modal|preview)/i
+let saveRoute: ((route: Learned['route']) => void) | undefined
+export function setRouteStore(
+	read: () => Learned['route'] | undefined,
+	write: (route: Learned['route']) => void,
+) {
+	saveRoute = write
+	const r = read()
+	if (r?.name) {
+		learned.route = r
+		previewStatus.learned = `Screen “${r.name}” (saved)`
+	}
+}
 
-const withOpener = createFilterGenerator<[]>(
-	(_args, _id, exports, initialized) => {
-		if (
-			!initialized ||
-			!exports ||
-			(typeof exports !== 'object' && typeof exports !== 'function')
-		)
-			return false
-		try {
-			return Object.keys(exports as object).some(
-				k => NAME.test(k) && typeof (exports as any)[k] === 'function',
-			)
-		} catch {
-			return false
-		}
-	},
-	() => 'shop-browser.product-opener',
-	FilterScopes.Initialized,
-)
-
-/** Discord functions that look like they open an item's details, known names first. */
-function openers(): Array<[string, (...a: any[]) => unknown]> {
-	const out: Array<[string, (...a: any[]) => unknown]> = []
-	const seen = new Set<string>()
-	for (const name of KNOWN)
-		try {
-			const [mod] = lookupModule((withProps as any)(name)) as any
-			if (typeof mod?.[name] === 'function' && !seen.has(name)) {
-				seen.add(name)
-				out.push([name, mod[name].bind(mod)])
-			}
-		} catch {}
+/** Does [props] look like they're about a shop item? */
+const aboutItem = (props: any): boolean => {
 	try {
-		let n = 0
-		for (const [mod] of lookupModules((withOpener as any)()) as any) {
-			for (const k of Object.keys(mod ?? {}))
-				if (NAME.test(k) && typeof mod[k] === 'function' && !seen.has(k)) {
-					seen.add(k)
-					out.push([k, mod[k].bind(mod)])
-				}
-			if (++n > 30) break
-		}
-	} catch {}
-	previewStatus.candidates = out.map(([k]) => k)
+		const text =
+			JSON.stringify(props, (_k, v) =>
+				typeof v === 'function' ? undefined : v,
+			)?.slice(0, 4000) ?? ''
+		return /sku_?id|skuId|"product"|collectible/i.test(text)
+	} catch {
+		return false
+	}
+}
+
+/** [template] with every sign of the learned item replaced by [p]. */
+function swap(
+	template: any,
+	p: { sku: string; raw?: any; rawCategory?: any },
+	depth = 0,
+): any {
+	if (depth > 5 || template == null) return template
+	if (Array.isArray(template)) return template.map(x => swap(x, p, depth + 1))
+	if (typeof template !== 'object') return template
+	if (
+		typeof template.sku_id === 'string' &&
+		(template.items || template.prices || template.type != null)
+	)
+		return p.raw ?? template
+	const out: any = {}
+	for (const [k, v] of Object.entries(template)) {
+		if (/^product$/i.test(k) && p.raw) out[k] = p.raw
+		else if (/^category$/i.test(k) && p.rawCategory) out[k] = p.rawCategory
+		else if (/sku_?id$/i.test(k) && typeof v === 'string') out[k] = p.sku
+		else if (
+			/^(product_?id|item_?id|itemSkuId)$/i.test(k) &&
+			typeof v === 'string'
+		)
+			out[k] = p.sku
+		else out[k] = typeof v === 'function' ? v : swap(v, p, depth + 1)
+	}
 	return out
 }
 
-let linkHandler: ((e: any) => unknown) | undefined
-export function watchLinkHandler(): () => void {
-	return getModules((withProps as any)('handleClick'), (mod: any) => {
-		if (typeof mod?.handleClick === 'function')
-			linkHandler = mod.handleClick.bind(mod)
-	}) as any
+export function installLearning(): () => void {
+	const undo: Array<() => void> = []
+	try {
+		undo.push(
+			instead(
+				ActionSheetActionCreators as any,
+				'openLazy',
+				function (this: unknown, args: any[], orig: (...a: any[]) => any) {
+					try {
+						const [importer, key, props] = args
+						if (
+							typeof key === 'string' &&
+							WANTED.test(key) &&
+							aboutItem(props) &&
+							!(props as any)?.__shopBrowser
+						) {
+							learned.sheet = { importer, key, props }
+							previewStatus.learned = `Bottom sheet “${key}”`
+						}
+					} catch {}
+					return orig.apply(this, args)
+				},
+			),
+		)
+	} catch {}
+	// Screens: wrap the navigation's navigate once it exists.
+	let wrapped: any
+	const wrapNav = () => {
+		try {
+			const nav: any = RootNavigationRef.getRootNavigationRef()
+			if (!nav || nav === wrapped || typeof nav.navigate !== 'function') return
+			wrapped = nav
+			undo.push(
+				instead(
+					nav,
+					'navigate',
+					function (this: unknown, args: any[], orig: (...a: any[]) => any) {
+						try {
+							const [name, params] = args
+							const flat = typeof name === 'object' ? name : { name, params }
+							if (
+								typeof flat?.name === 'string' &&
+								WANTED.test(flat.name) &&
+								aboutItem(flat.params) &&
+								!flat.params?.__shopBrowser
+							) {
+								learned.route = {
+									name: flat.name,
+									params: JSON.parse(JSON.stringify(flat.params ?? {})),
+								}
+								previewStatus.learned = `Screen “${flat.name}”`
+								saveRoute?.(learned.route)
+							}
+						} catch {}
+						return orig.apply(this, args)
+					},
+				),
+			)
+		} catch {}
+	}
+	wrapNav()
+	const t = setInterval(wrapNav, 3000)
+	undo.push(() => clearInterval(t))
+	return () => {
+		for (const u of undo.splice(0))
+			try {
+				u()
+			} catch {}
+	}
 }
 
-export function openItemSheet(product: {
+function toast(text: string) {
+	try {
+		ToastActionCreators.open('shop-browser-preview', { text } as never)
+	} catch {}
+}
+
+export function openItemSheet(p: {
 	sku: string
 	raw?: any
 	rawCategory?: any
 }): boolean {
-	const args = {
-		product: product.raw,
-		category: product.rawCategory,
-		skuId: product.sku,
-		sku_id: product.sku,
-		analyticsLocations: [],
-		analyticsSource: 'shop-browser',
-	}
-	for (const [name, fn] of openers()) {
+	if (learned.sheet)
 		try {
-			fn(args)
-			previewStatus.last = `Discord's ${name}`
+			;(ActionSheetActionCreators as any).openLazy(
+				learned.sheet.importer,
+				learned.sheet.key,
+				{ ...swap(learned.sheet.props, p), __shopBrowser: true },
+			)
+			previewStatus.last = `Bottom sheet “${learned.sheet.key}”`
 			return true
 		} catch {}
+	if (learned.route)
 		try {
-			fn(product.raw, product.rawCategory)
-			previewStatus.last = `Discord's ${name} (product, category)`
+			const nav: any = RootNavigationRef.getRootNavigationRef()
+			nav.navigate(learned.route.name, {
+				...swap(learned.route.params, p),
+				__shopBrowser: true,
+			})
+			previewStatus.last = `Screen “${learned.route.name}”`
 			return true
 		} catch {}
-	}
-	const href = `https://discord.com/shop#itemSkuId=${product.sku}`
-	if (linkHandler)
-		try {
-			linkHandler({ href, preventDefault() {}, stopPropagation() {} })
-			previewStatus.last = "Discord's link handler (Shop link)"
-			return true
-		} catch {}
-	void Linking.openURL(href).catch(() => {})
-	previewStatus.last = 'System link (Discord found no way to open it)'
+	previewStatus.last = 'Not learned yet'
+	toast(
+		'Tap any item in the Shop’s Featured page once, then Preview & Buy works for every item.',
+	)
 	return false
 }
