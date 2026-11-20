@@ -30,6 +30,7 @@ import { afterJSX } from '@valenced/react/jsx-runtime'
 import { lookupModule } from '@valenced/modules/finders'
 import { withProps } from '@valenced/modules/finders/filters'
 import { findModule } from './find'
+import { openItemSheet, previewStatus, watchLinkHandler } from './preview'
 import {
 	activeCount,
 	applyFilters,
@@ -151,38 +152,13 @@ function priceLine(p: Product): string {
  * which the app opens itself. The Browse layer steps aside first so the sheet isn't under it;
  * Browse brings it back as it was.
  */
-const OPENERS = [
-	'openCollectiblesShopProductDetailsModal',
-	'openCollectiblesShopProductDetails',
-	'openCollectibleProductDetails',
-	'openProductDetailsSheet',
-	'openCollectiblesProductDetails',
-]
 function previewOnProfile(p: Product) {
 	if (tab === 'browse') {
 		tab = 'featured'
 		layerDetail = undefined
 		tabsChanged()
 	}
-	setTimeout(() => {
-		for (const name of OPENERS)
-			try {
-				const [mod] = lookupModule((withProps as any)(name)) as any
-				const fn = mod?.[name]
-				if (typeof fn !== 'function') continue
-				fn({
-					product: p.raw,
-					category: p.rawCategory,
-					skuId: p.sku,
-					analyticsLocations: [],
-					analyticsSource: 'shop-browser',
-				})
-				return
-			} catch {}
-		void Linking.openURL(`https://discord.com/shop#itemSkuId=${p.sku}`).catch(
-			() => toast("Couldn't open Discord's preview"),
-		)
-	}, 250)
+	setTimeout(() => openItemSheet(p), 250)
 }
 
 function openDetail(p: Product, owned: boolean) {
@@ -1424,7 +1400,7 @@ export default plugin<{ jsonStorage: Settings }>({
 				}) as any,
 			)
 		}
-		cleanup(installTabs(), () => {
+		cleanup(watchLinkHandler(), installTabs(), () => {
 			setBrowsing(false)
 			storage = undefined
 		})
