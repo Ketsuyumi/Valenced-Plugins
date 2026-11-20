@@ -1,0 +1,20 @@
+{
+	"format": 1,
+	"id": "dev.ketsuyumi.download-emojis",
+	"name": "Download Emojis & Stickers",
+	"description": "Long-press a server: Download Emojis or Download Stickers saves all of them to your phone, like Discord's Save image.",
+	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+	"icon": "DownloadIcon",
+	"version": "1.0.0",
+	"dependencies": {
+		"valenced.api": {
+			"version": ">=1 <2"
+		},
+		"discord": {
+			"version": "*"
+		}
+	},
+	"dist": {
+		"script": "index.js"
+	}
+}
