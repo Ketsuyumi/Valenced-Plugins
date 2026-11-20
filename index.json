@@ -457,6 +457,30 @@
         }
       }
     },
+    "dev.ketsuyumi.download-emojis": {
+      "name": "Download Emojis & Stickers",
+      "description": "Long-press a server: Download Emojis or Download Stickers saves all of them to your phone, like Discord's Save image.",
+      "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+      "icon": "DownloadIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.download-emojis@1.0.0.zip",
+          "sha256": "be1bdd859a4e14c2e99fefae030a7aa357a2d8a1c1756292a91e0b3ae4c85e67",
+          "size": 2370,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "dev.ketsuyumi.embed-playback": {
       "name": "Embed Playback",
       "description": "Play YouTube videos from chat in a player right over the chat instead of leaving Discord, and shrink it to a floating picture-in-picture window that keeps playing while you scroll and switch channels.",
