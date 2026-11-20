@@ -1408,7 +1408,7 @@
       "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "RefreshIcon",
       "channels": {
-        "latest": "1.4.3"
+        "latest": "1.4.4"
       },
       "versions": {
         "1.0.0": {
@@ -1519,6 +1519,22 @@
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.4.3.zip",
           "sha256": "99446f5766d52b6a5e99dea1907137d6bd06a8a9edcbc2b3ea8b9ba063ca0535",
           "size": 3756,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            },
+            "dariuss.performance-monitor": {
+              "optional": true
+            }
+          }
+        },
+        "1.4.4": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.quick-reload@1.4.4.zip",
+          "sha256": "18004019486c55e96a65cced3bd8d3850bba46688afda2f4070f653ebdf9e079",
+          "size": 3808,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
