@@ -42,6 +42,85 @@ export interface Product {
 	/** Price with Nitro, if cheaper. */
 	nitro?: Price
 	order: number
+	/** Colour families of its colours (Discord's `styles`), for the Colour filter. */
+	swatches: Swatch[]
+	/** Theme / tag words Discord sends with the item or its category, when it does. */
+	tags: string[]
+}
+
+/** The desktop Shop's colour filter. */
+export const SWATCHES = {
+	purple: '#b388ff',
+	blue: '#36c5f0',
+	green: '#4cd964',
+	brown: '#c87533',
+	yellow: '#ffd60a',
+	orange: '#ff9f0a',
+	red: '#ff5a36',
+	pink: '#ff6b9a',
+	white: '#f2f2f2',
+	black: '#3a3a3a',
+} as const
+export type Swatch = keyof typeof SWATCHES
+
+/** Which family a colour (0xRRGGBB) belongs to, by hue, saturation and lightness. */
+export function swatchOf(rgb: number): Swatch {
+	const r = ((rgb >> 16) & 255) / 255
+	const g = ((rgb >> 8) & 255) / 255
+	const b = (rgb & 255) / 255
+	const max = Math.max(r, g, b)
+	const min = Math.min(r, g, b)
+	const l = (max + min) / 2
+	const d = max - min
+	const sat = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1))
+	if (l < 0.16 || (sat < 0.15 && l < 0.45)) return 'black'
+	if (l > 0.86 || (sat < 0.15 && l >= 0.45)) return 'white'
+	let h = 0
+	if (d) {
+		if (max === r) h = ((g - b) / d) % 6
+		else if (max === g) h = (b - r) / d + 2
+		else h = (r - g) / d + 4
+		h *= 60
+		if (h < 0) h += 360
+	}
+	if (h < 15 || h >= 345) return 'red'
+	if (h < 40) return l < 0.45 ? 'brown' : 'orange'
+	if (h < 65) return l < 0.35 ? 'brown' : 'yellow'
+	if (h < 165) return 'green'
+	if (h < 255) return 'blue'
+	if (h < 290) return 'purple'
+	return 'pink'
+}
+
+function colorsOf(raw: any): number[] {
+	const st = raw?.styles ?? {}
+	const list = [...(st.background_colors ?? []), ...(st.button_colors ?? [])]
+	if (typeof raw?.variant_value === 'string') {
+		const n = parseInt(raw.variant_value.replace('#', ''), 16)
+		if (Number.isFinite(n)) list.unshift(n)
+	}
+	return list.filter(
+		(n: unknown): n is number => typeof n === 'number' && Number.isFinite(n),
+	)
+}
+
+/** String lists under keys that look like tags or themes, on the item and its category. */
+function tagsOf(...objs: any[]): string[] {
+	const out = new Set<string>()
+	for (const o of objs) {
+		if (!o || typeof o !== 'object') continue
+		for (const [k, v] of Object.entries(o)) {
+			if (!/tag|theme|genre|vibe|style_?categor/i.test(k)) continue
+			const items = Array.isArray(v) ? v : typeof v === 'string' ? [v] : []
+			for (const t of items) {
+				const text =
+					typeof t === 'string' ? t : ((t as any)?.name ?? (t as any)?.label)
+				if (typeof text === 'string' && text.trim() && text.length < 30)
+					out.add(text.trim())
+			}
+		}
+	}
+	return [...out]
 }
 
 interface Http {
@@ -57,7 +136,10 @@ function http(): Http {
 
 export function errorText(error: unknown): string {
 	const e = error as { body?: any; status?: number; message?: string }
-	return e?.body?.message ?? (e?.status ? `HTTP ${e.status}` : (e?.message ?? String(error)))
+	return (
+		e?.body?.message ??
+		(e?.status ? `HTTP ${e.status}` : (e?.message ?? String(error)))
+	)
 }
 
 const httpUrl = (value: unknown) =>
@@ -88,7 +170,8 @@ export function imageOf(product: any): string | undefined {
 }
 
 function pricesOf(product: any, purchaseType: number): Price[] {
-	const set = product?.prices?.[purchaseType] ?? product?.prices?.[String(purchaseType)]
+	const set =
+		product?.prices?.[purchaseType] ?? product?.prices?.[String(purchaseType)]
 	const list: any[] = set?.country_prices?.prices ?? []
 	return list
 		.filter(p => typeof p?.amount === 'number' && p?.currency)
@@ -117,6 +200,8 @@ export function toProduct(raw: any, category: any, order: number): Product {
 		orbs: orbs?.amount,
 		nitro: nitro && money && nitro.amount < money.amount ? nitro : undefined,
 		order,
+		swatches: [...new Set(colorsOf(raw).map(swatchOf))],
+		tags: tagsOf(raw, category),
 	}
 }
 
@@ -137,7 +222,8 @@ export interface Shop {
  * Discord doesn't flag collabs, but licensed categories nearly always carry a copyright notice
  * (©, ™, ®) or collab wording in their descriptions. Users can correct any category by hand.
  */
-const COLLAB = /[©®™Ⓒ]|\(c\)\s*\d{4}|\bcollab(oration)?\b|\blicensed\b|\bin partnership\b|\bofficially licensed\b/i
+const COLLAB =
+	/[©®™Ⓒ]|\(c\)\s*\d{4}|\bcollab(oration)?\b|\blicensed\b|\bin partnership\b|\bofficially licensed\b/i
 
 export function isCollabCategory(category: any): boolean {
 	const texts = [
@@ -146,7 +232,10 @@ export function isCollabCategory(category: any): boolean {
 		category?.mobile_summary,
 		category?.featured_block_body,
 		category?.wide_banner_body,
-		...(category?.products ?? []).flatMap((p: any) => [p?.summary, ...(p?.variants ?? []).map((v: any) => v?.summary)]),
+		...(category?.products ?? []).flatMap((p: any) => [
+			p?.summary,
+			...(p?.variants ?? []).map((v: any) => v?.summary),
+		]),
 	]
 	return texts.some(t => typeof t === 'string' && COLLAB.test(t))
 }
@@ -155,7 +244,9 @@ export async function loadShop(): Promise<Shop> {
 	const { body } = await http().get({
 		url: '/collectibles-categories/v2?include_bundles=true&variants_return_style=1',
 	})
-	const categories: any[] = Array.isArray(body) ? body : (body?.categories ?? [])
+	const categories: any[] = Array.isArray(body)
+		? body
+		: (body?.categories ?? [])
 	const products: Product[] = []
 	const seen = new Set<string>()
 	let order = 0
@@ -172,7 +263,9 @@ export async function loadShop(): Promise<Shop> {
 		}
 	let owned = new Set<string>()
 	try {
-		const res = await http().get({ url: '/users/@me/collectibles-purchases?variants_return_style=1' })
+		const res = await http().get({
+			url: '/users/@me/collectibles-purchases?variants_return_style=1',
+		})
 		const list: any[] = Array.isArray(res.body) ? res.body : []
 		owned = new Set(list.map(p => String(p?.sku_id)))
 	} catch {}
@@ -180,7 +273,11 @@ export async function loadShop(): Promise<Shop> {
 		products,
 		categories: categories
 			.filter(c => c?.sku_id && (c.products?.length ?? 0) > 0)
-			.map(c => ({ id: String(c.sku_id), name: String(c.name ?? ''), collab: isCollabCategory(c) })),
+			.map(c => ({
+				id: String(c.sku_id),
+				name: String(c.name ?? ''),
+				collab: isCollabCategory(c),
+			})),
 		owned,
 	}
 }
@@ -200,46 +297,89 @@ export function formatPrice(price?: Price): string | undefined {
 
 export interface Filters {
 	query: string
-	type: 'all' | TypeId
+	/** Item types ticked (none = all), like the desktop Shop's Item Type boxes. */
+	types: number[]
 	owned: 'all' | 'owned' | 'not-owned'
 	pay: 'all' | 'orbs' | 'money'
 	category: string
 	collab: 'all' | 'non-collab' | 'collab'
+	/** Colour families ticked (none = any). */
+	swatches: Swatch[]
+	/** Themes ticked (none = any). */
+	tags: string[]
 	sort: 'shop' | 'cheap' | 'pricey' | 'name'
 }
 
 export const DEFAULT_FILTERS: Filters = {
 	query: '',
-	type: 'all',
+	types: [],
 	owned: 'all',
 	pay: 'all',
 	category: 'all',
 	collab: 'all',
+	swatches: [],
+	tags: [],
 	sort: 'shop',
+}
+
+/** Every theme/tag the shop's items carry, most used first. */
+export function allTags(shop: Shop): string[] {
+	const n = new Map<string, number>()
+	for (const p of shop.products)
+		for (const t of p.tags) n.set(t, (n.get(t) ?? 0) + 1)
+	return [...n.entries()].sort((a, b) => b[1] - a[1]).map(([t]) => t)
+}
+
+/** How many filters differ from the defaults (for the Filters button). */
+export function activeCount(f: Filters): number {
+	return (
+		f.types.length +
+		f.swatches.length +
+		f.tags.length +
+		(f.owned !== 'all' ? 1 : 0) +
+		(f.pay !== 'all' ? 1 : 0) +
+		(f.category !== 'all' ? 1 : 0) +
+		(f.collab !== 'all' ? 1 : 0)
+	)
 }
 
 /** Money as a comparable number (Orbs-only items sort by Orbs after paid ones). */
 const cost = (p: Product) =>
-	p.money ? p.money.amount / 10 ** p.money.exponent : p.orbs != null ? 1e6 + p.orbs : Infinity
+	p.money
+		? p.money.amount / 10 ** p.money.exponent
+		: p.orbs != null
+			? 1e6 + p.orbs
+			: Infinity
 
 /** Category IDs counted as collabs: detected ones, plus user marks (true) minus user unmarks (false). */
-export function collabIds(shop: Shop, marks: Record<string, boolean> = {}): Set<string> {
+export function collabIds(
+	shop: Shop,
+	marks: Record<string, boolean> = {},
+): Set<string> {
 	const ids = new Set<string>()
 	for (const c of shop.categories) if (marks[c.id] ?? c.collab) ids.add(c.id)
 	return ids
 }
 
-export function applyFilters(shop: Shop, f: Filters, marks: Record<string, boolean> = {}): Product[] {
+export function applyFilters(
+	shop: Shop,
+	f: Filters,
+	marks: Record<string, boolean> = {},
+): Product[] {
 	const q = f.query.trim().toLowerCase()
 	const collabs = f.collab === 'all' ? undefined : collabIds(shop, marks)
 	const list = shop.products.filter(p => {
-		if (f.type !== 'all' && p.type !== Number(f.type)) return false
+		if (f.types.length && !f.types.includes(p.type)) return false
+		if (f.swatches.length && !p.swatches.some(s => f.swatches.includes(s)))
+			return false
+		if (f.tags.length && !p.tags.some(t => f.tags.includes(t))) return false
 		if (f.owned === 'owned' && !shop.owned.has(p.sku)) return false
 		if (f.owned === 'not-owned' && shop.owned.has(p.sku)) return false
 		if (f.pay === 'orbs' && p.orbs == null) return false
 		if (f.pay === 'money' && !p.money) return false
 		if (f.category !== 'all' && p.categoryId !== f.category) return false
-		if (collabs && collabs.has(p.categoryId) !== (f.collab === 'collab')) return false
+		if (collabs && collabs.has(p.categoryId) !== (f.collab === 'collab'))
+			return false
 		if (q && !`${p.name} ${p.category}`.toLowerCase().includes(q)) return false
 		return true
 	})
@@ -248,12 +388,14 @@ export function applyFilters(shop: Shop, f: Filters, marks: Record<string, boole
 	const byCost = (dir: 1 | -1) => (a: Product, b: Product) => {
 		const x = cost(a)
 		const y = cost(b)
-		if (x === Infinity || y === Infinity) return (x === Infinity ? 1 : 0) - (y === Infinity ? 1 : 0)
+		if (x === Infinity || y === Infinity)
+			return (x === Infinity ? 1 : 0) - (y === Infinity ? 1 : 0)
 		return (x - y) * dir
 	}
 	if (f.sort === 'cheap') sorted.sort(byCost(1))
 	else if (f.sort === 'pricey') sorted.sort(byCost(-1))
-	else if (f.sort === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name))
+	else if (f.sort === 'name')
+		sorted.sort((a, b) => a.name.localeCompare(b.name))
 	else sorted.sort((a, b) => a.order - b.order)
 	return sorted
 }

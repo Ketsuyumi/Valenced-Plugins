@@ -261,19 +261,18 @@ other devices.
 
 ### Shop Browser (`dev.ketsuyumi.shop-browser`)
 
-The Discord Shop in a compact 3 × 3, 4 × 4 or 5 × 5 grid (5 × 5 hides the price line) with filters. Open the plugin's settings to browse:
+The Discord Shop like on desktop, on your phone. In Discord's Shop, **Shop All** opens it (or open the plugin's page):
+a 3 × 3, 4 × 4 or 5 × 5 grid (5 × 5 hides the price line), search, sorting, and a **Filters** panel laid out like the
+desktop Shop's:
 
-- **Filters**: type (decorations, effects, nameplates, frames, bundles), owned or not, Orbs or paid, category, and a
-  search over item and category names. **Reset filters** clears them; pull down to reload.
-- **Collabs**: show everything, only non-collab items, or only collabs. Collab categories (🤝) are detected from the
-  copyright notices (©, ™, ®) or collab wording licensed sets carry; long-press a category chip to mark or unmark it.
-- **Sorting**: shop order, cheapest, priciest, or A–Z (items with no price go last).
-- **Cards** show a small preview, the name, price (money and/or Orbs) and an **Owned** badge. Tap one for a bigger
-  preview, description, Nitro price and **Open in the Shop**.
+- **Item Type**: Avatar Decorations, Nameplates, Profile Effects, Profile Frames, Bundles (tick several).
+- **Show Only**: Orbs eligible, paid, collabs, non-collab, owned, not owned.
+- **Colour**: the desktop swatches, from each item's own colours.
+- **Theme**: when Discord's shop data carries themes or tags.
+- **Category** (🤝 marks collabs; long-press a category to correct it) and the grid size.
 
-Data comes from the same endpoints the app uses (`/collectibles-categories/v2` and `/users/@me/collectibles-purchases`,
-as documented by Discord Userdoccers), through Discord's own request helper. Buying still happens in Discord's shop.
-
+Data comes from the endpoints the app itself uses (Discord Userdoccers' collectibles page), through Discord's own
+request helper.
 ### Embed Playback (`dev.ketsuyumi.embed-playback`)
 
 Play YouTube videos without leaving Discord, like Aliucord's old inline playback. Tapping a YouTube embed (or a YouTube
