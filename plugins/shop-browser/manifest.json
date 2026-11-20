@@ -2,10 +2,10 @@
 	"format": 1,
 	"id": "dev.ketsuyumi.shop-browser",
 	"name": "Shop Browser",
-	"description": "Browse the Discord Shop like on desktop: a 3, 4 or 5-column grid with a filter panel (item type, Orbs eligible, collabs, owned, colour, theme, category), search and sorting. Opens from the Shop's Shop All.",
+	"description": "The Discord Shop like on desktop: a Featured | Browse switch in the Shop with Browse sections, Sort by, and a filter panel (item type, Orbs eligible, collabs, owned, colour, theme). Nameplates show as long bars, effects and frames big.",
 	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
 	"icon": "ShopIcon",
-	"version": "1.4.0",
+	"version": "1.5.0",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

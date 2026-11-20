@@ -307,7 +307,7 @@ export interface Filters {
 	swatches: Swatch[]
 	/** Themes ticked (none = any). */
 	tags: string[]
-	sort: 'shop' | 'cheap' | 'pricey' | 'name'
+	sort: 'shop' | 'newest' | 'oldest' | 'cheap' | 'pricey' | 'name'
 }
 
 export const DEFAULT_FILTERS: Filters = {
@@ -367,12 +367,14 @@ export function applyFilters(
 	marks: Record<string, boolean> = {},
 ): Product[] {
 	const q = f.query.trim().toLowerCase()
+	// Discord's own theme tags, if this shop's data has any.
+	const tagged = shop.products.some(p => p.tags.length)
 	const collabs = f.collab === 'all' ? undefined : collabIds(shop, marks)
 	const list = shop.products.filter(p => {
 		if (f.types.length && !f.types.includes(p.type)) return false
 		if (f.swatches.length && !p.swatches.some(s => f.swatches.includes(s)))
 			return false
-		if (f.tags.length && !p.tags.some(t => f.tags.includes(t))) return false
+		if (f.tags.length && !f.tags.some(t => inTheme(p, t, tagged))) return false
 		if (f.owned === 'owned' && !shop.owned.has(p.sku)) return false
 		if (f.owned === 'not-owned' && shop.owned.has(p.sku)) return false
 		if (f.pay === 'orbs' && p.orbs == null) return false
@@ -396,6 +398,106 @@ export function applyFilters(
 	else if (f.sort === 'pricey') sorted.sort(byCost(-1))
 	else if (f.sort === 'name')
 		sorted.sort((a, b) => a.name.localeCompare(b.name))
+	// An item's ID is a snowflake: it says when the item was made.
+	else if (f.sort === 'newest')
+		sorted.sort((a, b) => snowflakeCmp(b.sku, a.sku))
+	else if (f.sort === 'oldest')
+		sorted.sort((a, b) => snowflakeCmp(a.sku, b.sku))
 	else sorted.sort((a, b) => a.order - b.order)
 	return sorted
+}
+
+/** Compares two snowflake IDs (numbers too big for JavaScript numbers) by when they were made. */
+export function snowflakeCmp(a: string, b: string): number {
+	return a.length - b.length || (a < b ? -1 : a > b ? 1 : 0)
+}
+
+/** How an item is shown: nameplates as long bars, effects and frames tall, the rest in the grid. */
+export const shapeOf = (p: Product): 'wide' | 'tall' | 'grid' =>
+	p.type === 2 ? 'wide' : p.type === 1 || p.type === 3 ? 'tall' : 'grid'
+
+export interface Row {
+	key: string
+	shape: 'wide' | 'tall' | 'grid'
+	items: Product[]
+}
+
+/** Rows for the list, keeping the order: a nameplate per row, two effects/frames, [cols] of the rest. */
+export function toRows(items: Product[], cols: number): Row[] {
+	const rows: Row[] = []
+	let cur: Row | undefined
+	for (const p of items) {
+		const shape = shapeOf(p)
+		const per = shape === 'wide' ? 1 : shape === 'tall' ? 2 : cols
+		if (!cur || cur.shape !== shape || cur.items.length >= per) {
+			cur = { key: p.sku, shape, items: [] }
+			rows.push(cur)
+		}
+		cur.items.push(p)
+	}
+	return rows
+}
+
+/**
+ * The desktop Shop's themes. When Discord's data tags items with them, those tags are used;
+ * otherwise an item matches by words in its name, description and collection (a best guess).
+ */
+export const THEMES: Array<[name: string, icon: string, words: RegExp]> = [
+	[
+		'Anime',
+		'✲',
+		/anime|manga|zenless|jujutsu|naruto|one piece|kawaii|chibi|honkai|genshin|hoshimi|ellen joe/i,
+	],
+	[
+		'Gaming',
+		'🎮',
+		/gam(e|ing)|controller|arcade|pixel|palworld|borderlands|valorant|fortnite|dead by daylight|zenless|league of|minecraft|tron/i,
+	],
+	[
+		'Cute & Cosy',
+		'☕',
+		/cute|cos[yi]|cozy|kawaii|plush|sleepover|smol|hello kitty|cottage|snug|daydream/i,
+	],
+	[
+		'Sci-Fi',
+		'🪐',
+		/sci-?fi|space|cyber|robot|tron|neon|cosmos|galax|alien|futur|mecha|star wars|mandalorian/i,
+	],
+	[
+		'Food & Drinks',
+		'🍔',
+		/food|drink|snack|fruit|boba|coffee|\btea\b|cake|candy|sweet|pizza|sushi|ramen|bak(e|ery)/i,
+	],
+	[
+		'Fantasy',
+		'🔮',
+		/fantas|magic|dragon|fair(y|ies)|wizard|enchant|myth|folklore|mermaid|starlight|tarot|zodiac|witch/i,
+	],
+	[
+		'Animals & Pets',
+		'🐾',
+		/\bcats?\b|kitt(y|en)|\bdogs?\b|pupp|\bpets?\b|animal|bunn|bear|\bfox|bird|ears|critter|\bbugs?\b|woodland|paw|frog|fish/i,
+	],
+	[
+		'Nature',
+		'🍃',
+		/nature|flower|floral|leaf|leaves|plant|forest|garden|bloom|forag|sunkiss|ocean|seas\b|autumn|\bfall\b|spring|blossom|solar/i,
+	],
+	[
+		'Films & TV',
+		'🎬',
+		/film|movie|\btv\b|marvel|disney|star wars|mandalorian|spider-?man|venom|deadpool|wolverine|avatar|mickey|nightmare before christmas|showtime/i,
+	],
+	[
+		'Dark & Moody',
+		'🥀',
+		/\bdark|goth|night|horror|spooky|skull|creep|underworld|shadow|terror|moody|halloween|calavera|vampire|muertos/i,
+	],
+]
+
+/** Whether [p] belongs to theme [name]. */
+export function inTheme(p: Product, name: string, tagged: boolean): boolean {
+	if (tagged) return p.tags.some(t => t.toLowerCase() === name.toLowerCase())
+	const words = THEMES.find(([n]) => n === name)?.[2]
+	return !!words && words.test(`${p.name} ${p.summary} ${p.category}`)
 }

@@ -261,16 +261,19 @@ other devices.
 
 ### Shop Browser (`dev.ketsuyumi.shop-browser`)
 
-The Discord Shop like on desktop, on your phone, right in Discord's Shop page (under Find your style, where Shop All
-was; or as a pop-up from Shop All, or only on the plugin's page, as you choose):
-a 3 × 3, 4 × 4 or 5 × 5 grid (5 × 5 hides the price line), search, sorting, and a **Filters** panel laid out like the
-desktop Shop's:
+The Discord Shop like on desktop, on your phone. In Discord's Shop a **Featured | Browse ▾** switch sits in the top bar:
+Browse ▾ opens a menu (Avatar Decorations, Nameplates, Profile Effects, Profile Frames, Bundles, Collabs, Shop All) and
+covers the Shop with the browser; Featured goes back to Discord's page. It also works from the plugin's page, or as a
+pop-up from Shop All (setting).
 
-- **Item Type**: Avatar Decorations, Nameplates, Profile Effects, Profile Frames, Bundles (tick several).
-- **Show Only**: Orbs eligible, paid, collabs, non-collab, owned, not owned.
-- **Colour**: the desktop swatches, from each item's own colours.
-- **Theme**: when Discord's shop data carries themes or tags.
-- **Category** (🤝 marks collabs; long-press a category to correct it) and the grid size.
+- Title with the count ("Nameplates (53)"), **Sort by** Relevance, Newest, Oldest, price or A–Z (Newest/Oldest read
+  when each item was made from its ID), and **Filters / Hide Filters**.
+- Filters like the desktop Shop's: **Item Type** (tick several), **Show Only** (Orbs eligible, collabs, paid, owned…),
+  **Colour** (from each item's own colours), **Theme** (Anime, Gaming, Cute & Cosy, Sci-Fi, Food & Drinks, Fantasy,
+  Animals & Pets, Nature, Films & TV, Dark & Moody: Discord's own tags when its data has them, else matched by the
+  item's name, description and collection), and **Clear all filters**.
+- Nameplates show as long bars, profile effects and frames big (two a row), decorations and bundles in a 3–5 column
+  grid.
 
 Data comes from the endpoints the app itself uses (Discord Userdoccers' collectibles page), through Discord's own
 request helper.

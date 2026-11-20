@@ -17,16 +17,19 @@ import {
 	Linking,
 	Modal,
 	Pressable,
+	Text as RNText,
 	ScrollView,
 	useWindowDimensions,
 	View,
 } from 'react-native'
 import { ToastActionCreators } from '@valenced/discord/actions'
 import { ReactNativeSafeAreaContext } from '@valenced/externals/react-native-safe-area-context'
+import { RootNavigationRef } from '@valenced/discord/modules/main_tabs_v2'
+import { after } from '@valenced/patcher'
 import { afterJSX } from '@valenced/react/jsx-runtime'
+import { findModule } from './find'
 import {
 	activeCount,
-	allTags,
 	applyFilters,
 	collabIds,
 	DEFAULT_FILTERS,
@@ -34,7 +37,9 @@ import {
 	formatPrice,
 	loadShop,
 	SWATCHES,
+	THEMES,
 	TYPES,
+	toRows,
 } from './shop'
 import type { Filters, Product, Shop, Swatch } from './shop'
 
@@ -138,6 +143,12 @@ function priceLine(p: Product): string {
 }
 
 function openDetail(p: Product, owned: boolean) {
+	// Over the Shop's Browse layer, Discord's alerts can open underneath it: show it in the layer.
+	if (tab === 'browse' && tabsStatus.onShop) {
+		layerDetail = { p, owned }
+		tabsChanged()
+		return
+	}
 	const { AlertModal, AlertActionButton, Text, Stack } = Design as any
 	const key = `shop-browser-${p.sku}`
 	const close = () => (AlertActionCreators as any).dismissAlert(key)
@@ -197,14 +208,19 @@ function openDetail(p: Product, owned: boolean) {
 function Card({
 	p,
 	size,
+	h,
 	owned,
 	compact,
 }: {
 	p: Product
 	size: number
+	/** Height, when not square (nameplates are long, effects tall). */
+	h?: number
 	owned: boolean
 	compact?: boolean
 }) {
+	const height = h ?? size
+	const fill = p.type === 2
 	const { Text } = Design as any
 	return (
 		<Pressable
@@ -215,7 +231,7 @@ function Card({
 			<View
 				style={{
 					width: size,
-					height: size,
+					height,
 					borderRadius: 12,
 					overflow: 'hidden',
 					backgroundColor: 'rgba(127,127,127,0.14)',
@@ -226,8 +242,12 @@ function Card({
 				{p.image ? (
 					<Image
 						source={{ uri: p.image }}
-						resizeMode={p.type === 2 ? 'cover' : 'contain'}
-						style={{ width: size * 0.9, height: size * 0.9 }}
+						resizeMode={fill ? 'cover' : 'contain'}
+						style={
+							fill
+								? { width: size, height }
+								: { width: size * 0.92, height: height * 0.92 }
+						}
 					/>
 				) : (
 					<Text variant="text-xs/medium" color="text-muted">
@@ -275,8 +295,8 @@ interface Settings {
 	columns?: 3 | 4 | 5
 	/** Discord's Shop → Shop All opens the browser (older setting). */
 	inShop?: boolean
-	/** Where it shows in Discord's Shop: in the page, as a pop-up from Shop All, or not at all. */
-	shopMode?: 'inline' | 'popup' | 'off'
+	/** Where it shows in Discord's Shop: a Featured | Browse switch, a pop-up from Shop All, or not at all. */
+	shopMode?: 'tab' | 'inline' | 'popup' | 'off'
 }
 type Storage = {
 	use(): Partial<Settings> | undefined
@@ -382,7 +402,6 @@ function FilterPanel({
 	inline?: boolean
 }) {
 	const { Text } = Design as any
-	const tags = useMemo(() => allTags(shop), [shop])
 	const Wrap: any = inline ? View : ScrollView
 	const wrapProps = inline
 		? { style: { padding: 12 } }
@@ -538,52 +557,20 @@ function FilterPanel({
 					)}
 				</View>
 
-				{tags.length ? (
-					<>
-						<Heading>Theme</Heading>
-						<View
-							style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}
-						>
-							{tags.map(t => (
-								<View key={t} style={{ marginBottom: 6 }}>
-									<Chip
-										label={t}
-										on={f.tags.includes(t)}
-										onPress={() => set({ tags: toggle(f.tags, t) })}
-									/>
-								</View>
-							))}
-						</View>
-					</>
-				) : null}
-
-				<Heading>Category</Heading>
-				<Text variant="text-xxs/medium" color="text-muted">
-					🤝 = collab. Long-press a category to mark or unmark it.
-				</Text>
-				<View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 6 }}>
-					<View style={{ marginBottom: 6 }}>
-						<Chip
-							label="All"
-							on={f.category === 'all'}
-							onPress={() => set({ category: 'all' })}
-						/>
-					</View>
-					{shop.categories.map(c => (
-						<View key={c.id} style={{ marginBottom: 6 }}>
+				<Heading>Theme</Heading>
+				<View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
+					{THEMES.map(([t, icon]) => (
+						<View key={t} style={{ marginBottom: 6 }}>
 							<Chip
-								label={`${collabs.has(c.id) ? '🤝 ' : ''}${c.name}`}
-								on={f.category === c.id}
-								onPress={() =>
-									set({ category: f.category === c.id ? 'all' : c.id })
-								}
-								onLongPress={() => toggleCollab(c.id, c.name)}
+								label={`${icon} ${t}`}
+								on={f.tags.includes(t)}
+								onPress={() => set({ tags: toggle(f.tags, t) })}
 							/>
 						</View>
 					))}
 				</View>
 
-				<Heading>Grid</Heading>
+				<Heading>Grid (decorations and bundles)</Heading>
 				<View style={{ flexDirection: 'row', marginTop: 4 }}>
 					{([3, 4, 5] as const).map(n => (
 						<Chip
@@ -594,6 +581,23 @@ function FilterPanel({
 						/>
 					))}
 				</View>
+				<Pressable
+					onPress={() =>
+						set({ ...DEFAULT_FILTERS, query: f.query, sort: f.sort })
+					}
+					style={{
+						marginTop: 18,
+						height: 44,
+						borderRadius: 10,
+						alignItems: 'center',
+						justifyContent: 'center',
+						backgroundColor: 'rgba(127,127,127,0.2)',
+					}}
+				>
+					<Text variant="text-md/semibold" style={{ color: textColor() }}>
+						Clear all filters
+					</Text>
+				</Pressable>
 			</Wrap>
 		</View>
 	)
@@ -620,17 +624,59 @@ function panelColor(): string {
 
 let storage: Storage | undefined
 
-function ShopPage({ onClose }: { onClose?: () => void }) {
+const SORTS: [Filters['sort'], string][] = [
+	['shop', 'Relevance'],
+	['newest', 'Newest'],
+	['oldest', 'Oldest'],
+	['cheap', 'Price: Low to High'],
+	['pricey', 'Price: High to Low'],
+	['name', 'A–Z'],
+]
+
+/** The page's title, like the desktop Shop's ("Nameplates (53)"). */
+function titleOf(f: Filters, count: number): string {
+	const names: Record<number, string> = {
+		0: 'Avatar Decorations',
+		1: 'Profile Effects',
+		2: 'Nameplates',
+		3: 'Profile Frames',
+		1000: 'Bundles',
+	}
+	const name =
+		f.types.length === 1
+			? names[f.types[0]]
+			: f.collab === 'collab' && !f.types.length
+				? 'Collabs'
+				: 'Shop All'
+	return `${name} (${count})`
+}
+
+function ShopPage({
+	onClose,
+	preset,
+	presetKey,
+}: {
+	onClose?: () => void
+	preset?: Partial<Filters>
+	presetKey?: number
+}) {
 	const stored = storage?.use()
 	const marks = stored?.collabMarks ?? {}
 	const { Text, TextInput, Button } = Design as any
 	const [shop, setShop] = useState<Shop | undefined>(cached)
 	const [error, setError] = useState<string>()
-	const [f, setF] = useState<Filters>(DEFAULT_FILTERS)
+	const [f, setF] = useState<Filters>({ ...DEFAULT_FILTERS, ...preset })
 	const [panel, setPanel] = useState(false)
+	const [sortOpen, setSortOpen] = useState(false)
+	// Browse ▾ in the Shop picked a section: start from it.
+	useEffect(() => {
+		if (presetKey)
+			setF(prev => ({ ...DEFAULT_FILTERS, sort: prev.sort, ...preset }))
+	}, [presetKey])
 	const { width } = useWindowDimensions()
 	const cols = stored?.columns ?? 3
 	const size = Math.floor((width - PAD * 2 - GAP * (cols - 1)) / cols)
+	const rowsOf = (list: Product[]) => toRows(list, cols)
 	const save = (patch: Partial<Settings>) =>
 		storage?.set({ collabMarks: marks, ...stored, ...patch } as Settings, true)
 
@@ -651,6 +697,7 @@ function ShopPage({ onClose }: { onClose?: () => void }) {
 		() => (shop ? applyFilters(shop, f, marks) : []),
 		[shop, f, marks],
 	)
+	const rows = useMemo(() => rowsOf(items), [items, cols])
 	const collabs = useMemo(
 		() => (shop ? collabIds(shop, marks) : new Set<string>()),
 		[shop, marks],
@@ -715,24 +762,75 @@ function ShopPage({ onClose }: { onClose?: () => void }) {
 					</Text>
 				</Pressable>
 			</View>
-			<ChipRow
-				options={[
-					['shop', 'Shop order'],
-					['cheap', 'Cheapest'],
-					['pricey', 'Priciest'],
-					['name', 'A–Z'],
-				]}
-				value={f.sort}
-				onChange={sort => set({ sort })}
-			/>
-			{shop ? (
+			<View
+				style={{
+					flexDirection: 'row',
+					alignItems: 'center',
+					paddingHorizontal: PAD,
+					gap: 8,
+				}}
+			>
 				<Text
-					variant="text-xs/medium"
-					color="text-muted"
-					style={{ paddingHorizontal: PAD }}
+					variant="heading-lg/bold"
+					style={{ color: textColor(), flex: 1 }}
+					numberOfLines={1}
 				>
-					{items.length} of {shop.products.length} items
+					{shop ? titleOf(f, items.length) : 'Shop'}
 				</Text>
+				<Text variant="text-sm/semibold" color="text-muted">
+					Sort by
+				</Text>
+				<Pressable
+					onPress={() => setSortOpen(o => !o)}
+					accessibilityLabel="Sort by"
+					style={{
+						flexDirection: 'row',
+						alignItems: 'center',
+						height: 36,
+						paddingHorizontal: 10,
+						borderRadius: 8,
+						borderWidth: 1,
+						borderColor: 'rgba(127,127,127,0.35)',
+					}}
+				>
+					<Text variant="text-sm/semibold" style={{ color: textColor() }}>
+						{SORTS.find(([v]) => v === f.sort)?.[1] ?? 'Relevance'}{' '}
+						{sortOpen ? '▴' : '▾'}
+					</Text>
+				</Pressable>
+			</View>
+			{sortOpen ? (
+				<View
+					style={{
+						alignSelf: 'flex-end',
+						marginRight: PAD,
+						borderRadius: 10,
+						paddingVertical: 4,
+						backgroundColor: panelColor(),
+						borderWidth: 1,
+						borderColor: 'rgba(127,127,127,0.3)',
+					}}
+				>
+					{SORTS.map(([v, label]) => (
+						<Pressable
+							key={v}
+							onPress={() => {
+								set({ sort: v })
+								setSortOpen(false)
+							}}
+							style={{
+								paddingHorizontal: 16,
+								paddingVertical: 9,
+								backgroundColor:
+									f.sort === v ? 'rgba(88,101,242,0.3)' : 'transparent',
+							}}
+						>
+							<Text variant="text-sm/semibold" style={{ color: textColor() }}>
+								{label}
+							</Text>
+						</Pressable>
+					))}
+				</View>
 			) : null}
 		</View>
 	)
@@ -754,11 +852,8 @@ function ShopPage({ onClose }: { onClose?: () => void }) {
 			) : (
 				<FlatList
 					style={{ flex: 1 }}
-					data={items}
-					keyExtractor={p => p.sku}
-					key={`cols-${cols}`}
-					numColumns={cols}
-					columnWrapperStyle={{ gap: GAP, paddingHorizontal: PAD }}
+					data={rows}
+					keyExtractor={r => r.key}
 					contentContainerStyle={{ paddingBottom: 32, paddingTop: 4 }}
 					keyboardShouldPersistTaps="handled"
 					initialNumToRender={18}
@@ -774,13 +869,36 @@ function ShopPage({ onClose }: { onClose?: () => void }) {
 							No items match these filters.
 						</Text>
 					}
-					renderItem={({ item }) => (
-						<Card
-							p={item}
-							size={size}
-							owned={shop.owned.has(item.sku)}
-							compact={cols >= 5}
-						/>
+					renderItem={({ item: row }) => (
+						<View
+							style={{ flexDirection: 'row', gap: GAP, paddingHorizontal: PAD }}
+						>
+							{row.items.map(p => {
+								const full = width - PAD * 2
+								const w =
+									row.shape === 'wide'
+										? full
+										: row.shape === 'tall'
+											? Math.floor((full - GAP) / 2)
+											: size
+								const h =
+									row.shape === 'wide'
+										? Math.round(full * 0.22)
+										: row.shape === 'tall'
+											? Math.round(w * 1.35)
+											: size
+								return (
+									<Card
+										key={p.sku}
+										p={p}
+										size={w}
+										h={h}
+										owned={shop.owned.has(p.sku)}
+										compact={row.shape === 'grid' && cols >= 5}
+									/>
+								)
+							})}
+						</View>
 					)}
 				/>
 			)}
@@ -796,198 +914,6 @@ function ShopPage({ onClose }: { onClose?: () => void }) {
 					close={() => setPanel(false)}
 				/>
 			) : null}
-		</View>
-	)
-}
-
-// ── In Discord's own Shop ────────────────────────────────────────────────────
-
-const PAGE = 30
-
-/**
- * The browser inside the Shop page itself, where Discord's "Shop All" button was: search, sort,
- * the desktop-style filters (opened in place) and the grid, scrolling with the rest of the Shop.
- * The Shop page is already a scrolling list, so the grid isn't one: it shows 30 items, then more.
- */
-function InlineShop({ discordList }: { discordList?: () => void }) {
-	const stored = storage?.use()
-	const marks = stored?.collabMarks ?? {}
-	const { Text, TextInput, Button } = Design as any
-	const [shop, setShop] = useState<Shop | undefined>(cached)
-	const [error, setError] = useState<string>()
-	const [f, setF] = useState<Filters>(DEFAULT_FILTERS)
-	const [filters, setFilters] = useState(false)
-	const [shown, setShown] = useState(PAGE)
-	const [width, setWidth] = useState(0)
-	const cols = stored?.columns ?? 3
-	const size = width ? Math.floor((width - GAP * (cols - 1)) / cols) : 0
-	const save = (patch: Partial<Settings>) =>
-		storage?.set({ collabMarks: marks, ...stored, ...patch } as Settings, true)
-	const load = () => {
-		setError(undefined)
-		loadShop()
-			.then(s => {
-				cached = s
-				setShop(s)
-			})
-			.catch(e => setError(errorText(e)))
-	}
-	useEffect(() => {
-		if (!cached) load()
-	}, [])
-	useEffect(() => setShown(PAGE), [f])
-	const items = useMemo(
-		() => (shop ? applyFilters(shop, f, marks) : []),
-		[shop, f, marks],
-	)
-	const collabs = useMemo(
-		() => (shop ? collabIds(shop, marks) : new Set<string>()),
-		[shop, marks],
-	)
-	const toggleCollab = (id: string, name: string) => {
-		const now = !collabs.has(id)
-		save({ collabMarks: { ...marks, [id]: now } })
-		toast(now ? `${name} marked as a collab` : `${name} marked as not a collab`)
-	}
-	const set = (patch: Partial<Filters>) => setF(prev => ({ ...prev, ...patch }))
-	const active = activeCount(f)
-	return (
-		<View
-			style={{ marginTop: 8, marginBottom: 16 }}
-			onLayout={(e: any) =>
-				setWidth(Math.floor(e?.nativeEvent?.layout?.width ?? 0))
-			}
-		>
-			<View
-				style={{
-					flexDirection: 'row',
-					alignItems: 'center',
-					gap: 8,
-					marginBottom: 8,
-				}}
-			>
-				<View style={{ flex: 1 }}>
-					<TextInput
-						placeholder="Search the Shop"
-						value={f.query}
-						onChange={(query: string) => set({ query })}
-						isClearable
-					/>
-				</View>
-				<Pressable
-					onPress={() => setFilters(v => !v)}
-					accessibilityLabel="Filters"
-					style={{
-						paddingHorizontal: 12,
-						height: 40,
-						borderRadius: 10,
-						justifyContent: 'center',
-						backgroundColor:
-							filters || active ? ACCENT : 'rgba(127,127,127,0.18)',
-					}}
-				>
-					<Text
-						variant="text-sm/semibold"
-						style={{ color: filters || active ? '#ffffff' : textColor() }}
-					>
-						{filters
-							? 'Hide Filters'
-							: `Filters${active ? ` · ${active}` : ''}`}
-					</Text>
-				</Pressable>
-			</View>
-			<ScrollView
-				horizontal
-				showsHorizontalScrollIndicator={false}
-				style={{ marginBottom: 8 }}
-			>
-				{(
-					[
-						['shop', 'Recently Added'],
-						['cheap', 'Cheapest'],
-						['pricey', 'Priciest'],
-						['name', 'A–Z'],
-					] as [Filters['sort'], string][]
-				).map(([v, label]) => (
-					<Chip
-						key={v}
-						label={label}
-						on={f.sort === v}
-						onPress={() => set({ sort: v })}
-					/>
-				))}
-			</ScrollView>
-			{filters && shop ? (
-				<FilterPanel
-					inline
-					shop={shop}
-					f={f}
-					set={set}
-					collabs={collabs}
-					toggleCollab={toggleCollab}
-					cols={cols}
-					setCols={n => save({ columns: n })}
-					close={() => setFilters(false)}
-				/>
-			) : null}
-			{error ? (
-				<View style={{ gap: 8 }}>
-					<Text variant="text-sm/semibold" color="text-feedback-critical">
-						Couldn't load the shop: {error}
-					</Text>
-					<Button text="Try again" onPress={load} />
-				</View>
-			) : !shop || !size ? (
-				<View style={{ padding: 24, alignItems: 'center' }}>
-					<ActivityIndicator />
-				</View>
-			) : (
-				<>
-					<Text
-						variant="text-xs/medium"
-						color="text-muted"
-						style={{ marginBottom: 6 }}
-					>
-						{items.length} of {shop.products.length} items
-					</Text>
-					<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP }}>
-						{items.slice(0, shown).map(p => (
-							<Card
-								key={p.sku}
-								p={p}
-								size={size}
-								owned={shop.owned.has(p.sku)}
-								compact={cols >= 5}
-							/>
-						))}
-					</View>
-					{!items.length ? (
-						<Text variant="text-sm/medium" color="text-muted">
-							No items match these filters.
-						</Text>
-					) : null}
-					{items.length > shown ? (
-						<View style={{ marginTop: 4 }}>
-							<Button
-								text={`Show more (${items.length - shown} left)`}
-								variant="secondary"
-								onPress={() => setShown(n => n + PAGE * 2)}
-							/>
-						</View>
-					) : null}
-					{discordList ? (
-						<Pressable
-							onPress={discordList}
-							style={{ marginTop: 10, alignSelf: 'center' }}
-							hitSlop={8}
-						>
-							<Text variant="text-xs/semibold" color="text-muted">
-								Discord's own list
-							</Text>
-						</Pressable>
-					) : null}
-				</>
-			)}
 		</View>
 	)
 }
@@ -1067,6 +993,327 @@ const textIn = (v: unknown, depth = 0): string => {
 
 export const shopStatus = { hooked: false }
 
+/** The setting, with older values mapped (the in-page version became the switch). */
+function modeOf(st: Partial<Settings>): 'tab' | 'popup' | 'off' {
+	const m = st.shopMode ?? (st.inShop === false ? 'off' : 'tab')
+	return m === 'inline' ? 'tab' : m
+}
+
+// ── Featured | Browse, at the top of Discord's Shop ─────────────────────────
+
+/**
+ * A switch floating over the Shop's top bar, like the desktop Shop's tabs: Browse covers the Shop
+ * (below its top bar) with this browser, Featured shows Discord's page again. It's drawn beside
+ * Discord's toast container (over the whole app) and only while the screen open is the Shop
+ * (its route name says shop / collectibles), so it doesn't depend on anything inside the Shop page.
+ */
+export const tabsStatus = { route: '', onShop: false }
+let tab: 'featured' | 'browse' = 'featured'
+let layerDetail: { p: Product; owned: boolean } | undefined
+/** Browse ▾'s menu, and the section it last opened (the browser starts from it). */
+let browseMenu = false
+let preset: Partial<Filters> = {}
+let presetKey = 0
+const SECTIONS: [string, Partial<Filters>][] = [
+	['Avatar Decorations', { types: [0] }],
+	['Nameplates', { types: [2] }],
+	['Profile Effects', { types: [1] }],
+	['Profile Frames', { types: [3] }],
+	['Bundles', { types: [1000] }],
+	['Collabs', { collab: 'collab' }],
+	['Shop All', {}],
+]
+
+/** An item's details inside the Browse layer. */
+function LayerDetail({ p, owned }: { p: Product; owned: boolean }) {
+	const { Text, Button } = Design as any
+	const close = () => {
+		layerDetail = undefined
+		tabsChanged()
+	}
+	return (
+		<Pressable
+			onPress={close}
+			style={{
+				position: 'absolute',
+				top: 0,
+				left: 0,
+				right: 0,
+				bottom: 0,
+				backgroundColor: 'rgba(0,0,0,0.55)',
+				alignItems: 'center',
+				justifyContent: 'center',
+				padding: 20,
+			}}
+		>
+			<Pressable
+				onPress={() => {}}
+				style={{
+					width: '100%',
+					maxWidth: 420,
+					borderRadius: 16,
+					padding: 16,
+					gap: 10,
+					backgroundColor: panelColor(),
+				}}
+			>
+				<Text variant="heading-lg/bold" style={{ color: textColor() }}>
+					{p.name}
+				</Text>
+				{p.image ? (
+					<Image
+						source={{ uri: p.image }}
+						resizeMode={p.type === 2 ? 'cover' : 'contain'}
+						style={{
+							width: '100%',
+							height: p.type === 2 ? 80 : 200,
+							borderRadius: 12,
+						}}
+					/>
+				) : null}
+				<Text variant="text-sm/medium" color="text-muted">
+					{[TYPES[p.type as keyof typeof TYPES] ?? 'Item', p.category]
+						.filter(Boolean)
+						.join(' · ')}
+				</Text>
+				{p.summary ? (
+					<Text variant="text-md/normal" style={{ color: textColor() }}>
+						{p.summary}
+					</Text>
+				) : null}
+				<Text variant="text-md/semibold" style={{ color: textColor() }}>
+					{priceLine(p)}
+					{p.nitro ? `  (Nitro: ${formatPrice(p.nitro)})` : ''}
+				</Text>
+				{owned ? (
+					<Text variant="text-sm/semibold" color="text-feedback-positive">
+						You own this
+					</Text>
+				) : null}
+				<Button text="Close" variant="secondary" onPress={close} />
+			</Pressable>
+		</Pressable>
+	)
+}
+const tabListeners = new Set<() => void>()
+const tabsChanged = () => {
+	for (const l of tabListeners) l()
+}
+
+function routeName(): string {
+	try {
+		const nav: any = RootNavigationRef.getRootNavigationRef()
+		let r = nav?.getCurrentRoute?.()
+		return String(r?.name ?? '')
+	} catch {
+		return ''
+	}
+}
+const SHOP_ROUTE = /shop|collectible/i
+
+function ShopTabs() {
+	const [, tick] = useState(0)
+	const { width } = useWindowDimensions()
+	useEffect(() => {
+		const l = () => tick(n => n + 1)
+		tabListeners.add(l)
+		return () => {
+			tabListeners.delete(l)
+		}
+	}, [])
+	const st: any = storage?.use?.() ?? {}
+	if (!tabsStatus.onShop || modeOf(st) !== 'tab') return null
+	const top = topInset()
+	// The Shop's top bar: ✕ Shop on the left, Orbs / ♡ / ☰ on the right. The switch sits between
+	// them when there's room, else just under the bar.
+	const BAR = 56
+	const gap = width - 120 - 170
+	const inBar = gap >= 150
+	const pill = (
+		<View
+			style={{
+				flexDirection: 'row',
+				padding: 3,
+				borderRadius: 18,
+				backgroundColor: 'rgba(0,0,0,0.35)',
+				borderWidth: 1,
+				borderColor: 'rgba(255,255,255,0.12)',
+			}}
+		>
+			{(
+				[
+					['featured', 'Featured'],
+					['browse', browseMenu ? 'Browse ▴' : 'Browse ▾'],
+				] as const
+			).map(([t, label]) => (
+				<Pressable
+					key={t}
+					accessibilityRole="tab"
+					accessibilityState={{ selected: tab === t }}
+					onPress={() => {
+						if (t === 'browse') browseMenu = !browseMenu
+						else {
+							tab = 'featured'
+							browseMenu = false
+						}
+						tabsChanged()
+					}}
+					style={{
+						paddingHorizontal: 12,
+						height: 28,
+						borderRadius: 14,
+						justifyContent: 'center',
+						backgroundColor: tab === t ? ACCENT : 'transparent',
+					}}
+				>
+					<RNText style={{ color: '#ffffff', fontSize: 13, fontWeight: '700' }}>
+						{label}
+					</RNText>
+				</Pressable>
+			))}
+		</View>
+	)
+	return (
+		<View
+			pointerEvents="box-none"
+			style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+		>
+			{tab === 'browse' ? (
+				<View
+					style={{
+						position: 'absolute',
+						top: top + BAR,
+						left: 0,
+						right: 0,
+						bottom: 0,
+						backgroundColor: pageColor(),
+					}}
+				>
+					<View style={{ height: inBar ? 0 : 40 }} />
+					<ShopPage preset={preset} presetKey={presetKey} />
+				</View>
+			) : null}
+			<View
+				pointerEvents="box-none"
+				style={
+					inBar
+						? {
+								position: 'absolute',
+								top: top + (BAR - 34) / 2,
+								left: 120,
+								width: gap,
+								alignItems: 'center',
+							}
+						: {
+								position: 'absolute',
+								top: top + BAR + 4,
+								left: 0,
+								right: 0,
+								alignItems: 'center',
+							}
+				}
+			>
+				{pill}
+			</View>
+			{browseMenu ? (
+				<View
+					style={{
+						position: 'absolute',
+						top: inBar ? top + BAR - 4 : top + BAR + 40,
+						left: inBar ? 120 + Math.max(0, gap / 2 - 30) : width / 2 - 20,
+						minWidth: 200,
+						paddingVertical: 6,
+						borderRadius: 12,
+						backgroundColor: panelColor(),
+						borderWidth: 1,
+						borderColor: 'rgba(127,127,127,0.3)',
+						elevation: 30,
+						zIndex: 30,
+					}}
+				>
+					{SECTIONS.map(([label, filters]) => (
+						<Pressable
+							key={label}
+							onPress={() => {
+								preset = filters
+								presetKey++
+								tab = 'browse'
+								browseMenu = false
+								tabsChanged()
+							}}
+							style={({ pressed }: { pressed: boolean }) => ({
+								paddingHorizontal: 16,
+								paddingVertical: 11,
+								backgroundColor: pressed
+									? 'rgba(127,127,127,0.2)'
+									: 'transparent',
+							})}
+						>
+							<RNText
+								style={{ color: textColor(), fontSize: 15, fontWeight: '600' }}
+							>
+								{label}
+							</RNText>
+						</Pressable>
+					))}
+				</View>
+			) : null}
+			{tab === 'browse' && layerDetail ? (
+				<LayerDetail p={layerDetail.p} owned={layerDetail.owned} />
+			) : null}
+		</View>
+	)
+}
+
+function installTabs(): () => void {
+	const undo: Array<() => void> = []
+	// Which screen is open: from navigation changes, and a light check every 1.5 s as a backstop.
+	const check = () => {
+		const name = routeName()
+		const onShop = SHOP_ROUTE.test(name)
+		if (name === tabsStatus.route && onShop === tabsStatus.onShop) return
+		tabsStatus.route = name
+		tabsStatus.onShop = onShop
+		if (!onShop) {
+			tab = 'featured'
+			browseMenu = false
+			layerDetail = undefined
+		}
+		tabsChanged()
+	}
+	try {
+		const nav: any = RootNavigationRef.getRootNavigationRef()
+		const off = nav?.addListener?.('state', check)
+		if (typeof off === 'function') undo.push(off)
+	} catch {}
+	const timer = setInterval(check, 1500)
+	undo.push(() => clearInterval(timer))
+	undo.push(
+		findModule(
+			'modules/toast/native/AppToastContainer.tsx',
+			['AppToastContainer'],
+			(mod: any) => {
+				if (typeof mod?.default !== 'function') return
+				undo.push(
+					after(mod, 'default', ((rendered: any) => (
+						<>
+							{rendered}
+							<ShopTabs />
+						</>
+					)) as never),
+				)
+			},
+		),
+	)
+	return () => {
+		for (const u of undo.splice(0))
+			try {
+				u()
+			} catch {}
+		tab = 'featured'
+	}
+}
+
 export default plugin<{ jsonStorage: Settings }>({
 	jsonStorage: {
 		load: true,
@@ -1080,16 +1327,9 @@ export default plugin<{ jsonStorage: Settings }>({
 			cleanup(
 				afterJSX(B, (el: any) => {
 					const st = (storage as any)?.cache ?? {}
-					const mode: 'inline' | 'popup' | 'off' =
-						st.shopMode ?? (st.inShop === false ? 'off' : 'inline')
-					if (mode === 'off') return el
+					if (modeOf(st) !== 'popup') return el
 					const label = textIn(el?.props?.text ?? el?.props?.children).trim()
 					if (!SHOP_ALL.test(label)) return el
-					if (mode === 'inline')
-						return createElement(InlineShop, {
-							key: el?.key ?? 'shop-browser-inline',
-							discordList: el?.props?.onPress,
-						})
 					return createElement(
 						Fragment,
 						{ key: el?.key ?? 'shop-browser' },
@@ -1099,7 +1339,7 @@ export default plugin<{ jsonStorage: Settings }>({
 				}) as any,
 			)
 		}
-		cleanup(() => {
+		cleanup(installTabs(), () => {
 			setBrowsing(false)
 			storage = undefined
 		})
@@ -1109,7 +1349,7 @@ export default plugin<{ jsonStorage: Settings }>({
 
 function SettingsPage() {
 	const stored = storage?.use() as any
-	const { TableRowGroup, TableSwitchRow } = Design as any
+	const { TableRowGroup, TableSwitchRow, Text } = Design as any
 	return (
 		<View style={{ flex: 1 }}>
 			<View style={{ paddingHorizontal: PAD, paddingTop: 8 }}>
@@ -1117,9 +1357,9 @@ function SettingsPage() {
 					{(
 						[
 							[
-								'inline',
-								'In the Shop',
-								"Right in Discord's Shop page, under Find your style (in place of Shop All)",
+								'tab',
+								'Featured | Browse in the Shop',
+								'A switch at the top of the Shop: Browse covers it with this browser, Featured goes back',
 							],
 							[
 								'popup',
@@ -1129,8 +1369,7 @@ function SettingsPage() {
 							['off', 'Only here', "Leave Discord's Shop as it is"],
 						] as const
 					).map(([mode, label, sub]) => {
-						const current =
-							stored?.shopMode ?? (stored?.inShop === false ? 'off' : 'inline')
+						const current = modeOf(stored ?? {})
 						return (
 							<TableSwitchRow
 								key={mode}
@@ -1148,6 +1387,14 @@ function SettingsPage() {
 						)
 					})}
 				</TableRowGroup>
+				<Text
+					variant="text-xs/medium"
+					color="text-muted"
+					style={{ marginTop: 6 }}
+				>
+					Screen now: {tabsStatus.route || 'unknown'} · Shop detected:{' '}
+					{tabsStatus.onShop ? 'yes' : 'no'}
+				</Text>
 			</View>
 			<ShopPage />
 		</View>
