@@ -27,6 +27,8 @@ import { ReactNativeSafeAreaContext } from '@valenced/externals/react-native-saf
 import { RootNavigationRef } from '@valenced/discord/modules/main_tabs_v2'
 import { after } from '@valenced/patcher'
 import { afterJSX } from '@valenced/react/jsx-runtime'
+import { lookupModule } from '@valenced/modules/finders'
+import { withProps } from '@valenced/modules/finders/filters'
 import { findModule } from './find'
 import {
 	activeCount,
@@ -36,6 +38,7 @@ import {
 	errorText,
 	formatPrice,
 	loadShop,
+	hasPopularity,
 	SWATCHES,
 	THEMES,
 	TYPES,
@@ -142,6 +145,46 @@ function priceLine(p: Product): string {
 	return parts.join(' · ') || '—'
 }
 
+/**
+ * Discord's own item sheet, with the item on your profile (and Redeem / Buy). Opened through
+ * Discord's details action when one of its usual names is found, else through the item's Shop link,
+ * which the app opens itself. The Browse layer steps aside first so the sheet isn't under it;
+ * Browse brings it back as it was.
+ */
+const OPENERS = [
+	'openCollectiblesShopProductDetailsModal',
+	'openCollectiblesShopProductDetails',
+	'openCollectibleProductDetails',
+	'openProductDetailsSheet',
+	'openCollectiblesProductDetails',
+]
+function previewOnProfile(p: Product) {
+	if (tab === 'browse') {
+		tab = 'featured'
+		layerDetail = undefined
+		tabsChanged()
+	}
+	setTimeout(() => {
+		for (const name of OPENERS)
+			try {
+				const [mod] = lookupModule((withProps as any)(name)) as any
+				const fn = mod?.[name]
+				if (typeof fn !== 'function') continue
+				fn({
+					product: p.raw,
+					category: p.rawCategory,
+					skuId: p.sku,
+					analyticsLocations: [],
+					analyticsSource: 'shop-browser',
+				})
+				return
+			} catch {}
+		void Linking.openURL(`https://discord.com/shop#itemSkuId=${p.sku}`).catch(
+			() => toast("Couldn't open Discord's preview"),
+		)
+	}, 250)
+}
+
 function openDetail(p: Product, owned: boolean) {
 	// Over the Shop's Browse layer, Discord's alerts can open underneath it: show it in the layer.
 	if (tab === 'browse' && tabsStatus.onShop) {
@@ -189,13 +232,11 @@ function openDetail(p: Product, owned: boolean) {
 			actions={
 				<>
 					<AlertActionButton
-						text="Open in the Shop"
+						text="Preview on my profile"
 						variant="primary"
 						onPress={() => {
 							close()
-							void Linking.openURL(
-								`https://discord.com/shop#itemSkuId=${p.sku}`,
-							).catch(() => {})
+							previewOnProfile(p)
 						}}
 					/>
 					<AlertActionButton text="Close" variant="secondary" onPress={close} />
@@ -389,6 +430,7 @@ function FilterPanel({
 	setCols,
 	close,
 	inline,
+	top = 0,
 }: {
 	shop: Shop
 	f: Filters
@@ -400,6 +442,8 @@ function FilterPanel({
 	close: () => void
 	/** In the Shop page itself: laid out in the page instead of sliding over it. */
 	inline?: boolean
+	/** Where the panel starts: under the page's title row, so it covers only the items. */
+	top?: number
 }) {
 	const { Text } = Design as any
 	const Wrap: any = inline ? View : ScrollView
@@ -417,7 +461,7 @@ function FilterPanel({
 						}
 					: {
 							position: 'absolute',
-							top: 0,
+							top,
 							right: 0,
 							bottom: 0,
 							width: '74%',
@@ -624,8 +668,13 @@ function panelColor(): string {
 
 let storage: Storage | undefined
 
+/** What the browser had last (filters, sort), so coming back to it keeps them. */
+let lastFilters: Filters | undefined
+let appliedPreset = 0
+
 const SORTS: [Filters['sort'], string][] = [
 	['shop', 'Relevance'],
+	['popular', 'Popular'],
 	['newest', 'Newest'],
 	['oldest', 'Oldest'],
 	['cheap', 'Price: Low to High'],
@@ -665,14 +714,24 @@ function ShopPage({
 	const { Text, TextInput, Button } = Design as any
 	const [shop, setShop] = useState<Shop | undefined>(cached)
 	const [error, setError] = useState<string>()
-	const [f, setF] = useState<Filters>({ ...DEFAULT_FILTERS, ...preset })
+	// Coming back to Browse picks up where you were; a section from Browse ▾ starts from it.
+	const [f, setF] = useState<Filters>(() =>
+		presetKey && presetKey !== appliedPreset
+			? { ...DEFAULT_FILTERS, sort: lastFilters?.sort ?? 'shop', ...preset }
+			: (lastFilters ?? { ...DEFAULT_FILTERS, ...preset }),
+	)
 	const [panel, setPanel] = useState(false)
 	const [sortOpen, setSortOpen] = useState(false)
-	// Browse ▾ in the Shop picked a section: start from it.
+	const [headerH, setHeaderH] = useState(0)
 	useEffect(() => {
-		if (presetKey)
+		if (presetKey && presetKey !== appliedPreset) {
+			appliedPreset = presetKey
 			setF(prev => ({ ...DEFAULT_FILTERS, sort: prev.sort, ...preset }))
+		}
 	}, [presetKey])
+	useEffect(() => {
+		lastFilters = f
+	}, [f])
 	const { width } = useWindowDimensions()
 	const cols = stored?.columns ?? 3
 	const size = Math.floor((width - PAD * 2 - GAP * (cols - 1)) / cols)
@@ -711,7 +770,12 @@ function ShopPage({
 	const active = activeCount(f)
 
 	const top = (
-		<View style={{ paddingTop: 8, paddingBottom: 6, gap: 8 }}>
+		<View
+			style={{ paddingTop: 8, paddingBottom: 6, gap: 8 }}
+			onLayout={(e: any) =>
+				setHeaderH(Math.round(e?.nativeEvent?.layout?.height ?? 0))
+			}
+		>
 			<View
 				style={{
 					flexDirection: 'row',
@@ -832,6 +896,16 @@ function ShopPage({
 					))}
 				</View>
 			) : null}
+			{f.sort === 'popular' && shop && !hasPopularity(shop) ? (
+				<Text
+					variant="text-xxs/medium"
+					color="text-muted"
+					style={{ paddingHorizontal: PAD }}
+				>
+					Discord's app doesn't get popularity numbers, so Popular shows
+					Discord's own featured order.
+				</Text>
+			) : null}
 		</View>
 	)
 
@@ -912,6 +986,7 @@ function ShopPage({
 					cols={cols}
 					setCols={n => save({ columns: n })}
 					close={() => setPanel(false)}
+					top={headerH}
 				/>
 			) : null}
 		</View>
@@ -1090,6 +1165,13 @@ function LayerDetail({ p, owned }: { p: Product; owned: boolean }) {
 						You own this
 					</Text>
 				) : null}
+				<Button
+					text="Preview on my profile"
+					onPress={() => {
+						close()
+						previewOnProfile(p)
+					}}
+				/>
 				<Button text="Close" variant="secondary" onPress={close} />
 			</Pressable>
 		</Pressable>
@@ -1151,8 +1233,13 @@ function ShopTabs() {
 					accessibilityRole="tab"
 					accessibilityState={{ selected: tab === t }}
 					onPress={() => {
-						if (t === 'browse') browseMenu = !browseMenu
-						else {
+						// Browse goes back to where you were; the first time (or ▾) it opens the sections.
+						if (t === 'browse') {
+							if (tab === 'featured' && appliedPreset) {
+								tab = 'browse'
+								browseMenu = false
+							} else browseMenu = !browseMenu
+						} else {
 							tab = 'featured'
 							browseMenu = false
 						}

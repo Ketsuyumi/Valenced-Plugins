@@ -266,7 +266,7 @@ Browse ▾ opens a menu (Avatar Decorations, Nameplates, Profile Effects, Profil
 covers the Shop with the browser; Featured goes back to Discord's page. It also works from the plugin's page, or as a
 pop-up from Shop All (setting).
 
-- Title with the count ("Nameplates (53)"), **Sort by** Relevance, Newest, Oldest, price or A–Z (Newest/Oldest read
+- Title with the count ("Nameplates (53)"), **Sort by** Relevance, Popular, Newest, Oldest, price or A–Z (Newest/Oldest read
   when each item was made from its ID), and **Filters / Hide Filters**.
 - Filters like the desktop Shop's: **Item Type** (tick several), **Show Only** (Orbs eligible, collabs, paid, owned…),
   **Colour** (from each item's own colours), **Theme** (Anime, Gaming, Cute & Cosy, Sci-Fi, Food & Drinks, Fantasy,
@@ -274,6 +274,8 @@ pop-up from Shop All (setting).
   item's name, description and collection), and **Clear all filters**.
 - Nameplates show as long bars, profile effects and frames big (two a row), decorations and bundles in a 3–5 column
   grid.
+- Tap an item for its details and **Preview on my profile**, which opens Discord's own item sheet (with Redeem / Buy).
+  Browse brings you back where you were.
 
 Data comes from the endpoints the app itself uses (Discord Userdoccers' collectibles page), through Discord's own
 request helper.

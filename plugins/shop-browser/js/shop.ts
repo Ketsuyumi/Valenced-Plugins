@@ -46,6 +46,11 @@ export interface Product {
 	swatches: Swatch[]
 	/** Theme / tag words Discord sends with the item or its category, when it does. */
 	tags: string[]
+	/** Popularity, when Discord's data has one (higher is more popular). */
+	popularity?: number
+	/** Discord's own records, for its item sheet (preview on your profile). */
+	raw?: any
+	rawCategory?: any
 }
 
 /** The desktop Shop's colour filter. */
@@ -166,6 +171,54 @@ export function imageOf(product: any): string | undefined {
 		const img = imageOf(inner)
 		if (img) return img
 	}
+	// Frames (and anything else) keep their pictures elsewhere: any image link in the item, the
+	// still ones and frame ones first.
+	const found = deepImage(product)
+	if (found) return found
+	// Last try for frames: their first layer's asset (Discord's address for these isn't documented).
+	const layer = item?.layers?.find?.((l: any) => l?.id)
+	if (item?.type === 3 && layer)
+		return `https://cdn.discordapp.com/assets/profile_frames/${layer.id}.png`
+	return undefined
+}
+
+function deepImage(obj: unknown): string | undefined {
+	const found: Array<[string, string]> = []
+	const walk = (v: unknown, key: string, depth: number) => {
+		if (depth > 6 || v == null) return
+		if (typeof v === 'string') {
+			if (
+				/^https?:\/\/\S+\.(png|webp|jpe?g|gif|apng)(\?|$)/i.test(v) &&
+				!/banner|logo|hero/i.test(key + v)
+			)
+				found.push([key, v])
+			return
+		}
+		if (Array.isArray(v)) return v.forEach(x => walk(x, key, depth + 1))
+		if (typeof v === 'object')
+			for (const [k, x] of Object.entries(v as object)) walk(x, k, depth + 1)
+	}
+	walk(obj, '', 0)
+	const score = ([k, u]: [string, string]) =>
+		(/static/i.test(k + u) ? 2 : 0) + (/frame/i.test(k + u) ? 1 : 0)
+	found.sort((a, b) => score(b) - score(a))
+	return found[0]?.[1]
+}
+
+/** A popularity number Discord might send with an item (none is documented). */
+function popularityOf(raw: any): number | undefined {
+	for (const k of [
+		'popularity',
+		'popularity_score',
+		'popular_rank',
+		'rank',
+		'purchase_count',
+		'times_purchased',
+		'trending_score',
+		'score',
+	])
+		if (typeof raw?.[k] === 'number')
+			return k.includes('rank') ? -raw[k] : raw[k]
 	return undefined
 }
 
@@ -202,6 +255,9 @@ export function toProduct(raw: any, category: any, order: number): Product {
 		order,
 		swatches: [...new Set(colorsOf(raw).map(swatchOf))],
 		tags: tagsOf(raw, category),
+		popularity: popularityOf(raw),
+		raw,
+		rawCategory: category,
 	}
 }
 
@@ -307,7 +363,7 @@ export interface Filters {
 	swatches: Swatch[]
 	/** Themes ticked (none = any). */
 	tags: string[]
-	sort: 'shop' | 'newest' | 'oldest' | 'cheap' | 'pricey' | 'name'
+	sort: 'shop' | 'popular' | 'newest' | 'oldest' | 'cheap' | 'pricey' | 'name'
 }
 
 export const DEFAULT_FILTERS: Filters = {
@@ -399,6 +455,13 @@ export function applyFilters(
 	else if (f.sort === 'name')
 		sorted.sort((a, b) => a.name.localeCompare(b.name))
 	// An item's ID is a snowflake: it says when the item was made.
+	// Popular: Discord's popularity numbers when its data has them, else its own (featured) order.
+	else if (f.sort === 'popular')
+		sorted.sort(
+			(a, b) =>
+				(b.popularity ?? -Infinity) - (a.popularity ?? -Infinity) ||
+				a.order - b.order,
+		)
 	else if (f.sort === 'newest')
 		sorted.sort((a, b) => snowflakeCmp(b.sku, a.sku))
 	else if (f.sort === 'oldest')
@@ -501,3 +564,7 @@ export function inTheme(p: Product, name: string, tagged: boolean): boolean {
 	const words = THEMES.find(([n]) => n === name)?.[2]
 	return !!words && words.test(`${p.name} ${p.summary} ${p.category}`)
 }
+
+/** Whether the shop's data carries popularity numbers (for the Popular sort's note). */
+export const hasPopularity = (shop: Shop) =>
+	shop.products.some(p => p.popularity != null)
