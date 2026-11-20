@@ -4,6 +4,8 @@ export interface Asset {
 	/** Discord's MediaType: 0 image, 1 GIF. */
 	type: 0 | 1
 	name: string
+	/** File extension in the zip. */
+	ext: 'png' | 'gif'
 }
 
 const CDN = 'https://cdn.discordapp.com'
@@ -14,6 +16,7 @@ export function emojiAssets(list: any[]): Asset[] {
 		.map(e => ({
 			url: `${CDN}/emojis/${e.id}.${e.animated ? 'gif' : 'png'}?size=512&quality=lossless`,
 			type: e.animated ? 1 : 0,
+			ext: e.animated ? ('gif' as const) : ('png' as const),
 			name: String(e.name ?? e.id),
 		}))
 }
@@ -38,6 +41,7 @@ export function stickerAssets(list: any[]): {
 					? `${CDN}/stickers/${s.id}.gif?size=1024`
 					: `${CDN}/stickers/${s.id}.png?size=1024&passthrough=true`,
 			type: f === 4 ? 1 : 0,
+			ext: f === 4 ? ('gif' as const) : ('png' as const),
 			name: String(s.name ?? s.id),
 		})
 	}

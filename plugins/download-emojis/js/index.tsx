@@ -15,6 +15,7 @@ import {
 	stickerAssets,
 } from './assets'
 import { findModule } from './find'
+import { base64, zip } from './zip'
 
 /**
  * Download Emojis / Download Stickers in a server's long-press menu. Each one is saved with
@@ -30,47 +31,116 @@ const S = () => Stores as any
 const toast = (text: string) =>
 	(ToastActionCreators as any).open('download-emojis', { text })
 
-function downloader():
-	| ((url: string, type: number) => Promise<unknown>)
-	| undefined {
+const native = (name: string): any => {
 	try {
-		const m: any = (TurboModuleRegistry as any).get('NativeMediaManagerModule')
-		if (typeof m?.downloadMediaAsset === 'function')
-			return (url, type) => m.downloadMediaAsset(url, type)
-	} catch {}
-	return undefined
+		return (TurboModuleRegistry as any).get(name)
+	} catch {
+		return undefined
+	}
 }
 
-let running = false
+/** The bytes at [url] (XMLHttpRequest, which React Native hands back as an ArrayBuffer). */
+function bytes(url: string): Promise<Uint8Array> {
+	return new Promise((resolve, reject) => {
+		const x = new XMLHttpRequest()
+		x.open('GET', url)
+		x.responseType = 'arraybuffer'
+		x.onload = () =>
+			x.status === 200 && x.response
+				? resolve(new Uint8Array(x.response))
+				: reject(new Error(`HTTP ${x.status}`))
+		x.onerror = () => reject(new Error('network'))
+		x.send()
+	})
+}
 
-async function saveAll(what: string, assets: Asset[], skipped: number) {
-	const save = downloader()
-	if (!save) return toast("Couldn't find Discord's downloader")
-	running = true
-	let done = 0
-	let failed = 0
-	toast(`Saving ${assets.length} ${what}…`)
-	for (const a of assets) {
-		if (!running) break
-		try {
-			await save(a.url, a.type)
-			done++
-		} catch {
-			failed++
+const safe = (s: string) =>
+	s.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_').trim() || 'file'
+
+let running = false
+export const lastResult = { text: 'Nothing saved yet' }
+
+/**
+ * Hands the finished zip (in Discord's cache) to you: Discord's downloader first (it saves to
+ * your phone like Save image), then Android's share sheet (Save to Files, Drive, …).
+ */
+async function deliver(path: string, name: string): Promise<string> {
+	const uri = path.startsWith('file:') ? path : `file://${path}`
+	const media = native('NativeMediaManagerModule')
+	try {
+		if (typeof media?.downloadMediaAssetWithContentType === 'function') {
+			await media.downloadMediaAssetWithContentType(uri, 0, 'application/zip')
+			return `Saved ${name} to your phone`
 		}
-		if ((done + failed) % 20 === 0 && done + failed < assets.length)
-			toast(`Saved ${done} of ${assets.length} ${what}…`)
+	} catch {}
+	const share = native('NativeShareManagerModule')
+	try {
+		if (typeof share?.share === 'function') {
+			share.share(null, uri, name, null, null, () => {})
+			return `Choose where to keep ${name}`
+		}
+	} catch {}
+	throw new Error(`the zip is ready but couldn't be handed over (${path})`)
+}
+
+async function saveZip(
+	guildName: string,
+	what: string,
+	assets: Asset[],
+	skipped: number,
+) {
+	const files = native('NativeFileModule')
+	if (typeof files?.writeFile !== 'function')
+		return toast("Couldn't find Discord's file writer")
+	running = true
+	const got: { name: string; data: Uint8Array }[] = []
+	const used = new Set<string>()
+	let failed = 0
+	toast(`Getting ${assets.length} ${what}…`)
+	let next = 0
+	const worker = async () => {
+		while (running && next < assets.length) {
+			const a = assets[next++]!
+			try {
+				const data = await bytes(a.url)
+				let name = `${safe(a.name)}.${a.ext}`
+				for (let i = 2; used.has(name.toLowerCase()); i++)
+					name = `${safe(a.name)}_${i}.${a.ext}`
+				used.add(name.toLowerCase())
+				got.push({ name, data })
+				if (got.length % 25 === 0)
+					toast(`Got ${got.length} of ${assets.length} ${what}…`)
+			} catch {
+				failed++
+			}
+		}
 	}
-	running = false
-	const extra = [
-		failed ? `${failed} failed` : '',
-		skipped
-			? `${skipped} Lottie sticker${skipped === 1 ? '' : 's'} skipped`
-			: '',
-	]
-		.filter(Boolean)
-		.join(', ')
-	toast(`Saved ${done} ${what}${extra ? ` (${extra})` : ''}`)
+	try {
+		await Promise.all(Array.from({ length: 6 }, worker))
+		if (!running) return
+		if (!got.length) throw new Error(`none of the ${what} could be downloaded`)
+		const zipName = `${safe(guildName)}-${what}.zip`
+		const path: string = await files.writeFile(
+			'cache',
+			zipName,
+			base64(zip(got)),
+			'base64',
+		)
+		const said = await deliver(String(path), zipName)
+		const extra = [
+			failed ? `${failed} failed` : '',
+			skipped ? `${skipped} Lottie skipped` : '',
+		]
+			.filter(Boolean)
+			.join(', ')
+		lastResult.text = `${said}: ${got.length} ${what}${extra ? ` (${extra})` : ''}`
+		toast(lastResult.text)
+	} catch (e: any) {
+		lastResult.text = `Failed: ${e?.message ?? e}`
+		toast(lastResult.text)
+	} finally {
+		running = false
+	}
 }
 
 function ask(guildId: string, kind: 'emojis' | 'stickers') {
@@ -95,13 +165,13 @@ function ask(guildId: string, kind: 'emojis' | 'stickers') {
 		'download-emojis',
 		<AlertModal
 			title={`Download ${kind}`}
-			content={`Save ${assets.length} ${kind} from ${name} to your phone? They go where Discord saves pictures.`}
+			content={`Save ${assets.length} ${kind} from ${name} as one zip file?`}
 			actions={
 				<>
 					<AlertActionButton
-						text={`Save ${assets.length}`}
+						text="Save zip"
 						variant="primary"
-						onPress={() => void saveAll(kind, assets, skipped)}
+						onPress={() => void saveZip(name, kind, assets, skipped)}
 					/>
 					<AlertActionButton text="Cancel" variant="secondary" />
 				</>
@@ -150,11 +220,12 @@ export default plugin({
 										},
 									]
 									// Right after Edit Per-server Profile / Privacy Settings when there, else at the end.
-									const at = menu.items.findIndex((i: any) =>
-										/per-server profile|server profile|privacy/i.test(
-											String(i?.label ?? ''),
-										),
-									)
+									const labelAt = (re: RegExp) =>
+										menu.items.findIndex((i: any) =>
+											re.test(String(i?.label ?? '')),
+										)
+									let at = labelAt(/per-server profile|server profile/i)
+									if (at < 0) at = labelAt(/privacy/i)
 									if (at >= 0) menu.items.splice(at + 1, 0, ...rows)
 									else menu.items.push(...rows)
 								}
@@ -167,6 +238,15 @@ export default plugin({
 			() => {
 				running = false
 			},
+		)
+	},
+	SettingsComponent: () => {
+		const { Text } = Design as any
+		return (
+			<Text variant="text-md/normal" style={{ padding: 16 }}>
+				Long-press a server, then Download Emojis or Download Stickers.
+				{'\n\n'}Last time: {lastResult.text}
+			</Text>
 		)
 	},
 })
