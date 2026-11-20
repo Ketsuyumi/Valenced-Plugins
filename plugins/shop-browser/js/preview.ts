@@ -28,6 +28,27 @@ export const previewStatus = {
 }
 
 let saveRoute: ((route: Learned['route']) => void) | undefined
+/** The Shop screen's own route name (navigating to it isn't opening an item). */
+let shopRoute: () => string = () => ''
+export function setShopRoute(get: () => string) {
+	shopRoute = get
+}
+const currentRoute = (): string => {
+	try {
+		return String(
+			(RootNavigationRef.getRootNavigationRef() as any)?.getCurrentRoute?.()
+				?.name ?? '',
+		)
+	} catch {
+		return ''
+	}
+}
+function forget(why: string) {
+	learned.route = undefined
+	learned.sheet = undefined
+	saveRoute?.(undefined)
+	previewStatus.learned = `Nothing yet (${why})`
+}
 export function setRouteStore(
 	read: () => Learned['route'] | undefined,
 	write: (route: Learned['route']) => void,
@@ -126,7 +147,10 @@ export function installLearning(): () => void {
 								typeof flat?.name === 'string' &&
 								WANTED.test(flat.name) &&
 								aboutItem(flat.params) &&
-								!flat.params?.__shopBrowser
+								!flat.params?.__shopBrowser &&
+								// Opening the Shop itself (from a link or the menu) isn't opening an item.
+								flat.name !== shopRoute() &&
+								flat.name !== currentRoute()
 							) {
 								learned.route = {
 									name: flat.name,
@@ -177,11 +201,22 @@ export function openItemSheet(p: {
 	if (learned.route)
 		try {
 			const nav: any = RootNavigationRef.getRootNavigationRef()
+			const before = currentRoute()
 			nav.navigate(learned.route.name, {
 				...swap(learned.route.params, p),
 				__shopBrowser: true,
 			})
 			previewStatus.last = `Screen “${learned.route.name}”`
+			// Landed on the Shop's front page (or nowhere new): what was learned is wrong.
+			setTimeout(() => {
+				const now = currentRoute()
+				if (now === before || (shopRoute() && now === shopRoute())) {
+					forget('the screen learned before only reopened the Shop')
+					toast(
+						'That reopened the Shop instead of the item. Tap any item in Featured once, then try again.',
+					)
+				}
+			}, 900)
 			return true
 		} catch {}
 	previewStatus.last = 'Not learned yet'

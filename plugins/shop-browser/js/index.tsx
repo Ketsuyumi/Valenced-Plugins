@@ -35,6 +35,7 @@ import {
 	openItemSheet,
 	previewStatus,
 	setRouteStore,
+	setShopRoute,
 } from './preview'
 import {
 	activeCount,
@@ -318,7 +319,7 @@ interface Settings {
 	/** Discord's Shop → Shop All opens the browser (older setting). */
 	inShop?: boolean
 	/** How Discord opens an item's screen, learned from a tap in its Shop (for Preview & Buy). */
-	previewRoute?: { name: string; params: any }
+	previewRoute2?: { name: string; params: any }
 	/** Where it shows in Discord's Shop: a Featured | Browse switch, a pop-up from Shop All, or not at all. */
 	shopMode?: 'tab' | 'inline' | 'popup' | 'off'
 }
@@ -1408,13 +1409,14 @@ export default plugin<{ jsonStorage: Settings }>({
 			)
 		}
 		setRouteStore(
-			() => (storage as any)?.cache?.previewRoute,
-			previewRoute =>
+			() => (storage as any)?.cache?.previewRoute2,
+			previewRoute2 =>
 				storage?.set(
-					{ ...((storage as any)?.cache ?? {}), previewRoute } as Settings,
+					{ ...((storage as any)?.cache ?? {}), previewRoute2 } as Settings,
 					true,
 				),
 		)
+		setShopRoute(() => (tabsStatus.onShop ? tabsStatus.route : ''))
 		cleanup(installLearning(), installTabs(), () => {
 			setBrowsing(false)
 			storage = undefined
