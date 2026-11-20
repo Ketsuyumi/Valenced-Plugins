@@ -61,23 +61,43 @@ let running = false
 export const lastResult = { text: 'Nothing saved yet' }
 
 /**
- * Hands the finished zip (in Discord's cache) to you: Discord's downloader first (it saves to
- * your phone like Save image), then Android's share sheet (Save to Files, Drive, …).
+ * Hands the finished zip (in Discord's cache) to you: Android's Save as screen, or Discord's
+ * downloader (Save image's) if that screen isn't there.
  */
 async function deliver(path: string, name: string): Promise<string> {
-	const uri = path.startsWith('file:') ? path : `file://${path}`
+	const uri = `file://${encodeURI(path.replace(/^file:\/*/, '/'))}`
+	// Android's "Save as" screen, as Discord's own file exports use (saveDocuments): you pick the
+	// folder, and the zip is copied there.
+	const picker = native('RNDocumentPicker')
+	if (typeof picker?.saveDocument === 'function') {
+		let picked: any
+		try {
+			picked = await picker.saveDocument({
+				sourceUris: [uri],
+				fileName: name,
+				mimeType: 'application/zip',
+				copy: true,
+			})
+		} catch (e: any) {
+			if (/cancel/i.test(String(e?.code ?? e?.message ?? e)))
+				throw new Error('cancelled')
+			picked = undefined
+		}
+		if (picked) {
+			const written = await picker.writeDocuments?.(picked)
+			const list: any[] = Array.isArray(written) ? written : []
+			const err = list.find(r => r?.error)?.error
+			if (err) throw new Error(String(err))
+			if (!list.length && Array.isArray(picked) && !picked.length)
+				throw new Error('cancelled')
+			return `Saved ${name}`
+		}
+	}
 	const media = native('NativeMediaManagerModule')
 	try {
 		if (typeof media?.downloadMediaAssetWithContentType === 'function') {
 			await media.downloadMediaAssetWithContentType(uri, 0, 'application/zip')
 			return `Saved ${name} to your phone`
-		}
-	} catch {}
-	const share = native('NativeShareManagerModule')
-	try {
-		if (typeof share?.share === 'function') {
-			share.share(null, uri, name, null, null, () => {})
-			return `Choose where to keep ${name}`
 		}
 	} catch {}
 	throw new Error(`the zip is ready but couldn't be handed over (${path})`)
@@ -136,7 +156,8 @@ async function saveZip(
 		lastResult.text = `${said}: ${got.length} ${what}${extra ? ` (${extra})` : ''}`
 		toast(lastResult.text)
 	} catch (e: any) {
-		lastResult.text = `Failed: ${e?.message ?? e}`
+		lastResult.text =
+			e?.message === 'cancelled' ? 'Cancelled' : `Failed: ${e?.message ?? e}`
 		toast(lastResult.text)
 	} finally {
 		running = false

@@ -5,7 +5,7 @@
 	"description": "Long-press a server: Download Emojis or Download Stickers saves all of them to your phone as one zip.",
 	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
 	"icon": "DownloadIcon",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"
