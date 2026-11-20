@@ -171,14 +171,16 @@ export function imageOf(product: any): string | undefined {
 		const img = imageOf(inner)
 		if (img) return img
 	}
-	// Frames (and anything else) keep their pictures elsewhere: any image link in the item, the
-	// still ones and frame ones first.
+	// Current collectibles (frames among them) have a static picture by SKU on Discord's CDN
+	// (media/v1/collectibles-shop/{sku}/static): the product's own, else the item's.
+	const sku = product?.sku_id ?? item?.sku_id
+	if (sku && (item?.type === 3 || product?.type === 3))
+		return `https://cdn.discordapp.com/media/v1/collectibles-shop/${sku}/static`
+	// Anything else keeping its picture elsewhere: any image link in the item, still ones first.
 	const found = deepImage(product)
 	if (found) return found
-	// Last try for frames: their first layer's asset (Discord's address for these isn't documented).
-	const layer = item?.layers?.find?.((l: any) => l?.id)
-	if (item?.type === 3 && layer)
-		return `https://cdn.discordapp.com/assets/profile_frames/${layer.id}.png`
+	if (item?.sku_id && item?.layers)
+		return `https://cdn.discordapp.com/media/v1/collectibles-shop/${item.sku_id}/static`
 	return undefined
 }
 

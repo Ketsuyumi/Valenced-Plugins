@@ -175,11 +175,26 @@ export function OnMe({ p, text }: { p: Product; text: string }) {
 					/>
 				</View>
 				{img ? (
-					<Image
-						source={img}
-						resizeMode="contain"
-						style={{ position: 'absolute', width: 200, height: 260 }}
-					/>
+					p.type === 1 ? (
+						// An effect plays over the whole card, edge to edge.
+						<Image
+							source={img}
+							resizeMode="cover"
+							style={{
+								position: 'absolute',
+								width: 170,
+								height: 230,
+								borderRadius: 14,
+							}}
+						/>
+					) : (
+						// A frame wraps around the card, a little bigger than it.
+						<Image
+							source={img}
+							resizeMode="contain"
+							style={{ position: 'absolute', width: 200, height: 260 }}
+						/>
+					)
 				) : null}
 			</View>
 		</View>
