@@ -30,6 +30,7 @@ import { afterJSX } from '@valenced/react/jsx-runtime'
 import { lookupModule } from '@valenced/modules/finders'
 import { withProps } from '@valenced/modules/finders/filters'
 import { findModule } from './find'
+import { fitCard, FrameView } from './frame'
 import { OnMe } from './onme'
 import {
 	canOpenSheet,
@@ -264,7 +265,22 @@ function Card({
 					justifyContent: 'center',
 				}}
 			>
-				{p.image ? (
+				{p.frame ? (
+					(() => {
+						const { cardW, cardH } = fitCard(p.frame, size * 0.9, height * 0.9)
+						return (
+							<FrameView frame={p.frame} cardW={cardW} cardH={cardH}>
+								<View
+									style={{
+										flex: 1,
+										borderRadius: 8,
+										backgroundColor: 'rgba(0,0,0,0.35)',
+									}}
+								/>
+							</FrameView>
+						)
+					})()
+				) : p.image ? (
 					<Image
 						source={{ uri: p.image }}
 						resizeMode={fill ? 'cover' : 'contain'}

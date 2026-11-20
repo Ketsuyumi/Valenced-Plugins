@@ -1,6 +1,7 @@
 import { Design } from '@valenced/discord/design'
 import { Stores } from '@valenced/discord/flux'
 import { Image, View } from 'react-native'
+import { fitCard, FrameView } from './frame'
 import type { Product } from './shop'
 
 /**
@@ -111,6 +112,71 @@ export function OnMe({ p, text }: { p: Product; text: string }) {
 				</Text>
 			</View>
 		)
+	const card = (w: number, h: number) => (
+		<View
+			style={{
+				width: w,
+				height: h,
+				borderRadius: 14,
+				overflow: 'hidden',
+				backgroundColor: 'rgba(0,0,0,0.45)',
+			}}
+		>
+			<View
+				style={{ height: h * 0.27, backgroundColor: 'rgba(127,127,127,0.35)' }}
+			/>
+			<Image
+				source={{ uri: avatar }}
+				style={{
+					width: 64,
+					height: 64,
+					borderRadius: 32,
+					marginTop: -32,
+					marginLeft: 12,
+					borderWidth: 4,
+					borderColor: 'rgba(0,0,0,0.45)',
+				}}
+			/>
+			<Text
+				variant="text-md/bold"
+				style={{ color: text, marginLeft: 14, marginTop: 6 }}
+				numberOfLines={1}
+			>
+				{name}
+			</Text>
+			<View
+				style={{
+					height: 8,
+					width: w * 0.5,
+					borderRadius: 4,
+					marginLeft: 14,
+					marginTop: 10,
+					backgroundColor: 'rgba(127,127,127,0.35)',
+				}}
+			/>
+			<View
+				style={{
+					height: 8,
+					width: w * 0.7,
+					borderRadius: 4,
+					marginLeft: 14,
+					marginTop: 8,
+					backgroundColor: 'rgba(127,127,127,0.25)',
+				}}
+			/>
+		</View>
+	)
+	if (p.frame) {
+		// Frame: drawn from its layers around your card, as Discord does.
+		const { cardW, cardH } = fitCard(p.frame, 240, 300)
+		return (
+			<View style={{ alignItems: 'center' }}>
+				<FrameView frame={p.frame} cardW={cardW} cardH={cardH}>
+					{card(cardW, cardH)}
+				</FrameView>
+			</View>
+		)
+	}
 	// Frame, effect (and bundles): a small profile card of yours, the item over it.
 	return (
 		<View style={{ alignItems: 'center' }}>

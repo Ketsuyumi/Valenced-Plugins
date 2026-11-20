@@ -48,6 +48,8 @@ export interface Product {
 	tags: string[]
 	/** Popularity, when Discord's data has one (higher is more popular). */
 	popularity?: number
+	/** A profile frame's layers (frames are drawn from these, as Discord does). */
+	frame?: Frame
 	/** Discord's own records, for its item sheet (preview on your profile). */
 	raw?: any
 	rawCategory?: any
@@ -237,6 +239,49 @@ function pricesOf(product: any, purchaseType: number): Price[] {
 		}))
 }
 
+export interface FrameLayer {
+	url: string
+	front: boolean
+	bottom: boolean
+	/** Stretched to the card's full height (a side border) rather than kept at its own shape. */
+	stretch: boolean
+}
+export interface Frame {
+	innerWidth: number
+	top: number
+	bottom: number
+	side: number
+	layers: FrameLayer[]
+}
+
+/**
+ * A frame's layers, each a still at /media/v1/collectibles-shop/{sku}/{layer id}/static (as
+ * Discord's mobile app and other clients draw them; the layout follows its ProfileFrame).
+ */
+export function frameOf(raw: any): Frame | undefined {
+	const item = (raw?.items ?? []).find(
+		(i: any) => Number(i?.type) === 3 && Array.isArray(i?.layers),
+	)
+	if (!item?.layers?.length) return undefined
+	const sku = item.sku_id ?? raw.sku_id
+	const layers = [...item.layers]
+		.filter((l: any) => l?.id)
+		.map((l: any) => ({
+			url: `https://cdn.discordapp.com/media/v1/collectibles-shop/${sku}/${l.id}/static?width=600`,
+			front: String(l.order ?? '').toLowerCase() !== 'back' && l.order !== 0,
+			bottom: /bottom/i.test(String(l.anchor ?? '')) || l.anchor === 2,
+			stretch: !!l.responsive || /border|edge|side/i.test(String(l.type ?? '')),
+		}))
+	if (!layers.length) return undefined
+	return {
+		innerWidth: Number(item.inner_width) || 1200,
+		top: Number(item.overflow_top) || 0,
+		bottom: Number(item.overflow_bottom) || 0,
+		side: Number(item.overflow_horizontal) || 0,
+		layers,
+	}
+}
+
 export function toProduct(raw: any, category: any, order: number): Product {
 	const base = pricesOf(raw, 0)
 	const nitroList = pricesOf(raw, 3)
@@ -258,6 +303,7 @@ export function toProduct(raw: any, category: any, order: number): Product {
 		swatches: [...new Set(colorsOf(raw).map(swatchOf))],
 		tags: tagsOf(raw, category),
 		popularity: popularityOf(raw),
+		frame: frameOf(raw),
 		raw,
 		rawCategory: category,
 	}
