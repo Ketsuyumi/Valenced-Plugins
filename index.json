@@ -463,7 +463,7 @@
       "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "PlayIcon",
       "channels": {
-        "latest": "1.4.0"
+        "latest": "1.4.1"
       },
       "versions": {
         "1.0.0": {
@@ -565,6 +565,22 @@
               "optional": true
             }
           }
+        },
+        "1.4.1": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.embed-playback@1.4.1.zip",
+          "sha256": "bd4cbd2572ba939e1a04575af951a2e6eb38a3380d501359530ac89bba663834",
+          "size": 23605,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            },
+            "palmdevs.block-youtube-ads": {
+              "optional": true
+            }
+          }
         }
       }
     },
@@ -577,7 +593,7 @@
       ],
       "icon": "LinkIcon",
       "channels": {
-        "latest": "1.7.0"
+        "latest": "1.7.1"
       },
       "versions": {
         "1.0.0": {
@@ -696,6 +712,19 @@
               "version": "*"
             }
           }
+        },
+        "1.7.1": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.floating-browser@1.7.1.zip",
+          "sha256": "bab328445d30b14d939e81c665fadbe63ec4d76f521a3f30f0d1b4dc0505678c",
+          "size": 18735,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
         }
       }
     },
@@ -705,7 +734,7 @@
       "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "ForumIcon",
       "channels": {
-        "latest": "1.1.2"
+        "latest": "1.1.3"
       },
       "versions": {
         "1.0.0": {
@@ -764,6 +793,19 @@
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.forum-grid@1.1.2.zip",
           "sha256": "e9f87eca6b4ff301422633fda751ec2ddb00380cb6b8b0893e65fbb8b305824c",
           "size": 9420,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.1.3": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.forum-grid@1.1.3.zip",
+          "sha256": "977c39b179f08c13e69f02096601a6a66f481d1da77f850f099a12dbf675ec9d",
+          "size": 9558,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
