@@ -5,8 +5,8 @@ import {
 import { Stores } from '@valenced/discord/flux'
 import { RootNavigationRef } from '@valenced/discord/modules/main_tabs_v2'
 import * as discordFinders from '@valenced/discord/utils/modules/finders'
-import { lookupModule } from '@valenced/modules/finders'
-import { withProps } from '@valenced/modules/finders/filters'
+import { lookupModule, lookupModules } from '@valenced/modules/finders'
+import { withDependencies, withProps } from '@valenced/modules/finders/filters'
 import { instead } from '@valenced/patcher'
 
 /**
@@ -194,23 +194,78 @@ function toast(text: string) {
  * (fetched with CollectiblesActionCreators.fetchCollectiblesProduct when not loaded yet). This is
  * what Discord's own shop cards call.
  */
-function sheetOpener(): ((args: any, stack?: string) => unknown) | undefined {
+type Opener = (args: any, stack?: string) => unknown
+let opener: Opener | undefined
+let forceTried = false
+
+const openerOf = (mod: any): Opener | undefined =>
+	typeof mod?.openProductDetailsActionSheet === 'function'
+		? mod.openProductDetailsActionSheet
+		: typeof mod?.default?.openProductDetailsActionSheet === 'function'
+			? mod.default.openProductDetailsActionSheet
+			: undefined
+
+const idOf = (...props: string[]): number | undefined => {
+	try {
+		const [, id] = lookupModule((withProps as any)(...props)) as any
+		return typeof id === 'number' ? id : undefined
+	} catch {
+		return undefined
+	}
+}
+
+/**
+ * Discord only loads the module with openProductDetailsActionSheet when you tap an item in its
+ * own Shop. It's found ahead of that by what it imports (the sheet actions, the collectibles
+ * actions and the product helpers, all loaded by the Shop already) and loaded the way Discord
+ * would load it.
+ */
+function forceLoadOpener(): Opener | undefined {
+	if (forceTried) return undefined
+	const ids = [
+		idOf('openLazy', 'hideActionSheet'),
+		idOf('productDetailsOpened') ?? idOf('fetchCollectiblesProduct'),
+		idOf('getIsVariantProduct'),
+	].filter((x): x is number => x !== undefined)
+	if (ids.length < 3) {
+		previewStatus.last = `Sheet module: only ${ids.length}/3 of its imports are loaded yet`
+		return undefined
+	}
+	forceTried = true
+	const { atMost, unordered } = withDependencies as any
+	let n = 0
+	try {
+		for (const [mod] of lookupModules(
+			(withDependencies as any)(atMost(10, unordered(ids))),
+			{ initialize: true } as any,
+		) as any) {
+			const found = openerOf(mod)
+			if (found) return found
+			if (++n >= 8) break
+		}
+	} catch (e: any) {
+		previewStatus.last = `Sheet module: ${e?.message ?? e}`
+	}
+	return undefined
+}
+
+function sheetOpener(): Opener | undefined {
+	if (opener) return opener
 	try {
 		const found = (discordFinders as any).lookupModuleWithImportedPath?.(
 			'modules/collectibles/native/openProductDetailsActionSheet.tsx',
 		)
-		const mod = Array.isArray(found) ? found[0] : found
-		if (typeof mod?.openProductDetailsActionSheet === 'function')
-			return mod.openProductDetailsActionSheet
+		opener = openerOf(Array.isArray(found) ? found[0] : found)
 	} catch {}
-	try {
-		const [mod] = lookupModule(
-			(withProps as any)('openProductDetailsActionSheet'),
-		) as any
-		if (typeof mod?.openProductDetailsActionSheet === 'function')
-			return mod.openProductDetailsActionSheet
-	} catch {}
-	return undefined
+	if (!opener)
+		try {
+			const [mod] = lookupModule(
+				(withProps as any)('openProductDetailsActionSheet'),
+			) as any
+			opener = openerOf(mod)
+		} catch {}
+	if (!opener) opener = forceLoadOpener()
+	return opener
 }
 
 async function productRecord(sku: string): Promise<any> {

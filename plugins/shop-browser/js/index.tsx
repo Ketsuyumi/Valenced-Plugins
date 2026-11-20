@@ -1174,10 +1174,7 @@ function LayerDetail({ p, owned }: { p: Product; owned: boolean }) {
 				) : null}
 				{hint ? (
 					<Text variant="text-xs/medium" color="text-muted">
-						Buying happens in Discord's own sheet, which the plugin learns by
-						seeing Discord open it once: tap any item in Featured, in Discord's
-						own Shop All list (bottom of Featured) or in ♡ Favorites. Then Buy
-						in Discord opens it for this item.
+						{`Discord's buy sheet couldn't be opened (${previewStatus.last}). Tap any item in Discord's own Featured page once, then Buy in Discord works for every item.`}
 					</Text>
 				) : null}
 				<Button text="Close" variant="secondary" onPress={close} />

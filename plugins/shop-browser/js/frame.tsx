@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Image, View } from 'react-native'
+import { useEffect, useState } from 'react'
+import { Image, PixelRatio, View } from 'react-native'
 import type { Frame } from './shop'
 
 /**
@@ -9,6 +9,31 @@ import type { Frame } from './shop'
  * side borders stretched to the card's height. [children] is the card itself, drawn between the
  * back and front layers.
  */
+const ratios = new Map<string, number>()
+
+/** Like Discord: measure the bare picture, then ask the CDN for it at the exact size drawn. */
+function useRatio(url: string): number {
+	const [ratio, setRatio] = useState(() => ratios.get(url) ?? 0)
+	useEffect(() => {
+		if (ratio) return
+		let gone = false
+		Image.getSize(
+			url,
+			(w: number, h: number) => {
+				if (w > 0 && !gone) {
+					ratios.set(url, h / w)
+					setRatio(h / w)
+				}
+			},
+			() => {},
+		)
+		return () => {
+			gone = true
+		}
+	}, [url])
+	return ratio
+}
+
 function Layer({
 	url,
 	w,
@@ -24,25 +49,14 @@ function Layer({
 	h?: number
 	stretch: boolean
 }) {
-	const [ratio, setRatio] = useState(0)
-	const height = stretch ? h : ratio ? w * ratio : undefined
-	if (!height) {
-		// Measure the picture first (its own shape decides its height).
-		return (
-			<Image
-				source={{ uri: url }}
-				style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
-				onLoad={(e: any) => {
-					const s = e?.nativeEvent?.source
-					if (s?.width && s?.height) setRatio(s.height / s.width)
-				}}
-			/>
-		)
-	}
+	const ratio = useRatio(url)
+	if (!ratio) return null
+	const height = stretch && h ? h : w * ratio
+	const px = Math.round(w * PixelRatio.get())
 	return (
 		<Image
-			source={{ uri: url }}
-			resizeMode={stretch ? 'stretch' : 'contain'}
+			source={{ uri: `${url}?width=${px}&height=${Math.round(px * ratio)}` }}
+			resizeMode={stretch ? 'stretch' : 'cover'}
 			style={{
 				position: 'absolute',
 				left: 0,

@@ -270,7 +270,7 @@ export function frameOf(raw: any): Frame | undefined {
 	const layers = [...item.layers]
 		.filter((l: any) => l?.id)
 		.map((l: any) => ({
-			url: `https://cdn.discordapp.com/media/v1/collectibles-shop/${sku}/${l.id}/static?width=600`,
+			url: `https://cdn.discordapp.com/media/v1/collectibles-shop/${sku}/${l.id}/static`,
 			front: String(l.order ?? '').toLowerCase() !== 'back' && l.order !== 0,
 			bottom: /bottom/i.test(String(l.anchor ?? '')) || l.anchor === 2,
 			stretch: !!l.responsive || /border|edge|side/i.test(String(l.type ?? '')),
