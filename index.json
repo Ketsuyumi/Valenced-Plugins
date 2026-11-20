@@ -459,17 +459,30 @@
     },
     "dev.ketsuyumi.download-emojis": {
       "name": "Download Emojis & Stickers",
-      "description": "Long-press a server: Download Emojis or Download Stickers saves all of them to your phone, like Discord's Save image.",
+      "description": "Long-press a server: Download Emojis or Download Stickers saves all of them to your phone as one zip.",
       "author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
       "icon": "DownloadIcon",
       "channels": {
-        "latest": "1.0.0"
+        "latest": "1.1.0"
       },
       "versions": {
         "1.0.0": {
           "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.download-emojis@1.0.0.zip",
           "sha256": "be1bdd859a4e14c2e99fefae030a7aa357a2d8a1c1756292a91e0b3ae4c85e67",
           "size": 2370,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.1.0": {
+          "url": "https://inkmachinegirl.github.io/Valenced-Plugins/pool/dev.ketsuyumi.download-emojis@1.1.0.zip",
+          "sha256": "3753933c6aa40554a1a4e339a1d38c4c80b636d73435e7a74811d9654b977c56",
+          "size": 3890,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
