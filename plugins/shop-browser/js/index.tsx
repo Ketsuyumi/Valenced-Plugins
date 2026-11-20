@@ -2,20 +2,11 @@ import { AlertActionCreators } from '@valenced/discord/actions'
 import { Tokens } from '@valenced/discord/common/tokens'
 import { Design } from '@valenced/discord/design'
 import { Stores } from '@valenced/discord/flux'
-import {
-	cloneElement,
-	createElement,
-	Fragment,
-	useEffect,
-	useMemo,
-	useState,
-} from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
 	ActivityIndicator,
 	FlatList,
 	Image,
-	Linking,
-	Modal,
 	Pressable,
 	Text as RNText,
 	ScrollView,
@@ -26,15 +17,11 @@ import { ToastActionCreators } from '@valenced/discord/actions'
 import { ReactNativeSafeAreaContext } from '@valenced/externals/react-native-safe-area-context'
 import { RootNavigationRef } from '@valenced/discord/modules/main_tabs_v2'
 import { after } from '@valenced/patcher'
-import { afterJSX } from '@valenced/react/jsx-runtime'
-import { lookupModule } from '@valenced/modules/finders'
-import { withProps } from '@valenced/modules/finders/filters'
 import { findModule } from './find'
 import { fitCard, FrameView } from './frame'
 import { OnMe } from './onme'
 import {
 	canOpenSheet,
-	installLearning,
 	openDiscordSheet,
 	openItemSheet,
 	previewStatus,
@@ -999,46 +986,6 @@ function ShopPage({
 	)
 }
 
-// ── Or: "Shop All" opens this browser over the shop ──────────────────────────
-
-let browsing = false
-const browseListeners = new Set<() => void>()
-function setBrowsing(on: boolean) {
-	browsing = on
-	for (const l of browseListeners) l()
-}
-
-/** Rendered next to the Shop's button: a full-screen Modal while browsing. */
-function BrowseHost() {
-	const [, tick] = useState(0)
-	useEffect(() => {
-		const l = () => tick(n => n + 1)
-		browseListeners.add(l)
-		return () => {
-			browseListeners.delete(l)
-		}
-	}, [])
-	if (!browsing) return null
-	return (
-		<Modal
-			visible
-			animationType="slide"
-			onRequestClose={() => setBrowsing(false)}
-			statusBarTranslucent
-		>
-			<View
-				style={{
-					flex: 1,
-					paddingTop: topInset(),
-					backgroundColor: pageColor(),
-				}}
-			>
-				<ShopPage onClose={() => setBrowsing(false)} />
-			</View>
-		</Modal>
-	)
-}
-
 function pageColor(): string {
 	try {
 		const T = (Tokens as any).default
@@ -1062,22 +1009,10 @@ function topInset(): number {
 	return 40
 }
 
-const SHOP_ALL = /^(shop all|browse all|see all)$/i
-const textIn = (v: unknown, depth = 0): string => {
-	if (depth > 4 || v == null || typeof v === 'boolean') return ''
-	if (typeof v === 'string' || typeof v === 'number') return String(v)
-	if (Array.isArray(v)) return v.map(x => textIn(x, depth + 1)).join('')
-	if (typeof v === 'object')
-		return textIn((v as any).props?.children, depth + 1)
-	return ''
-}
-
-export const shopStatus = { hooked: false }
-
 /** The setting, with older values mapped (the in-page version became the switch). */
-function modeOf(st: Partial<Settings>): 'tab' | 'popup' | 'off' {
+function modeOf(st: Partial<Settings>): 'tab' | 'off' {
 	const m = st.shopMode ?? (st.inShop === false ? 'off' : 'tab')
-	return m === 'inline' ? 'tab' : m
+	return m === 'off' ? 'off' : 'tab'
 }
 
 // ── Featured | Browse, at the top of Discord's Shop ─────────────────────────
@@ -1377,9 +1312,12 @@ function installTabs(): () => void {
 		const nav: any = RootNavigationRef.getRootNavigationRef()
 		const off = nav?.addListener?.('state', check)
 		if (typeof off === 'function') undo.push(off)
-	} catch {}
-	const timer = setInterval(check, 1500)
-	undo.push(() => clearInterval(timer))
+		else throw 0
+	} catch {
+		// No navigation events to listen to: a light check every 1.5 s instead.
+		const timer = setInterval(check, 1500)
+		undo.push(() => clearInterval(timer))
+	}
 	undo.push(
 		findModule(
 			'modules/toast/native/AppToastContainer.tsx',
@@ -1413,24 +1351,6 @@ export default plugin<{ jsonStorage: Settings }>({
 	},
 	start({ cleanup, jsonStorage }) {
 		storage = jsonStorage as unknown as Storage
-		const B = (Design as any).Button
-		if (B) {
-			shopStatus.hooked = true
-			cleanup(
-				afterJSX(B, (el: any) => {
-					const st = (storage as any)?.cache ?? {}
-					if (modeOf(st) !== 'popup') return el
-					const label = textIn(el?.props?.text ?? el?.props?.children).trim()
-					if (!SHOP_ALL.test(label)) return el
-					return createElement(
-						Fragment,
-						{ key: el?.key ?? 'shop-browser' },
-						cloneElement(el, { onPress: () => setBrowsing(true) }),
-						createElement(BrowseHost, { key: 'shop-browser-host' }),
-					)
-				}) as any,
-			)
-		}
 		setRouteStore(
 			() => (storage as any)?.cache?.previewRoute2,
 			previewRoute2 =>
@@ -1440,8 +1360,7 @@ export default plugin<{ jsonStorage: Settings }>({
 				),
 		)
 		setShopRoute(() => (tabsStatus.onShop ? tabsStatus.route : ''))
-		cleanup(installLearning(), installTabs(), () => {
-			setBrowsing(false)
+		cleanup(installTabs(), () => {
 			storage = undefined
 		})
 	},
@@ -1452,60 +1371,33 @@ function SettingsPage() {
 	const stored = storage?.use() as any
 	const { TableRowGroup, TableSwitchRow, Text } = Design as any
 	return (
-		<View style={{ flex: 1 }}>
-			<View style={{ paddingHorizontal: PAD, paddingTop: 8 }}>
-				<TableRowGroup>
-					{(
-						[
-							[
-								'tab',
-								'Featured | Browse in the Shop',
-								'A switch at the top of the Shop: Browse covers it with this browser, Featured goes back',
-							],
-							[
-								'popup',
-								'Pop-up from Shop All',
-								"Discord's Shop → Shop All opens it full screen",
-							],
-							['off', 'Only here', "Leave Discord's Shop as it is"],
-						] as const
-					).map(([mode, label, sub]) => {
-						const current = modeOf(stored ?? {})
-						return (
-							<TableSwitchRow
-								key={mode}
-								label={label}
-								subLabel={sub}
-								value={current === mode}
-								onValueChange={(on: boolean) =>
-									on &&
-									storage?.set(
-										{ collabMarks: {}, ...stored, shopMode: mode } as Settings,
-										true,
-									)
-								}
-							/>
+		<ScrollView contentContainerStyle={{ padding: PAD }}>
+			<TableRowGroup>
+				<TableSwitchRow
+					label="Featured | Browse in the Shop"
+					subLabel="A switch at the top of Discord's Shop: Browse shows every item with filters and sorting, Featured goes back"
+					value={modeOf(stored ?? {}) !== 'off'}
+					onValueChange={(on: boolean) =>
+						storage?.set(
+							{
+								collabMarks: {},
+								...stored,
+								shopMode: on ? 'tab' : 'off',
+							} as Settings,
+							true,
 						)
-					})}
-				</TableRowGroup>
-				<Text
-					variant="text-xs/medium"
-					color="text-muted"
-					style={{ marginTop: 6 }}
-				>
-					Screen now: {tabsStatus.route || 'unknown'} · Shop detected:{' '}
-					{tabsStatus.onShop ? 'yes' : 'no'}
-				</Text>
-				<Text
-					variant="text-xs/medium"
-					color="text-muted"
-					style={{ marginTop: 2 }}
-				>
-					Preview & Buy: learned {previewStatus.learned} · last used{' '}
-					{previewStatus.last}
-				</Text>
-			</View>
-			<ShopPage />
-		</View>
+					}
+				/>
+			</TableRowGroup>
+			<Text
+				variant="text-xs/medium"
+				color="text-muted"
+				style={{ marginTop: 8 }}
+			>
+				Open it from Discord's Shop. Shop detected:{' '}
+				{tabsStatus.onShop ? 'yes' : 'no'} · Buy in Discord:{' '}
+				{previewStatus.last}
+			</Text>
+		</ScrollView>
 	)
 }

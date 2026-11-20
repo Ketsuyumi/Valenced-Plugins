@@ -35,6 +35,8 @@ export interface Product {
 	category: string
 	categoryId: string
 	image?: string
+	/** Its animated picture on Discord's CDN (decorations, effects, nameplates), as Discord plays it. */
+	animated?: string
 	/** Normal price (money), if it has one. */
 	money?: Price
 	/** Price in Orbs, if it can be bought with Orbs. */
@@ -261,6 +263,16 @@ export interface Frame {
  * A frame's layers, each a still at /media/v1/collectibles-shop/{sku}/{layer id}/static (as
  * Discord's mobile app and other clients draw them; the layout follows its ProfileFrame).
  */
+/** Discord's own address for an item's animation: collectibles-shop/{item sku}/animated. */
+export function animatedOf(raw: any): string | undefined {
+	const item = (raw?.items ?? []).find((i: any) =>
+		[0, 1, 2].includes(Number(i?.type)),
+	)
+	const sku = item?.sku_id ?? raw?.sku_id
+	if (!item || !sku) return undefined
+	return `https://cdn.discordapp.com/media/v1/collectibles-shop/${sku}/animated`
+}
+
 export function frameOf(raw: any): Frame | undefined {
 	const item = (raw?.items ?? []).find(
 		(i: any) => Number(i?.type) === 3 && Array.isArray(i?.layers),
@@ -299,6 +311,7 @@ export function toProduct(raw: any, category: any, order: number): Product {
 		category: String(category?.name ?? ''),
 		categoryId: String(category?.sku_id ?? raw.category_sku_id ?? ''),
 		image: imageOf(raw),
+		animated: animatedOf(raw),
 		money,
 		orbs: orbs?.amount,
 		nitro: nitro && money && nitro.amount < money.amount ? nitro : undefined,

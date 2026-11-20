@@ -1,6 +1,7 @@
 import { Design } from '@valenced/discord/design'
 import { Stores } from '@valenced/discord/flux'
 import { Image, View } from 'react-native'
+import { AnimImage } from './anim'
 import { fitCard, FrameView } from './frame'
 import type { Product } from './shop'
 
@@ -48,9 +49,10 @@ export function OnMe({ p, text }: { p: Product; text: string }) {
 					justifyContent: 'center',
 				}}
 			>
-				{img ? (
-					<Image
-						source={img}
+				{img || p.animated ? (
+					<AnimImage
+						animated={p.animated}
+						still={p.image}
 						resizeMode="cover"
 						style={{
 							position: 'absolute',
@@ -99,9 +101,10 @@ export function OnMe({ p, text }: { p: Product; text: string }) {
 						source={{ uri: avatar }}
 						style={{ width: 96, height: 96, borderRadius: 48 }}
 					/>
-					{img ? (
-						<Image
-							source={img}
+					{img || p.animated ? (
+						<AnimImage
+							animated={p.animated}
+							still={p.image}
 							resizeMode="contain"
 							style={{ position: 'absolute', width: 120, height: 120 }}
 						/>
@@ -240,11 +243,12 @@ export function OnMe({ p, text }: { p: Product; text: string }) {
 						}}
 					/>
 				</View>
-				{img ? (
+				{img || p.animated ? (
 					p.type === 1 ? (
 						// An effect plays over the whole card, edge to edge.
-						<Image
-							source={img}
+						<AnimImage
+							animated={p.animated}
+							still={p.image}
 							resizeMode="cover"
 							style={{
 								position: 'absolute',
@@ -255,8 +259,9 @@ export function OnMe({ p, text }: { p: Product; text: string }) {
 						/>
 					) : (
 						// A frame wraps around the card, a little bigger than it.
-						<Image
-							source={img}
+						<AnimImage
+							animated={p.animated}
+							still={p.image}
 							resizeMode="contain"
 							style={{ position: 'absolute', width: 200, height: 260 }}
 						/>
