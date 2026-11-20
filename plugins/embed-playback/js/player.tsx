@@ -1,7 +1,14 @@
 import { Design } from '@valenced/discord/design'
 import { after } from '@valenced/patcher'
+import { onBack } from './back'
 import { useEffect, useRef, useState } from 'react'
-import { BackHandler, Dimensions, Linking, PanResponder, Pressable, View } from 'react-native'
+import {
+	Dimensions,
+	Linking,
+	PanResponder,
+	Pressable,
+	View,
+} from 'react-native'
 import { findModule } from './find'
 import { findWebView } from './webview'
 import { external, MODES, playerSource } from './youtube'
@@ -47,7 +54,12 @@ const listeners = new Set<() => void>()
 const emit = () => {
 	for (const l of listeners) l()
 }
-let readSettings: () => PlayerSettings = () => ({ pipSize: 'medium', openAs: 'big', mode: 'discord', borderless: false })
+let readSettings: () => PlayerSettings = () => ({
+	pipSize: 'medium',
+	openAs: 'big',
+	mode: 'discord',
+	borderless: false,
+})
 let saveMode: (mode: PlayerMode) => void = () => {}
 let mounted = false
 /** Where the overlay's top-left sits in the window, to place a thumbnail rectangle exactly. */
@@ -99,7 +111,12 @@ export function thumbnailWindow(rect: Rect): Window {
 export function play(video: Video, rect?: Rect, as?: OpenAs) {
 	const how = as ?? readSettings().openAs
 	const onThumb = (how === 'thumbnail' || how === 'inline') && rect
-	const win = how === 'small' ? smallWindow() : onThumb ? thumbnailWindow(rect) : bigWindow()
+	const win =
+		how === 'small'
+			? smallWindow()
+			: onThumb
+				? thumbnailWindow(rect)
+				: bigWindow()
 	current = { ...video, ...win }
 	emit()
 }
@@ -114,10 +131,23 @@ function move(win: Window) {
 }
 const isBig = () => !!current && current.w >= screen().width * 0.8
 
-function Button({ label, onPress, hint }: { label: string; onPress: () => void; hint: string }) {
+function Button({
+	label,
+	onPress,
+	hint,
+}: {
+	label: string
+	onPress: () => void
+	hint: string
+}) {
 	const { Text } = Design as any
 	return (
-		<Pressable onPress={onPress} accessibilityLabel={hint} hitSlop={8} style={{ paddingHorizontal: 8, height: BAR, justifyContent: 'center' }}>
+		<Pressable
+			onPress={onPress}
+			accessibilityLabel={hint}
+			hitSlop={8}
+			style={{ paddingHorizontal: 8, height: BAR, justifyContent: 'center' }}
+		>
 			<Text variant="text-md/bold" style={{ color: '#ffffff' }}>
 				{label}
 			</Text>
@@ -133,7 +163,8 @@ const dragger = PanResponder.create({
 	onPanResponderGrant: () => {
 		if (current) dragStart = { x: current.x, y: current.y, w: current.w }
 	},
-	onPanResponderMove: (_, g) => move({ x: dragStart.x + g.dx, y: dragStart.y + g.dy, w: dragStart.w }),
+	onPanResponderMove: (_, g) =>
+		move({ x: dragStart.x + g.dx, y: dragStart.y + g.dy, w: dragStart.w }),
 })
 const resizer = PanResponder.create({
 	onStartShouldSetPanResponder: () => true,
@@ -180,43 +211,61 @@ function Player({ video }: { video: Video & Window }) {
 			}}
 		>
 			{borderless ? null : (
-			<View {...dragger.panHandlers} style={{ height: BAR, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(20,20,24,0.92)' }}>
-				<Text variant="text-xs/semibold" style={{ color: '#bbbbbb', flex: 1, paddingLeft: 10 }} numberOfLines={1}>
-					⠿ YouTube
-				</Text>
-				<Button
-					label="↻"
-					hint="Try another way of loading the video"
-					onPress={() => {
-						const mode = readSettings().mode
-						saveMode(MODES[(MODES.indexOf(mode) + 1) % MODES.length])
-						emit()
+				<View
+					{...dragger.panHandlers}
+					style={{
+						height: BAR,
+						flexDirection: 'row',
+						alignItems: 'center',
+						backgroundColor: 'rgba(20,20,24,0.92)',
 					}}
-				/>
-				{video.w >= 220 ? (
+				>
+					<Text
+						variant="text-xs/semibold"
+						style={{ color: '#bbbbbb', flex: 1, paddingLeft: 10 }}
+						numberOfLines={1}
+					>
+						⠿ YouTube
+					</Text>
 					<Button
-						label="↗"
-						hint="Open in YouTube"
+						label="↻"
+						hint="Try another way of loading the video"
 						onPress={() => {
-							external.skip = true
-							void Linking.openURL(`https://www.youtube.com/watch?v=${video.videoId}`).catch(() => {})
-							closePlayer()
+							const mode = readSettings().mode
+							saveMode(MODES[(MODES.indexOf(mode) + 1) % MODES.length])
+							emit()
 						}}
 					/>
-				) : null}
-				<Button
-					label={big ? '▁' : '⤢'}
-					hint={big ? 'Shrink to a floating window' : 'Make bigger'}
-					onPress={() => move(big ? smallWindow() : bigWindow())}
-				/>
-				<Button label="✕" hint="Close the player" onPress={closePlayer} />
-			</View>
+					{video.w >= 220 ? (
+						<Button
+							label="↗"
+							hint="Open in YouTube"
+							onPress={() => {
+								external.skip = true
+								void Linking.openURL(
+									`https://www.youtube.com/watch?v=${video.videoId}`,
+								).catch(() => {})
+								closePlayer()
+							}}
+						/>
+					) : null}
+					<Button
+						label={big ? '▁' : '⤢'}
+						hint={big ? 'Shrink to a floating window' : 'Make bigger'}
+						onPress={() => move(big ? smallWindow() : bigWindow())}
+					/>
+					<Button label="✕" hint="Close the player" onPress={closePlayer} />
+				</View>
 			)}
 			<View style={{ width: video.w, height: h }}>
 				{WebView ? (
 					<WebView
 						key={`${video.videoId}:${readSettings().mode}`}
-						source={playerSource(readSettings().mode, video.videoId, video.start)}
+						source={playerSource(
+							readSettings().mode,
+							video.videoId,
+							video.start,
+						)}
 						originWhitelist={['*']}
 						javaScriptEnabled
 						domStorageEnabled
@@ -227,7 +276,14 @@ function Player({ video }: { video: Video & Window }) {
 						style={{ flex: 1, backgroundColor: '#000' }}
 					/>
 				) : (
-					<View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 12 }}>
+					<View
+						style={{
+							flex: 1,
+							alignItems: 'center',
+							justifyContent: 'center',
+							padding: 12,
+						}}
+					>
 						<Text variant="text-sm/medium" style={{ color: '#ffffff' }}>
 							Couldn't start the player on this Discord version.
 						</Text>
@@ -235,13 +291,19 @@ function Player({ video }: { video: Video & Window }) {
 				)}
 				{borderless ? (
 					<>
-						<View {...dragger.panHandlers} accessibilityLabel="Move" style={corner({ left: 6, top: 6 })}>
+						<View
+							{...dragger.panHandlers}
+							accessibilityLabel="Move"
+							style={corner({ left: 6, top: 6 })}
+						>
 							<Text variant="text-sm/bold" style={{ color: '#ffffff' }}>
 								⠿
 							</Text>
 						</View>
 						<Pressable
-							accessibilityLabel={big ? 'Shrink to a floating window' : 'Make bigger'}
+							accessibilityLabel={
+								big ? 'Shrink to a floating window' : 'Make bigger'
+							}
 							onPress={() => move(big ? smallWindow() : bigWindow())}
 							style={corner({ right: 40, top: 6 })}
 						>
@@ -249,7 +311,11 @@ function Player({ video }: { video: Video & Window }) {
 								{big ? '▁' : '⤢'}
 							</Text>
 						</Pressable>
-						<Pressable accessibilityLabel="Close the player" onPress={closePlayer} style={corner({ right: 6, top: 6 })}>
+						<Pressable
+							accessibilityLabel="Close the player"
+							onPress={closePlayer}
+							style={corner({ right: 6, top: 6 })}
+						>
 							<Text variant="text-sm/bold" style={{ color: '#ffffff' }}>
 								✕
 							</Text>
@@ -270,7 +336,10 @@ function Player({ video }: { video: Video & Window }) {
 						padding: 4,
 					}}
 				>
-					<Text variant="text-md/bold" style={{ color: 'rgba(255,255,255,0.8)' }}>
+					<Text
+						variant="text-md/bold"
+						style={{ color: 'rgba(255,255,255,0.8)' }}
+					>
 						◢
 					</Text>
 				</View>
@@ -294,11 +363,10 @@ function Host() {
 	// Back shrinks a big player first, then lets Discord handle back as usual.
 	useEffect(() => {
 		if (!current || !isBig()) return
-		const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+		return onBack(() => {
 			move(smallWindow())
 			return true
 		})
-		return () => sub.remove()
 	}, [current?.videoId, current ? isBig() : false])
 	return (
 		<View
@@ -307,7 +375,8 @@ function Host() {
 			onLayout={() => {
 				try {
 					root.current?.measureInWindow?.((x: number, y: number) => {
-						if (Number.isFinite(x) && Number.isFinite(y)) overlayOffset = { x, y }
+						if (Number.isFinite(x) && Number.isFinite(y))
+							overlayOffset = { x, y }
 					})
 				} catch {}
 			}}
@@ -318,22 +387,29 @@ function Host() {
 	)
 }
 
-export function installPlayer(read: () => PlayerSettings, writeMode: (mode: PlayerMode) => void): () => void {
+export function installPlayer(
+	read: () => PlayerSettings,
+	writeMode: (mode: PlayerMode) => void,
+): () => void {
 	readSettings = read
 	saveMode = writeMode
 	const undo: Array<() => void> = []
 	undo.push(
-		findModule('modules/toast/native/AppToastContainer.tsx', ['AppToastContainer'], (mod: any) => {
-			if (typeof mod?.default !== 'function') return
-			undo.push(
-				after(mod, 'default', ((rendered: any) => (
-					<>
-						{rendered}
-						<Host />
-					</>
-				)) as never),
-			)
-		}),
+		findModule(
+			'modules/toast/native/AppToastContainer.tsx',
+			['AppToastContainer'],
+			(mod: any) => {
+				if (typeof mod?.default !== 'function') return
+				undo.push(
+					after(mod, 'default', ((rendered: any) => (
+						<>
+							{rendered}
+							<Host />
+						</>
+					)) as never),
+				)
+			},
+		),
 	)
 	return () => {
 		for (const u of undo.splice(0))

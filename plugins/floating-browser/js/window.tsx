@@ -1,8 +1,8 @@
 import { ToastActionCreators } from '@valenced/discord/actions'
 import { after } from '@valenced/patcher'
+import { onBack } from './back'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-	BackHandler,
 	Dimensions,
 	Linking,
 	PanResponder,
@@ -596,7 +596,7 @@ function Browser({ box }: { box: Win }) {
 
 	// Back: the page's history first, then shrink a big window.
 	useEffect(() => {
-		const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+		return onBack(() => {
 			// Minimized: back belongs to Discord.
 			if (minimized) return false
 			if (page.back) {
@@ -609,7 +609,6 @@ function Browser({ box }: { box: Win }) {
 			}
 			return false
 		})
-		return () => sub.remove()
 	}, [page.back, big, tab?.id])
 
 	const go = (text: string) => {

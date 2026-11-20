@@ -1,12 +1,12 @@
 import { ToastActionCreators } from '@valenced/discord/actions'
 import { Tokens } from '@valenced/discord/common/tokens'
+import { onBack } from './back'
 import { Design } from '@valenced/discord/design'
 import { Stores } from '@valenced/discord/flux'
 import { after } from '@valenced/patcher'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
 	ActivityIndicator,
-	BackHandler,
 	FlatList,
 	Image,
 	Pressable,
@@ -625,11 +625,10 @@ function Overlay() {
 	}, [])
 	useEffect(() => {
 		if (!forum) return
-		const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+		return onBack(() => {
 			hideGrid()
 			return true
 		})
-		return () => sub.remove()
 	}, [forum?.id])
 	if (!forum) return null
 	return (

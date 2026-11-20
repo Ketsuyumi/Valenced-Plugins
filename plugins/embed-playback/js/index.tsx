@@ -12,7 +12,14 @@ import { closePlayer, installPlayer, play, playerAvailable } from './player'
 import { inlineState, startInline, stopInline } from './native'
 import { playerSource } from './youtube'
 import { findWebView } from './webview'
-import { describeSource, external, MODE_NAMES, MODES, youtubeInSource, youtubeOf } from './youtube'
+import {
+	describeSource,
+	external,
+	MODE_NAMES,
+	MODES,
+	youtubeInSource,
+	youtubeOf,
+} from './youtube'
 import type { PlayerMode } from './youtube'
 import type { OpenAs, PlayerSettings, Rect } from './player'
 
@@ -60,18 +67,30 @@ let lastOpened = 0
  */
 function findRect(value: unknown): Rect | undefined {
 	let best: { rect: Rect; score: number } | undefined
-	const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined)
+	const num = (v: unknown) =>
+		typeof v === 'number' && Number.isFinite(v) ? v : undefined
 	const visit = (node: any, key: string, depth: number) => {
 		if (!node || typeof node !== 'object' || depth > 5) return
 		const x = num(node.pageX) ?? num(node.x) ?? num(node.left)
 		const y = num(node.pageY) ?? num(node.y) ?? num(node.top)
 		const width = num(node.width)
 		const height = num(node.height)
-		if (x !== undefined && y !== undefined && width && height && width > 60 && height > 40) {
-			const score = (/layout|origin|frame|rect|measure|position/i.test(key) ? 2 : 0) + (node.pageX !== undefined ? 1 : 0)
-			if (!best || score > best.score) best = { rect: { x, y, width, height }, score }
+		if (
+			x !== undefined &&
+			y !== undefined &&
+			width &&
+			height &&
+			width > 60 &&
+			height > 40
+		) {
+			const score =
+				(/layout|origin|frame|rect|measure|position/i.test(key) ? 2 : 0) +
+				(node.pageX !== undefined ? 1 : 0)
+			if (!best || score > best.score)
+				best = { rect: { x, y, width, height }, score }
 		}
-		for (const [k, v] of Object.entries(node)) if (v && typeof v === 'object') visit(v, k, depth + 1)
+		for (const [k, v] of Object.entries(node))
+			if (v && typeof v === 'object') visit(v, k, depth + 1)
 	}
 	visit(value, '', 0)
 	return best?.rect
@@ -90,7 +109,9 @@ function describeArgs(args: unknown): string {
 					if (seen.has(v)) return '[seen]'
 					seen.add(v)
 				}
-				return typeof v === 'string' && v.length > 200 ? `${v.slice(0, 200)}…` : v
+				return typeof v === 'string' && v.length > 200
+					? `${v.slice(0, 200)}…`
+					: v
 			},
 			1,
 		).slice(0, 6000)
@@ -105,7 +126,11 @@ const hooked = { opener: false, header: false, links: false }
 let lastSource = 'Nothing opened in the viewer yet'
 
 /** Plays [video] if the player can; false lets Discord do what it would have done. */
-function tryPlay(video: { videoId: string; start?: number } | undefined, via: string, rect?: Rect): boolean {
+function tryPlay(
+	video: { videoId: string; start?: number } | undefined,
+	via: string,
+	rect?: Rect,
+): boolean {
 	if (!video) return false
 	if (!playerAvailable()) {
 		lastTap = `Caught by ${via}, but the player isn't attached (open a chat once)`
@@ -126,7 +151,9 @@ function tryPlay(video: { videoId: string; start?: number } | undefined, via: st
 		return true
 	}
 	if (how === 'thumbnail' || how === 'inline')
-		lastTap += rect ? ' · on the thumbnail' : ' · thumbnail position not given, opened big'
+		lastTap += rect
+			? ' · on the thumbnail'
+			: ' · thumbnail position not given, opened big'
 	play(video, rect)
 	return true
 }
@@ -137,9 +164,16 @@ function tryPlay(video: { videoId: string; start?: number } | undefined, via: st
 let watching: ReturnType<typeof setInterval> | undefined
 let inlineVideo: string | undefined
 
-async function playInline(video: { videoId: string; start?: number }, rect: Rect) {
+async function playInline(
+	video: { videoId: string; start?: number },
+	rect: Rect,
+) {
 	closePlayer()
-	const result = await startInline(video.videoId, playerSource(settings().mode, video.videoId, video.start), rect)
+	const result = await startInline(
+		video.videoId,
+		playerSource(settings().mode, video.videoId, video.start),
+		rect,
+	)
 	if (result !== 'ok') {
 		lastTap += ` · inside the message failed (${result}), opened on the thumbnail`
 		play(video, rect)
@@ -161,14 +195,27 @@ function watchInline() {
 		const id = inlineVideo
 		inlineVideo = undefined
 		if (id && state.stopped === 'scrolled' && settings().continueFloating)
-			play({ videoId: id, start: Math.floor(state.time ?? 0) || undefined }, undefined, 'small')
+			play(
+				{ videoId: id, start: Math.floor(state.time ?? 0) || undefined },
+				undefined,
+				'small',
+			)
 	}, 700)
 }
 
 function SettingsPage({ api }: { api: any }) {
-	const { Stack, Text, TableRowGroup, TableRow, TableSwitchRow, TableRadioGroup, TableRadioRow } = Design as any
+	const {
+		Stack,
+		Text,
+		TableRowGroup,
+		TableRow,
+		TableSwitchRow,
+		TableRadioGroup,
+		TableRadioRow,
+	} = Design as any
 	const s: Settings = { ...DEFAULTS, ...api.jsonStorage.use() }
-	const set = (patch: Partial<Settings>) => api.jsonStorage.set({ ...s, ...patch }, true)
+	const set = (patch: Partial<Settings>) =>
+		api.jsonStorage.set({ ...s, ...patch }, true)
 	return (
 		<ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
 			<Stack spacing={24}>
@@ -186,14 +233,27 @@ function SettingsPage({ api }: { api: any }) {
 						onValueChange={(links: boolean) => set({ links })}
 					/>
 				</TableRowGroup>
-				<TableRadioGroup title="Open as" defaultValue={s.openAs} value={s.openAs} onChange={(openAs: OpenAs) => set({ openAs })}>
-					<TableRadioRow label="Big" subLabel="Across the top of the screen." value="big" />
+				<TableRadioGroup
+					title="Open as"
+					defaultValue={s.openAs}
+					value={s.openAs}
+					onChange={(openAs: OpenAs) => set({ openAs })}
+				>
+					<TableRadioRow
+						label="Big"
+						subLabel="Across the top of the screen."
+						value="big"
+					/>
 					<TableRadioRow
 						label="Inside the message"
 						subLabel="Plays in the embed itself and scrolls with it (native). Falls back to On the thumbnail."
 						value="inline"
 					/>
-					<TableRadioRow label="On the thumbnail" subLabel="Where the embed's picture is, the same size." value="thumbnail" />
+					<TableRadioRow
+						label="On the thumbnail"
+						subLabel="Where the embed's picture is, the same size."
+						value="thumbnail"
+					/>
 					<TableRadioRow label="Small floating window" value="small" />
 				</TableRadioGroup>
 				<TableRowGroup>
@@ -207,10 +267,17 @@ function SettingsPage({ api }: { api: any }) {
 						label="Keep playing when scrolled away"
 						subLabel="When a video inside a message scrolls off screen, it carries on in the floating window from the same second."
 						value={s.continueFloating}
-						onValueChange={(continueFloating: boolean) => set({ continueFloating })}
+						onValueChange={(continueFloating: boolean) =>
+							set({ continueFloating })
+						}
 					/>
 				</TableRowGroup>
-				<TableRadioGroup title="Floating window size" defaultValue={s.pipSize} value={s.pipSize} onChange={(pipSize: Settings['pipSize']) => set({ pipSize })}>
+				<TableRadioGroup
+					title="Floating window size"
+					defaultValue={s.pipSize}
+					value={s.pipSize}
+					onChange={(pipSize: Settings['pipSize']) => set({ pipSize })}
+				>
 					<TableRadioRow label="Small" value="small" />
 					<TableRadioRow label="Medium" value="medium" />
 					<TableRadioRow label="Large" value="large" />
@@ -226,8 +293,9 @@ function SettingsPage({ api }: { api: any }) {
 					))}
 				</TableRadioGroup>
 				<Text variant="text-sm/medium" color="text-muted">
-					If YouTube says "This video is unavailable" or shows an error code, tap ↻ in the player to try
-					the next way. The one you end on is remembered.
+					If YouTube says "This video is unavailable" or shows an error code,
+					tap ↻ in the player to try the next way. The one you end on is
+					remembered.
 				</Text>
 				<TableRowGroup title="Ads">
 					<TableRow
@@ -240,29 +308,52 @@ function SettingsPage({ api }: { api: any }) {
 					/>
 				</TableRowGroup>
 				<TableRowGroup title="Status">
-					<TableRow label="Player" subLabel={playerAvailable() ? 'Ready' : 'Not attached yet (open any chat once)'} />
-					<TableRow label="Web view" subLabel={findWebView() ? 'Found' : "Not found: videos open Discord's usual way"} />
+					<TableRow
+						label="Player"
+						subLabel={
+							playerAvailable()
+								? 'Ready'
+								: 'Not attached yet (open any chat once)'
+						}
+					/>
+					<TableRow
+						label="Web view"
+						subLabel={
+							findWebView()
+								? 'Found'
+								: "Not found: videos open Discord's usual way"
+						}
+					/>
 					<TableRow label="Last YouTube tap" subLabel={lastTap} />
 					<TableRow
 						label="Hooks"
 						subLabel={`Viewer opener: ${hooked.opener ? 'yes' : 'no'} · Viewer header: ${hooked.header ? 'yes' : 'no'} · Links: ${hooked.links ? 'yes' : 'no'}`}
 					/>
-					<TableRow label="Last thing the viewer showed" subLabel={lastSource} />
+					<TableRow
+						label="Last thing the viewer showed"
+						subLabel={lastSource}
+					/>
 					<TableRow
 						label="Copy debug info"
 						subLabel="What Discord passed for the last YouTube video, to send to the developer."
 						onPress={() => {
-							void Clipboard.setString(lastArgs || 'No YouTube video opened through the viewer yet')
+							void Clipboard.setString(
+								lastArgs || 'No YouTube video opened through the viewer yet',
+							)
 							try {
-								ToastActionCreators.open('embed-playback', { text: 'Copied' } as never)
+								ToastActionCreators.open('embed-playback', {
+									text: 'Copied',
+								} as never)
 							} catch {}
 						}}
 					/>
 				</TableRowGroup>
 				<Text variant="text-sm/medium" color="text-muted">
-					Drag the player by its bar and resize it from the ◢ corner. ▁ shrinks it to a small floating
-					window and ⤢ makes it big; it keeps playing while you scroll and switch channels. ↻ tries
-					another way of loading the video, ↗ opens it in YouTube, ✕ closes it. Back shrinks a big player.
+					Drag the player by its bar and resize it from the ◢ corner. ▁ shrinks
+					it to a small floating window and ⤢ makes it big; it keeps playing
+					while you scroll and switch channels. ↻ tries another way of loading
+					the video, ↗ opens it in YouTube, ✕ closes it. Back shrinks a big
+					player.
 				</Text>
 			</Stack>
 		</ScrollView>
@@ -274,7 +365,8 @@ export default plugin<{ jsonStorage: Settings }>({
 	start({ cleanup, jsonStorage }) {
 		settings = () => {
 			const s = { ...DEFAULTS, ...jsonStorage.cache } as Settings
-			if (!(jsonStorage.cache as any)?.openAs && s.startSmall) s.openAs = 'small'
+			if (!(jsonStorage.cache as any)?.openAs && s.startSmall)
+				s.openAs = 'small'
 			return s
 		}
 		cleanup(() => {
@@ -290,27 +382,49 @@ export default plugin<{ jsonStorage: Settings }>({
 
 		// Embeds: Discord opens YouTube embeds in its media viewer (openMediaModal).
 		cleanup(
-			findModule('modules/media_viewer/native/components/openMediaModal.tsx', ['openMediaModal'], (mod: any) => {
-				const host = typeof mod?.openMediaModal === 'function' ? mod : typeof mod?.default?.openMediaModal === 'function' ? mod.default : null
-				if (!host) return
-				hooked.opener = true
-				cleanup(
-					instead(host, 'openMediaModal', function (this: unknown, args: any[], orig: (...a: any[]) => any) {
-						try {
-							if (settings().embeds) {
-								const options = args[0] ?? {}
-								const sources: any[] = options.initialSources ?? options.sources ?? []
-								const index = Number(options.initialIndex ?? options.index ?? 0) || 0
-								lastSource = `opener: ${describeSource(sources[index] ?? sources[0] ?? options)}`
-								const video = youtubeInSource(sources[index] ?? sources[0]) ?? youtubeInSource(args)
-								if (video) lastArgs = describeArgs(args)
-								if (tryPlay(video, 'the viewer opener', findRect(args))) return
-							}
-						} catch {}
-						return orig.apply(this, args)
-					}),
-				)
-			}),
+			findModule(
+				'modules/media_viewer/native/components/openMediaModal.tsx',
+				['openMediaModal'],
+				(mod: any) => {
+					const host =
+						typeof mod?.openMediaModal === 'function'
+							? mod
+							: typeof mod?.default?.openMediaModal === 'function'
+								? mod.default
+								: null
+					if (!host) return
+					hooked.opener = true
+					cleanup(
+						instead(
+							host,
+							'openMediaModal',
+							function (
+								this: unknown,
+								args: any[],
+								orig: (...a: any[]) => any,
+							) {
+								try {
+									if (settings().embeds) {
+										const options = args[0] ?? {}
+										const sources: any[] =
+											options.initialSources ?? options.sources ?? []
+										const index =
+											Number(options.initialIndex ?? options.index ?? 0) || 0
+										lastSource = `opener: ${describeSource(sources[index] ?? sources[0] ?? options)}`
+										const video =
+											youtubeInSource(sources[index] ?? sources[0]) ??
+											youtubeInSource(args)
+										if (video) lastArgs = describeArgs(args)
+										if (tryPlay(video, 'the viewer opener', findRect(args)))
+											return
+									}
+								} catch {}
+								return orig.apply(this, args)
+							},
+						),
+					)
+				},
+			),
 		)
 
 		// The viewer itself: however Discord opened it, its header gets the current source and
@@ -318,7 +432,8 @@ export default plugin<{ jsonStorage: Settings }>({
 		let handled = ''
 		const onHeader = (props: any) => {
 			try {
-				if (props?.source) lastSource = `header: ${describeSource(props.source)}`
+				if (props?.source)
+					lastSource = `header: ${describeSource(props.source)}`
 				if (!settings().embeds) return
 				const video = youtubeInSource(props?.source)
 				if (!video) return
@@ -331,7 +446,8 @@ export default plugin<{ jsonStorage: Settings }>({
 					props?.onClose?.()
 					return
 				}
-				if (tryPlay(video, "the viewer's header")) setTimeout(() => props?.onClose?.(), 0)
+				if (tryPlay(video, "the viewer's header"))
+					setTimeout(() => props?.onClose?.(), 0)
 			} catch {}
 		}
 		cleanup(
@@ -350,10 +466,18 @@ export default plugin<{ jsonStorage: Settings }>({
 						if (!host) continue
 						hooked.header = true
 						cleanup(
-							instead(host.o, host.k, function (this: unknown, args: any[], orig: (...a: any[]) => any) {
-								onHeader(args[0])
-								return orig.apply(this, args)
-							}),
+							instead(
+								host.o,
+								host.k,
+								function (
+									this: unknown,
+									args: any[],
+									orig: (...a: any[]) => any,
+								) {
+									onHeader(args[0])
+									return orig.apply(this, args)
+								},
+							),
 						)
 						break
 					}
@@ -367,20 +491,36 @@ export default plugin<{ jsonStorage: Settings }>({
 				if (typeof mod?.handleClick !== 'function') return
 				hooked.links = true
 				cleanup(
-					instead(mod, 'handleClick', function (this: unknown, args: any[], orig: (...a: any[]) => any) {
-						if (settings().links && tryPlay(youtubeOf(args[0]?.href), 'the link handler')) return
-						return orig.apply(this, args)
-					}),
+					instead(
+						mod,
+						'handleClick',
+						function (this: unknown, args: any[], orig: (...a: any[]) => any) {
+							if (
+								settings().links &&
+								tryPlay(youtubeOf(args[0]?.href), 'the link handler')
+							)
+								return
+							return orig.apply(this, args)
+						},
+					),
 				)
 			}),
-			instead(Linking, 'openURL', function (args: any[], orig: (...a: any[]) => any) {
-				if (external.skip) {
-					external.skip = false
+			instead(
+				Linking,
+				'openURL',
+				function (args: any[], orig: (...a: any[]) => any) {
+					if (external.skip) {
+						external.skip = false
+						return orig.apply(Linking, args)
+					}
+					if (
+						(settings().links || settings().embeds) &&
+						tryPlay(youtubeOf(args[0]), 'the open-link hook')
+					)
+						return Promise.resolve(true)
 					return orig.apply(Linking, args)
-				}
-				if ((settings().links || settings().embeds) && tryPlay(youtubeOf(args[0]), 'the open-link hook')) return Promise.resolve(true)
-				return orig.apply(Linking, args)
-			}),
+				},
+			),
 		)
 	},
 	SettingsComponent: SettingsPage,

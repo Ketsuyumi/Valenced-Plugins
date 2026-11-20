@@ -5,7 +5,10 @@ import { callNativeMethod } from '@valenced/modules/native'
  * thumbnail view and moved with it every frame, so it scrolls with the message.
  */
 
-const call = callNativeMethod as unknown as (name: string, args?: unknown[]) => Promise<any>
+const call = callNativeMethod as unknown as (
+	name: string,
+	args?: unknown[],
+) => Promise<any>
 
 export interface InlineState {
 	active: boolean
@@ -41,7 +44,9 @@ export async function startInline(
 export async function inlineState(): Promise<InlineState> {
 	try {
 		const raw = await call('embedPlayback.state', [])
-		return typeof raw === 'string' ? JSON.parse(raw) : (raw ?? { active: false })
+		return typeof raw === 'string'
+			? JSON.parse(raw)
+			: (raw ?? { active: false })
 	} catch {
 		return { active: false }
 	}
