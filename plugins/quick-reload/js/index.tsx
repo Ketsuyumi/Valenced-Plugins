@@ -1,3 +1,4 @@
+/// <reference types="@valenced/types/hidden" />
 import { getAssetIdByName } from '@valenced/assets'
 import { ToastActionCreators } from '@valenced/discord/actions'
 import { Design } from '@valenced/discord/design'
@@ -15,6 +16,7 @@ import {
 	withProps,
 } from '@valenced/modules/finders/filters'
 import { after } from '@valenced/patcher'
+import { isPluginEnabled, pList } from '@valenced/plugins/_'
 import { lookupGeneratedIconComponent } from '@valenced/utils/discord'
 import { cloneElement, createElement, Fragment, isValidElement } from 'react'
 import { ScrollView } from 'react-native'
@@ -82,6 +84,20 @@ function monitorInstalled(): boolean | undefined {
 		)
 	} catch {
 		return undefined
+	}
+}
+
+/**
+ * Whether Performance Monitor is installed and switched on, from Valenced's own plugin list.
+ * Its settings page stays registered while it's off, so the page alone can't tell.
+ */
+function monitorOn(): boolean | undefined {
+	try {
+		const p = pList.get(MONITOR_ROUTE)
+		if (!p) return false
+		return isPluginEnabled(p)
+	} catch {
+		return monitorInstalled()
 	}
 }
 
@@ -181,8 +197,8 @@ const BAR_BUTTONS: BarButton[] = [
 		label: 'Performance Monitor',
 		icons: ['AnalyticsIcon', 'ChartIcon', 'StatsIcon', 'PollsIcon'],
 		onPress: openMonitor,
-		// Not on the bar when Performance Monitor isn't installed (its page would be missing).
-		enabled: settings => settings.monitorButton && monitorInstalled() !== false,
+		// Not on the bar when Performance Monitor isn't installed or is switched off.
+		enabled: settings => settings.monitorButton && monitorOn() !== false,
 	},
 	{
 		key: 'quick-reload',
@@ -402,7 +418,7 @@ function SettingsPage({ api }: { api: Api }) {
 					/>
 					<TableSwitchRow
 						label="Performance Monitor button on your bar"
-						subLabel="Opens dariussbezy's Performance Monitor plugin (dariuss.performance-monitor). Only shows when that plugin is installed."
+						subLabel="Opens dariussbezy's Performance Monitor plugin (dariuss.performance-monitor). Only shows while that plugin is installed and on."
 						value={settings.monitorButton}
 						onValueChange={(monitorButton: boolean) => set({ monitorButton })}
 					/>
