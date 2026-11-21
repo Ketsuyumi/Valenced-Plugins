@@ -1,0 +1,20 @@
+{
+	"format": 1,
+	"id": "dev.ketsuyumi.watch-together-adblock",
+	"name": "Watch Together Ad Block",
+	"description": "No YouTube ads in Discord's Watch Together activity: ad data is taken out before the player sees it, ad overlays are hidden, and any ad that still starts is skipped.",
+	"author": "Satou (https://github.com/inkmachinegirl \"GitHub\")",
+	"icon": "ActivitiesIcon",
+	"version": "1.0.0",
+	"dependencies": {
+		"valenced.api": {
+			"version": ">=1 <2"
+		},
+		"discord": {
+			"version": "*"
+		}
+	},
+	"dist": {
+		"script": "index.js"
+	}
+}
