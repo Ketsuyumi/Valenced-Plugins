@@ -5,6 +5,7 @@ import { Image, ScrollView, View } from 'react-native'
 import { installBanner, installGuard, installNicknames } from './chat'
 import { DmEditor, openEditor } from './editor'
 import { bump, patchLists, refreshLists } from './list'
+import { installNameEmoji } from './namerow'
 import { installPreview, previewStatus } from './preview'
 import { installSheet } from './sheet'
 import {
@@ -287,6 +288,7 @@ export default plugin<{ jsonStorage: Settings }>({
 			installTabs(),
 			installEmptyText(),
 			installPreview(),
+			installNameEmoji(),
 			installBanner(),
 			installGuard(),
 			installNicknames(),

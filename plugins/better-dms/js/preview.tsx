@@ -3,6 +3,7 @@ import { cloneElement } from 'react'
 import { Image, Text } from 'react-native'
 import { type CustomEmoji, emojiUrl } from './emoji'
 import { findModule } from './find'
+import { nameRow } from './namerow'
 import {
 	ago,
 	channel,
@@ -50,9 +51,10 @@ function pieces(id: string): { lead: Piece[]; info: Piece[]; fade: boolean } {
 	const info: Piece[] = []
 
 	if (on('colors') && d.color) lead.push({ text: '● ', color: d.color })
-	if (on('emoji') && d.customEmoji)
-		lead.push({ text: ' ', emoji: d.customEmoji })
-	else if (on('emoji') && d.emoji) lead.push({ text: `${d.emoji} ` })
+	// Shown by the name when that works (namerow.tsx); here otherwise.
+	const emojiHere = on('emoji') && !nameRow.works
+	if (emojiHere && d.customEmoji) lead.push({ text: ' ', emoji: d.customEmoji })
+	else if (emojiHere && d.emoji) lead.push({ text: `${d.emoji} ` })
 	if (on('labels') && d.label)
 		lead.push({
 			text: `${d.label} · `,
